@@ -3,12 +3,29 @@
 
 ### **/backend/README.md**
 
-```markdown
-# SGH - Backend
+# Gestión de horarios API (Hexagonal + FastAPI)
 
-Este directorio contendrá la lógica del **servidor** del Sistema de Gestión de Horario.  
-Aquí se desarrollarán la **API** y la conexión con la **base de datos**.
+## 📂 Capas de la arquitectura
+- **domain**: entidades y puertos (reglas del negocio, sin dependencias externas)
+- **application**: casos de uso; orquestan el dominio mediante puertos
+- **infrastructure**: adaptadores (repositorios, controladores HTTP, DB, etc.)
+- **main.py**: composición de la app (inyección de dependencias)
 
-## 📌 Estado actual
-En construcción.  
-Próximamente se añadirán dependencias, instrucciones de instalación y guías de uso.
+## 🚀 Requisitos
+- Python 3.12+
+- PostgreSQL (cuando esté lista la base de datos)
+- Entorno virtual (`venv`)
+
+## ⚙️ Instalación
+Clonar el repo y levantar entorno:
+
+```bash
+# Crear entorno virtual
+python3 -m venv env
+source env/bin/activate
+
+# Instalar dependencias desde requirements.txt
+pip install -r requirements.txt
+
+#runnear la API
+uvicorn main:app --reload --port 8000
