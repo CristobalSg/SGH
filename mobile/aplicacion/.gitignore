@@ -10,11 +10,6 @@
 
 # production
 /dist
-/www
-
-# Capacitor native folders
-/android
-/ios
 
 # misc
 .DS_Store
@@ -34,7 +29,3 @@ yarn-error.log*
 
 # Optional eslint cache
 .eslintcache
-
-# OS generated files
-Thumbs.db
-Desktop.ini
