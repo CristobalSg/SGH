@@ -1,11 +1,19 @@
 from dataclasses import dataclass
 from uuid import UUID, uuid4
+from pydantic import BaseModel
 
 @dataclass
-class Product:
+class User:
     id: UUID
-    name: str
+    username: str
+    password: str
+    email: str
+    role: str
 
     @staticmethod
-    def new(name: str) -> "Product":
-        return Product(id=uuid4(), name=name)
+    def new(username: str, password: str, email: str, role: str = "user") -> "User":
+        return User(id=uuid4(), username=username, password=password, email=email, role=role)
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
