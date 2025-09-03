@@ -21,7 +21,7 @@ Clonar el repo y levantar entorno:
 
 ```bash
 # Crear entorno virtual
-python3 -m venv env
+python3 -m venv .venv
 source env/bin/activate
 
 # Instalar dependencias desde requirements.txt
