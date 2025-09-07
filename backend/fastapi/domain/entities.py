@@ -1,53 +1,49 @@
-from dataclasses import dataclass
-from uuid import UUID, uuid4
-from datetime import datetime
-from typing import List
+from datetime import time
+from typing import Optional
 from pydantic import BaseModel
 
-@dataclass
-class User:
-    id: UUID
-    username: str
-    password: str
-    email: str
-    role: str
-
-    @staticmethod
-    def new(username: str, password: str, email: str, role: str = "user") -> "User":
-        return User(id=uuid4(), username=username, password=password, email=email, role=role)
-
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
 
-@dataclass
-class ScheduleRequirement:
-    id: UUID
-    title: str
-    description: str
-    start_date: datetime
-    end_date: datetime
-    user_id: UUID
-    status: str  # 'pending', 'approved', 'rejected'
-    created_at: datetime
-    updated_at: datetime
+class DocenteBase(BaseModel):
+    nombre: str
+    email: str
+    pass_hash: str
 
-    @staticmethod
-    def new(title: str, description: str, start_date: datetime, end_date: datetime, user_id: UUID) -> "ScheduleRequirement":
-        return ScheduleRequirement(
-            id=uuid4(),
-            title=title,
-            description=description,
-            start_date=start_date,
-            end_date=end_date,
-            user_id=user_id,
-            status="pending",
-            created_at=datetime.now(),
-            updated_at=datetime.now()
-        )
+class DocenteCreate(DocenteBase):
+    pass
 
-class CreateScheduleRequest(BaseModel):
-    title: str
-    description: str
-    start_date: datetime
-    end_date: datetime
+class Docente(DocenteBase):
+    id: int
+    class Config:
+        orm_mode = True
+
+class RestriccionBase(BaseModel):
+    tipo: str
+    valor: str
+    prioridad: int
+    restriccion_blanda: Optional[str] = None
+    restriccion_dura: Optional[str] = None
+
+class RestriccionCreate(RestriccionBase):
+    docente_id: int
+
+class Restriccion(RestriccionBase):
+    id: int
+    docente_id: int
+    class Config:
+        orm_mode = True
+
+class BloqueBase(BaseModel):
+    dia_semana: int
+    hora_inicio: time
+    hora_fin: time
+
+class BloqueCreate(BloqueBase):
+    pass
+
+class Bloque(BloqueBase):
+    id: int
+    class Config:
+        orm_mode = True
