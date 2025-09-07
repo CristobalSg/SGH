@@ -1,7 +1,10 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from domain.models import Docente, Restriccion, Bloque
-from domain.entities import DocenteCreate, RestriccionCreate, BloqueCreate
+from domain.models import Docente, Restriccion, Bloque, RestriccionHorario
+from domain.entities import (
+    DocenteCreate, RestriccionCreate, BloqueCreate,
+    RestriccionHorarioCreate
+)
 
 class SQLDocenteRepository:
     def __init__(self, session: Session):
@@ -104,6 +107,40 @@ class SQLBloqueRepository:
         db_bloque = self.get_by_id(bloque_id)
         if db_bloque:
             self.session.delete(db_bloque)
+            self.session.commit()
+            return True
+        return False
+
+class SQLRestriccionHorarioRepository:
+    def __init__(self, session: Session):
+        self.session = session
+
+    def create(self, restriccion: RestriccionHorarioCreate) -> RestriccionHorario:
+        db_restriccion = RestriccionHorario(**restriccion.dict())
+        self.session.add(db_restriccion)
+        self.session.commit()
+        self.session.refresh(db_restriccion)
+        return db_restriccion
+
+    def get_by_id(self, restriccion_id: int) -> Optional[RestriccionHorario]:
+        return self.session.query(RestriccionHorario).filter(RestriccionHorario.id == restriccion_id).first()
+
+    def get_by_docente(self, docente_id: int) -> List[RestriccionHorario]:
+        return self.session.query(RestriccionHorario).filter(RestriccionHorario.docente_id == docente_id).all()
+
+    def update(self, restriccion_id: int, restriccion_data: dict) -> Optional[RestriccionHorario]:
+        db_restriccion = self.get_by_id(restriccion_id)
+        if db_restriccion:
+            for key, value in restriccion_data.items():
+                setattr(db_restriccion, key, value)
+            self.session.commit()
+            self.session.refresh(db_restriccion)
+        return db_restriccion
+
+    def delete(self, restriccion_id: int) -> bool:
+        db_restriccion = self.get_by_id(restriccion_id)
+        if db_restriccion:
+            self.session.delete(db_restriccion)
             self.session.commit()
             return True
         return False

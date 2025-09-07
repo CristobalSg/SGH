@@ -1,6 +1,19 @@
-from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from infrastructure.database.config import Base
+
+class RestriccionHorario(Base):
+    __tablename__ = "restriccion_horario"
+
+    id = Column(Integer, primary_key=True)
+    docente_id = Column(Integer, ForeignKey('docente.id'))
+    dia_semana = Column(Integer)
+    hora_inicio = Column(Time)
+    hora_fin = Column(Time)
+    disponible = Column(Boolean, default=True)
+    descripcion = Column(Text, nullable=True)
+    
+    docente = relationship("Docente", back_populates="restricciones_horario")
 
 class Docente(Base):
     __tablename__ = "docente"
@@ -12,6 +25,7 @@ class Docente(Base):
     
     clases = relationship("Clase", back_populates="docente")
     restricciones = relationship("Restriccion", back_populates="docente")
+    restricciones_horario = relationship("RestriccionHorario", back_populates="docente")
 
 class Asignatura(Base):
     __tablename__ = "asignatura"

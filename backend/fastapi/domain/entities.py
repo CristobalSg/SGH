@@ -47,3 +47,19 @@ class Bloque(BloqueBase):
     id: int
     class Config:
         orm_mode = True
+
+class RestriccionHorarioBase(BaseModel):
+    dia_semana: int
+    hora_inicio: time
+    hora_fin: time
+    disponible: bool
+    descripcion: Optional[str] = None
+
+class RestriccionHorarioCreate(RestriccionHorarioBase):
+    docente_id: int
+
+class RestriccionHorario(RestriccionHorarioBase):
+    id: int
+    docente_id: int
+    class Config:
+        orm_mode = True
