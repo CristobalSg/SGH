@@ -1,0 +1,12 @@
+.calendar-container {
+  display: flex;
+  justify-content: center;  /* centra horizontal */
+  align-items: center;      /* centra vertical */
+  height: 100%;             /* ocupa toda la altura disponible */
+  
+}
+
+ion-datetime {
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}

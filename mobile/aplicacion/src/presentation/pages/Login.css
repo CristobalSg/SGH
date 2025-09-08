@@ -1,0 +1,12 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.login-card {
+  width: 90%;          /* ancho del formulario */
+  border-radius: 16px; /* bordes redondeados */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* sombra ligera */
+}
