@@ -5,11 +5,31 @@
 
 # Gestión de horarios API (Hexagonal + FastAPI)
 
-## 📂 Capas de la arquitectura
-- **domain**: entidades y puertos (reglas del negocio, sin dependencias externas)
-- **application**: casos de uso; orquestan el dominio mediante puertos
-- **infrastructure**: adaptadores (repositorios, controladores HTTP, DB, etc.)
-- **main.py**: composición de la app (inyección de dependencias)
+## 🛠️ Tecnologías Utilizadas
+- **FastAPI**: Framework web para APIs REST
+- **SQLAlchemy**: ORM para manejo de base de datos
+- **Alembic**: Migraciones de base de datos
+- **Pydantic**: Validación y serialización de datos
+- **PostgreSQL**: Base de datos relacional
+- **pytest**: Framework de pruebas unitarias
+- **pytest-cov**: Análisis de cobertura de código
+
+
+## 📂 Estructura del Proyecto
+```
+fastapi/
+├── domain/              # Entidades y puertos (reglas del negocio)
+├── application/         # Casos de uso (orquestación del dominio)
+├── infrastructure/      # Adaptadores (repositorios, controladores HTTP, DB)
+├── tests/              # Pruebas unitarias e integración
+│   └── application/
+│       └── use_cases/
+├── migrations/         # Migraciones de base de datos (Alembic)
+├── main.py            # Composición de la app (inyección de dependencias)
+├── requirements.txt   # Dependencias del proyecto
+├── pytest.ini       # Configuración de pruebas
+└── Makefile.tests   # Comandos para ejecutar pruebas
+```
 
 ## 🚀 Requisitos
 - Python 3.12+
@@ -67,3 +87,67 @@ curl -X GET http://localhost:8000/db/test-db
 ```
 
 Deberías recibir una respuesta confirmando que la conexión a la base de datos es exitosa.
+
+## 🧪 Sistema de Pruebas
+
+El proyecto cuenta con un sistema completo de pruebas automatizadas que incluye:
+
+### Tipos de Pruebas Implementadas
+- **Pruebas Unitarias**: Testing de casos de uso y lógica de negocio
+- **Pruebas de Integración**: Testing de endpoints API y flujos completos
+- **Análisis de Cobertura**: Reportes detallados de cobertura de código
+
+### Estructura de Pruebas
+```
+tests/
+├── application/
+│   └── use_cases/
+│       └── test_restriccion_horario_use_cases.py    # Pruebas unitarias
+└── integration/
+    ├── conftest.py                                  # Configuración y fixtures
+    └── test_restricciones_api.py                   # Pruebas de integración API
+```
+
+### Comandos de Pruebas
+```bash
+# Ejecutar todas las pruebas (unitarias + integración)
+make -f Makefile.tests test
+
+# Solo pruebas unitarias
+make -f Makefile.tests test-unit
+
+# Solo pruebas de integración
+make -f Makefile.tests test-integration
+
+# Pruebas con reporte de cobertura
+make -f Makefile.tests test-cov
+
+# Pruebas de API específicas
+make -f Makefile.tests test-api
+```
+
+### Configuración de Testing
+- **SQLite in-memory**: Base de datos temporal para pruebas aisladas
+- **Fixtures**: Datos de prueba reutilizables
+- **pytest**: Framework principal con configuración en `pytest.ini`
+- **Makefile.tests**: Automatización de comandos de pruebas
+
+## 📖 API Documentation
+
+Una vez que el servidor esté ejecutándose, puedes acceder a la documentación interactiva de la API:
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+## 🎯 Endpoints Principales
+
+### Restricciones
+- `GET /restricciones` - Listar restricciones (con paginación)
+- `POST /restricciones` - Crear nueva restricción
+- `GET /restricciones/{id}` - Obtener restricción por ID
+- `PUT /restricciones/{id}` - Actualizar restricción completa
+- `PATCH /restricciones/{id}` - Actualizar restricción parcial
+- `DELETE /restricciones/{id}` - Eliminar restricción
+
+### Testing Database
+- `GET /db/test-db` - Verificar conexión a la base de datos

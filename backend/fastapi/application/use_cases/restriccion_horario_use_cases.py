@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, List
 from domain.ports import RestriccionHorarioRepository
-from domain.models import RestriccionHorario
+from domain.entities import RestriccionHorario, RestriccionHorarioCreate
 
 @dataclass
 class RestriccionHorarioUseCases:
@@ -15,7 +15,7 @@ class RestriccionHorarioUseCases:
 
     def create(self, docente_id: int, dia_semana: int, hora_inicio: str,
               hora_fin: str, disponible: bool, descripcion: str = None) -> RestriccionHorario:
-        restriccion = RestriccionHorario(
+        restriccion_create = RestriccionHorarioCreate(
             docente_id=docente_id,
             dia_semana=dia_semana,
             hora_inicio=hora_inicio,
@@ -23,7 +23,7 @@ class RestriccionHorarioUseCases:
             disponible=disponible,
             descripcion=descripcion
         )
-        return self.repo.add(restriccion)
+        return self.repo.create(restriccion_create)
 
     def update(self, id: int, dia_semana: int = None, hora_inicio: str = None,
               hora_fin: str = None, disponible: bool = None, descripcion: str = None) -> Optional[RestriccionHorario]:

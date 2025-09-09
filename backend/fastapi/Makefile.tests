@@ -1,0 +1,109 @@
+# Makefile para gestión de pruebas - SGH Backend
+
+# Variables
+PYTHON := python
+PYTEST := $(PYTHON) -m pytest
+SHELL := /bin/bash
+VENV_ACTIVATE := . .venv/bin/activate
+TEST_DIR := tests
+COVERAGE_DIR := htmlcov
+
+# Colores para output
+GREEN := \033[0;32m
+RED := \033[0;31m
+YELLOW := \033[1;33m
+NC := \033[0m # No Color
+
+.PHONY: help test test-verbose test-cov test-cov-html test-restriccion test-integration install-test clean-cov
+
+help: ## Mostrar ayuda
+	@echo "$(GREEN)Comandos disponibles:$(NC)"
+	@echo "  $(YELLOW)test$(NC)                    - Ejecutar todas las pruebas"
+	@echo "  $(YELLOW)test-verbose$(NC)            - Ejecutar todas las pruebas con salida verbose"
+	@echo "  $(YELLOW)test-unit$(NC)               - Ejecutar solo pruebas unitarias"
+	@echo "  $(YELLOW)test-integration$(NC)        - Ejecutar solo pruebas de integración"
+	@echo "  $(YELLOW)test-restriccion$(NC)        - Ejecutar solo pruebas de RestriccionHorario"
+	@echo "  $(YELLOW)test-api$(NC)                - Ejecutar solo pruebas de API"
+	@echo "  $(YELLOW)test-cov$(NC)                - Ejecutar pruebas con reporte de cobertura"
+	@echo "  $(YELLOW)test-cov-html$(NC)           - Ejecutar pruebas con reporte HTML de cobertura"
+	@echo "  $(YELLOW)install-test$(NC)            - Instalar dependencias de testing"
+	@echo "  $(YELLOW)clean-cov$(NC)               - Limpiar archivos de cobertura"
+
+test: ## Ejecutar todas las pruebas
+	@echo "$(GREEN)🧪 Ejecutando pruebas...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR)
+
+test-verbose: ## Ejecutar todas las pruebas con salida verbose
+	@echo "$(GREEN)🧪 Ejecutando pruebas (verbose)...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR) -v
+
+test-unit: ## Ejecutar solo pruebas unitarias
+	@echo "$(GREEN)🧪 Ejecutando pruebas unitarias...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR)/application -v
+
+test-integration: ## Ejecutar solo pruebas de integración
+	@echo "$(GREEN)🧪 Ejecutando pruebas de integración...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR)/integration -v
+
+test-restriccion: ## Ejecutar solo pruebas de RestriccionHorario
+	@echo "$(GREEN)🧪 Ejecutando pruebas de RestriccionHorario...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR)/application/use_cases/test_restriccion_horario_use_cases.py -v
+
+test-api: ## Ejecutar solo pruebas de API de restricciones
+	@echo "$(GREEN)🧪 Ejecutando pruebas de API de restricciones...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR)/integration/test_restricciones_api.py -v
+
+test-cov: ## Ejecutar pruebas con reporte de cobertura
+	@echo "$(GREEN)🧪 Ejecutando pruebas con cobertura...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR) \
+		--cov=application \
+		--cov-report=term-missing \
+		--cov-report=xml
+
+test-cov-html: ## Ejecutar pruebas con reporte HTML de cobertura
+	@echo "$(GREEN)🧪 Ejecutando pruebas con cobertura HTML...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) $(TEST_DIR) \
+		--cov=application \
+		--cov-report=html:$(COVERAGE_DIR) \
+		--cov-report=term-missing
+	@echo "$(YELLOW)📊 Reporte HTML generado en: $(COVERAGE_DIR)/index.html$(NC)"
+
+test-restriccion-cov: ## Ejecutar pruebas de RestriccionHorario con cobertura
+	@echo "$(GREEN)🧪 Ejecutando pruebas de RestriccionHorario con cobertura...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) \
+		$(TEST_DIR)/application/use_cases/test_restriccion_horario_use_cases.py \
+		--cov=application.use_cases.restriccion_horario_use_cases \
+		--cov-report=term-missing \
+		-v
+
+test-api-cov: ## Ejecutar pruebas de API con cobertura
+	@echo "$(GREEN)🧪 Ejecutando pruebas de API con cobertura...$(NC)"
+	$(VENV_ACTIVATE) && $(PYTEST) \
+		$(TEST_DIR)/integration/test_restricciones_api.py \
+		--cov=infrastructure.controllers.restriccion_controller \
+		--cov=application.use_cases.restriccion_use_cases \
+		--cov-report=term-missing \
+		-v
+
+install-test: ## Instalar dependencias de testing
+	@echo "$(GREEN)📦 Instalando dependencias de testing...$(NC)"
+	$(VENV_ACTIVATE) && pip install pytest pytest-asyncio pytest-cov
+
+clean-cov: ## Limpiar archivos de cobertura
+	@echo "$(GREEN)🧹 Limpiando archivos de cobertura...$(NC)"
+	rm -rf $(COVERAGE_DIR)
+	rm -f .coverage
+	rm -f coverage.xml
+
+# Targets para desarrollo
+watch-test: ## Ejecutar pruebas en modo watch (requiere pytest-watch)
+	@echo "$(GREEN)👀 Ejecutando pruebas en modo watch...$(NC)"
+	$(VENV_ACTIVATE) && pip install pytest-watch
+	$(VENV_ACTIVATE) && ptw $(TEST_DIR)
+
+lint-tests: ## Verificar estilo de código en pruebas
+	@echo "$(GREEN)🔍 Verificando estilo de código en pruebas...$(NC)"
+	$(VENV_ACTIVATE) && flake8 $(TEST_DIR) --max-line-length=100
+
+# Target por defecto
+.DEFAULT_GOAL := help

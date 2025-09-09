@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List
 from infrastructure.database.config import get_db
-from domain.entities import Restriccion, RestriccionCreate, RestriccionBase
+from domain.entities import Restriccion, RestriccionCreate, RestriccionBase, RestriccionPatch
 from application.use_cases.restriccion_use_cases import RestriccionUseCases
 from infrastructure.repositories.sql_repository import SQLRestriccionRepository
 
@@ -12,13 +12,10 @@ def get_restriccion_use_cases(db: Session = Depends(get_db)) -> RestriccionUseCa
     repo = SQLRestriccionRepository(db)
     return RestriccionUseCases(repo)
 
-@router.get("/", response_model=List[Restriccion], summary="Obtener todas las restricciones")
+@router.get("/", response_model=List[Restriccion], status_code=status.HTTP_200_OK, summary="Obtener todas las restricciones")
 async def get_restricciones(
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """
-    Obtiene todas las restricciones del sistema.
-    """
     try:
         restricciones = use_cases.get_all()
         return restricciones
@@ -28,14 +25,11 @@ async def get_restricciones(
             detail=f"Error al obtener las restricciones: {str(e)}"
         )
 
-@router.get("/{restriccion_id}", response_model=Restriccion, summary="Obtener restricción por ID")
+@router.get("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Obtener restricción por ID")
 async def get_restriccion(
-    restriccion_id: int,
+    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """
-    Obtiene una restricción específica por su ID.
-    """
     try:
         restriccion = use_cases.get_by_id(restriccion_id)
         if not restriccion:
@@ -57,9 +51,6 @@ async def create_restriccion(
     restriccion_data: RestriccionCreate,
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """
-    Crea una nueva restricción en el sistema.
-    """
     try:
         nueva_restriccion = use_cases.create(
             docente_id=restriccion_data.docente_id,
@@ -70,21 +61,25 @@ async def create_restriccion(
             restriccion_dura=restriccion_data.restriccion_dura
         )
         return nueva_restriccion
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error de validación: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al crear la restricción: {str(e)}"
         )
 
-@router.put("/{restriccion_id}", response_model=Restriccion, summary="Actualizar restricción completa")
+@router.put("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Actualizar restricción completa")
 async def update_restriccion_complete(
-    restriccion_id: int,
     restriccion_data: RestriccionBase,
+    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """
-    Actualiza completamente una restricción (PUT - reemplaza todos los campos).
-    """
     try:
         restriccion_actualizada = use_cases.update(
             id=restriccion_id,
@@ -104,6 +99,11 @@ async def update_restriccion_complete(
         return restriccion_actualizada
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error de validación: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -112,31 +112,27 @@ async def update_restriccion_complete(
 
 @router.patch("/{restriccion_id}", response_model=Restriccion, summary="Actualizar restricción parcial")
 async def update_restriccion_partial(
-    restriccion_id: int,
-    restriccion_data: dict,
+    restriccion_data: RestriccionPatch,
+    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """
-    Actualiza parcialmente una restricción (PATCH - solo los campos proporcionados).
-    """
     try:
-        # Validar que solo se envíen campos permitidos
-        campos_permitidos = {"tipo", "valor", "prioridad", "restriccion_blanda", "restriccion_dura"}
-        campos_invalidos = set(restriccion_data.keys()) - campos_permitidos
+        # Validar que se envíen datos usando el modelo Pydantic
+        update_data = restriccion_data.dict(exclude_unset=True)
         
-        if campos_invalidos:
+        if not update_data:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Campos no válidos: {', '.join(campos_invalidos)}"
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No se proporcionaron datos para actualizar"
             )
         
         restriccion_actualizada = use_cases.update(
             id=restriccion_id,
-            tipo=restriccion_data.get("tipo"),
-            valor=restriccion_data.get("valor"),
-            prioridad=restriccion_data.get("prioridad"),
-            restriccion_blanda=restriccion_data.get("restriccion_blanda"),
-            restriccion_dura=restriccion_data.get("restriccion_dura")
+            tipo=update_data.get("tipo"),
+            valor=update_data.get("valor"),
+            prioridad=update_data.get("prioridad"),
+            restriccion_blanda=update_data.get("restriccion_blanda"),
+            restriccion_dura=update_data.get("restriccion_dura")
         )
         
         if not restriccion_actualizada:
@@ -148,6 +144,11 @@ async def update_restriccion_partial(
         return restriccion_actualizada
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error de validación: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -156,12 +157,10 @@ async def update_restriccion_partial(
 
 @router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar restricción")
 async def delete_restriccion(
-    restriccion_id: int,
+    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """
-    Elimina una restricción del sistema.
-    """
+
     try:
         deleted = use_cases.delete(restriccion_id)
         if not deleted:
