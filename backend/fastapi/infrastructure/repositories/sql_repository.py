@@ -57,6 +57,9 @@ class SQLRestriccionRepository:
     def get_by_id(self, restriccion_id: int) -> Optional[Restriccion]:
         return self.session.query(Restriccion).filter(Restriccion.id == restriccion_id).first()
 
+    def get_all(self) -> List[Restriccion]:
+        return self.session.query(Restriccion).all()
+
     def get_by_docente(self, docente_id: int) -> List[Restriccion]:
         return self.session.query(Restriccion).filter(Restriccion.docente_id == docente_id).all()
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
 from domain.models import Docente
@@ -19,4 +19,7 @@ async def test_database(db: Session = Depends(get_db)):
             }
         }
     except Exception as e:
-        return {"status": "error", "message": f"Error de conexión: {str(e)}"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error de conexión a la base de datos: {str(e)}"
+        )
