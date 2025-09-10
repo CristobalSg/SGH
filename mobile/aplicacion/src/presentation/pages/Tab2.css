@@ -1,0 +1,18 @@
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+}
+
+.edit-avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: calc(50% - 60px); /* ajusta el botón sobre la foto */
+}

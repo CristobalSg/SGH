@@ -1,0 +1,39 @@
+/* Tab3.css */
+
+:root {
+  --ion-color-primary: #00f0ff; /* Azul eléctrico futurista */
+  --ion-color-light: #fff;
+}
+
+body, ion-app, ion-content {
+  background-color: #1e1e2f; /* Fondo oscuro futurista */
+  color: #fff;
+  font-family: 'Orbitron', sans-serif; /* Fuente futurista */
+}
+
+ion-toolbar {
+  --background: #121224;
+}
+
+ion-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+ion-item {
+  --background: #2a2a40;
+  --border-radius: 12px;
+  margin: 8px 16px;
+  --box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+ion-item[slot="header"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+

@@ -1,49 +1,91 @@
-<<<<<<< HEAD
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonDatetime } from '@ionic/react';
-=======
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import LoginForm from '../components/LoginForm/LoginForm';
->>>>>>> 83c9c309f672a0e659d6ecb99450568a809dc5de
+import { 
+  IonContent, 
+  IonHeader, 
+  IonPage, 
+  IonTitle, 
+  IonToolbar, 
+  IonDatetime, 
+  IonButtons, 
+  IonButton, 
+  IonIcon, 
+  IonPopover, 
+  IonList, 
+  IonItem, 
+  IonLabel 
+} from '@ionic/react';
+import { useState } from 'react';
+import { notificationsOutline } from 'ionicons/icons';
 import './Tab1.css';
 
 const Tab1: React.FC = () => {
+  const [showPopover, setShowPopover] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
+  const handleDateChange = (e: CustomEvent) => {
+    const date = e.detail.value; // valor seleccionado en el calendario
+    setSelectedDate(date);
+    setShowPopover(true); // abrir el popover
+  };
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-<<<<<<< HEAD
           <IonTitle>Inicio</IonTitle>
-=======
-          <IonTitle>Login</IonTitle>
->>>>>>> 83c9c309f672a0e659d6ecb99450568a809dc5de
+          <IonButtons slot="end">
+            <IonButton onClick={() => setShowPopover(true)}>
+              <IonIcon icon={notificationsOutline} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       
       <IonContent fullscreen className="ion-padding">
         <IonHeader collapse="condense">
-<<<<<<< HEAD
           <IonTitle size="large">Calendario</IonTitle>
         </IonHeader>
-
-        {/* Contenedor para centrar */}
+        
         <div className="calendar-container">
           <IonDatetime
             presentation="date"
-            showDefaultButtons={true}
-          ></IonDatetime>
-        </div>
-=======
-          <IonToolbar>
-            <IonTitle size="large">Login</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-
-        {/* Aquí va el login */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-          <LoginForm />
+            showDefaultButtons={false}
+            highlightedDates={[
+              {
+                date: '2025-09-30', 
+                textColor: 'red',
+                backgroundColor: '#ffcccc'
+              }
+            ]}
+            onIonChange={handleDateChange}
+          />
         </div>
 
->>>>>>> 83c9c309f672a0e659d6ecb99450568a809dc5de
+        {/* Popover para opciones del día seleccionado */}
+        <IonPopover
+          isOpen={showPopover}
+          onDidDismiss={() => setShowPopover(false)}
+          showBackdrop={true}
+          className="custom-popover"
+        >
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{selectedDate ? new Date(selectedDate).toLocaleDateString() : "Día seleccionado"}</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <IonList>
+              <IonItem button onClick={() => alert("Agregar evento en " + selectedDate)}>
+                <IonLabel>➕ Agregar evento</IonLabel>
+              </IonItem>
+              <IonItem button onClick={() => alert("Editar evento en " + selectedDate)}>
+                <IonLabel>✏️ Editar evento</IonLabel>
+              </IonItem>
+              <IonItem button onClick={() => alert("Eliminar evento en " + selectedDate)}>
+                <IonLabel>🗑️ Eliminar evento</IonLabel>
+              </IonItem>
+            </IonList>
+          </IonContent>
+        </IonPopover>
       </IonContent>
     </IonPage>
   );

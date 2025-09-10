@@ -35,3 +35,67 @@ cd algorithm/fet-7.4.4
 qmake fet.pro
 make -j 16 # suele demorar unos 3 minutos, casi 4
 ```
+## Configurar permisos para inicialización con Docker
+```bash
+# Dar permisos al script de inicio
+chmod +x backend/fastapi/start.sh
+```
+
+### Levantar con Docker
+```bash
+# Iniciar todos los servicios (backend + frontend + base de datos)
+docker-compose --env-file .env.development up -d
+
+# Ver que todo esté funcionando
+docker-compose --env-file .env.development ps
+```
+
+### Acceder al sistema
+- **🌐 Aplicación web**: http://localhost:8100
+- **🔧 API del backend**: http://localhost:8000  
+- **📚 Documentación API**: http://localhost:8000/docs
+
+## 🔄 Actualizar después de cambios en el código
+
+### Si alguien del equipo hizo cambios:
+
+1. **Obtener cambios:**
+```bash
+git pull origin <rama>
+```
+
+2. **Si solo cambió código** (archivos .py, .tsx, .css):
+```bash
+# ✅ NO hacer nada - Los cambios se ven automáticamente
+```
+
+3. **Si cambió dependencias** (package.json, requirements.txt):
+```bash
+# Reconstruir el servicio que cambió
+docker-compose --env-file .env.development build --no-cache mobile    # si cambió frontend
+docker-compose --env-file .env.development build --no-cache backend   # si cambió backend
+
+# Reiniciar servicios
+docker-compose --env-file .env.development up -d
+```
+
+## 📋 Comandos útiles
+
+```bash
+# Ver logs de todos los servicios
+docker-compose --env-file .env.development logs -f
+
+# Ver logs de un servicio específico
+docker-compose --env-file .env.development logs backend
+docker-compose --env-file .env.development logs mobile
+
+# Parar todos los servicios
+docker-compose --env-file .env.development down
+
+# Reiniciar un servicio específico
+docker-compose --env-file .env.development restart backend
+```
+
+## ⚙️ Archivo de configuración (.env.development)
+
+El archivo `.env.development` debe contener todas las configuraciones necesarias en la carpeta raiz del proyecto.

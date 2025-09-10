@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+# Base de datos PostgreSQL
+  postgres:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: sgh-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sgh-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Backend FastAPI
+  backend:
+    build:
+      context: ./backend/fastapi
+      dockerfile: Dockerfile
+    container_name: sgh-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT}:8000"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      DB_URL: ${DB_URL}
+      PYTHONPATH: ${PYTHONPATH}
+      PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE}
+      PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
+      NODE_ENV: ${NODE_ENV}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    volumes:
+      - ./backend/fastapi:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sgh-network
+    healthcheck:
+      # CAMBIAR: Usar GET en lugar de HEAD/spider
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 -O /dev/null http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# Frontend Ionic
+  mobile:
+    build:
+      context: ./mobile
+      dockerfile: Dockerfile
+    container_name: sgh-mobile
+    restart: unless-stopped
+    ports:
+      - "${MOBILE_PORT}:8100"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      IONIC_ENV: ${IONIC_ENV}
+      API_URL: ${API_URL}
+    volumes:
+      - ./mobile/aplicacion/src:/app/src
+      - ./mobile/aplicacion/public:/app/public
+      - ./mobile/aplicacion/capacitor.config.ts:/app/capacitor.config.ts
+      - ./mobile/aplicacion/ionic.config.json:/app/ionic.config.json
+      - ./mobile/aplicacion/vite.config.ts:/app/vite.config.ts
+      - ./mobile/aplicacion/tsconfig.json:/app/tsconfig.json
+      # AGREGAR: tsconfig.node.json al volume mount
+      - ./mobile/aplicacion/tsconfig.node.json:/app/tsconfig.node.json
+    depends_on:
+      - backend
+    networks:
+      - sgh-network
+    healthcheck:
+      # CAMBIAR: Usar GET en lugar de HEAD/spider
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 -O /dev/null http://localhost:8100 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Volúmenes para persistencia de datos
+volumes:
+  postgres_data:
+    driver: local
+
+# Red personalizada para aislar los servicios
+networks:
+  sgh-network:
+    driver: bridge
