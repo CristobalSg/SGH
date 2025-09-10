@@ -10,11 +10,12 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
+import { calendar, home, person, time } from 'ionicons/icons';
 import Tab1 from './presentation/pages/Tab1';
 import Tab2 from './presentation/pages/Tab2';
 import Tab3 from './presentation/pages/Tab3';
 import Login from './presentation/pages/login';
+import Restricciones from './presentation/pages/Restricciones';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -64,20 +65,25 @@ const App: React.FC = () => (
                 <Route exact path="/tabs/tab1" component={Tab1} />
                 <Route exact path="/tabs/tab2" component={Tab2} />
                 <Route exact path="/tabs/tab3" component={Tab3} />
+                <Route exact path="/tabs/restricciones" component={Restricciones} />
               </IonRouterOutlet>
 
               <IonTabBar slot="bottom">
                 <IonTabButton tab="tab1" href="/tabs/tab1">
-                  <IonIcon aria-hidden="true" icon={triangle} />
-                  <IonLabel>Tab 1</IonLabel>
+                  <IonIcon aria-hidden="true" icon={home} />
+                  <IonLabel>Home</IonLabel>
                 </IonTabButton>
                 <IonTabButton tab="tab2" href="/tabs/tab2">
-                  <IonIcon aria-hidden="true" icon={ellipse} />
-                  <IonLabel>Tab 2</IonLabel>
+                  <IonIcon aria-hidden="true" icon={person} />
+                  <IonLabel>Perfil</IonLabel>
                 </IonTabButton>
                 <IonTabButton tab="tab3" href="/tabs/tab3">
-                  <IonIcon aria-hidden="true" icon={square} />
-                  <IonLabel>Tab 3</IonLabel>
+                  <IonIcon aria-hidden="true" icon={calendar} />
+                  <IonLabel>Eventos</IonLabel>
+                </IonTabButton>
+                <IonTabButton tab="restricciones" href="/tabs/restricciones">
+                  <IonIcon aria-hidden="true" icon={time} />
+                  <IonLabel>Restricciones</IonLabel>
                 </IonTabButton>
               </IonTabBar>
             </IonTabs>
@@ -87,6 +93,5 @@ const App: React.FC = () => (
     </IonReactRouter>
   </IonApp>
 );
-
 
 export default App;
