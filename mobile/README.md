@@ -2,6 +2,54 @@
 
 Este directorio contiene el código de la **aplicación móvil** del *Sistema de Gestión de Horario* (SGH), desarrollada con **Ionic + React + Capacitor** siguiendo principios de **Clean Architecture**.
 
+
+🚦 Flujo de navegación
+
+Al iniciar la aplicación, el usuario es dirigido a la pantalla de Login.
+
+Por ahora, basta con presionar el botón Ingresar para acceder a la aplicación.
+
+Una vez dentro, se puede navegar mediante la barra inferior de navegación a las secciones:
+
+Home
+
+Perfil
+
+Eventos
+
+Restricciones
+
+Roles (Admin, Profesor, Alumno): aún no están separados, por lo que cualquier usuario puede ver todas las ventanas.
+
+📂 Vistas principales
+
+Home:
+
+Muestra un calendario con eventos.
+
+Se visualiza un día 30 marcado con un evento de ejemplo.
+
+Al hacer clic en un día, se puede agregar, editar o eliminar un evento.
+
+En la parte superior hay una campana de notificaciones que actualmente muestra notificaciones falsas (mock).
+
+Perfil:
+
+Visualiza los datos personales del usuario.
+
+Permite cambiar la contraseña y la foto de perfil.
+
+Eventos:
+
+Lista de todos los eventos del usuario.
+
+Ordenados en orden cronológico.
+
+Restricciones:
+
+Formulario para agregar restricciones de horario.
+
+Se selecciona un día de la semana y una hora en la que no se podrán dar clases.
 ---
 
 ## 🚀 Requisitos previos
