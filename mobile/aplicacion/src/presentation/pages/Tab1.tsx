@@ -1,3 +1,4 @@
+
 import { 
   IonContent, 
   IonHeader, 
@@ -15,6 +16,7 @@ import {
 } from '@ionic/react';
 import { useState } from 'react';
 import { notificationsOutline } from 'ionicons/icons';
+
 import './Tab1.css';
 
 const Tab1: React.FC = () => {
@@ -32,11 +34,13 @@ const Tab1: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Inicio</IonTitle>
+
           <IonButtons slot="end">
             <IonButton onClick={() => setShowPopover(true)}>
               <IonIcon icon={notificationsOutline} />
             </IonButton>
           </IonButtons>
+
         </IonToolbar>
       </IonHeader>
       
