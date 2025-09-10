@@ -19,12 +19,13 @@ import './Tab1.css';
 
 const Tab1: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
-  const mockNotifications = [
-    { id: 1, text: "Tu clase de hoy ha sido reprogramada." },
-    { id: 2, text: "Nuevo evento agregado al calendario." },
-    { id: 3, text: "Recuerda actualizar tu perfil." }
-  ];
+  const handleDateChange = (e: CustomEvent) => {
+    const date = e.detail.value; // valor seleccionado en el calendario
+    setSelectedDate(date);
+    setShowPopover(true); // abrir el popover
+  };
 
   return (
     <IonPage>
@@ -43,16 +44,23 @@ const Tab1: React.FC = () => {
         <IonHeader collapse="condense">
           <IonTitle size="large">Calendario</IonTitle>
         </IonHeader>
-
-        {/* Contenedor para centrar */}
+        
         <div className="calendar-container">
           <IonDatetime
             presentation="date"
-            showDefaultButtons={true}
-          ></IonDatetime>
+            showDefaultButtons={false}
+            highlightedDates={[
+              {
+                date: '2025-09-30', 
+                textColor: 'red',
+                backgroundColor: '#ffcccc'
+              }
+            ]}
+            onIonChange={handleDateChange}
+          />
         </div>
 
-        {/* Popover centrado */}
+        {/* Popover para opciones del día seleccionado */}
         <IonPopover
           isOpen={showPopover}
           onDidDismiss={() => setShowPopover(false)}
@@ -61,16 +69,20 @@ const Tab1: React.FC = () => {
         >
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Notificaciones</IonTitle>
+              <IonTitle>{selectedDate ? new Date(selectedDate).toLocaleDateString() : "Día seleccionado"}</IonTitle>
             </IonToolbar>
           </IonHeader>
           <IonContent>
             <IonList>
-              {mockNotifications.map((notif) => (
-                <IonItem key={notif.id}>
-                  <IonLabel>{notif.text}</IonLabel>
-                </IonItem>
-              ))}
+              <IonItem button onClick={() => alert("Agregar evento en " + selectedDate)}>
+                <IonLabel>➕ Agregar evento</IonLabel>
+              </IonItem>
+              <IonItem button onClick={() => alert("Editar evento en " + selectedDate)}>
+                <IonLabel>✏️ Editar evento</IonLabel>
+              </IonItem>
+              <IonItem button onClick={() => alert("Eliminar evento en " + selectedDate)}>
+                <IonLabel>🗑️ Eliminar evento</IonLabel>
+              </IonItem>
             </IonList>
           </IonContent>
         </IonPopover>
