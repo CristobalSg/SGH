@@ -10,6 +10,16 @@ export default defineConfig({
     react(),
     legacy()
   ],
+  server: {
+    host: '0.0.0.0',
+    port: 8100,
+    hmr: {
+      port: 8100
+    }
+  },
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.API_URL),
+  },
   test: {
     globals: true,
     environment: 'jsdom',
