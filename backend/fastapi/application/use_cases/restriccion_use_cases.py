@@ -1,48 +1,78 @@
-from dataclasses import dataclass
 from typing import Optional, List
-from domain.ports import RestriccionRepositoryPort
+from fastapi import HTTPException, status
 from domain.entities import RestriccionCreate, Restriccion
+from infrastructure.repositories.restriccion_repository import RestriccionRepository
 
-@dataclass
 class RestriccionUseCases:
-    repo: RestriccionRepositoryPort
+    def __init__(self, restriccion_repository: RestriccionRepository):
+        self.restriccion_repository = restriccion_repository
 
-    def get_all(self) -> List[Restriccion]:
-        return self.repo.get_all()
+    def get_all(self, skip: int = 0, limit: int = 100) -> List[Restriccion]:
+        """Obtener todas las restricciones con paginación"""
+        return self.restriccion_repository.get_all(skip=skip, limit=limit)
 
-    def get_by_id(self, id: int) -> Optional[Restriccion]:
-        return self.repo.get_by_id(id)
+    def get_by_id(self, restriccion_id: int) -> Restriccion:
+        """Obtener restricción por ID"""
+        restriccion = self.restriccion_repository.get_by_id(restriccion_id)
+        if not restriccion:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Restricción no encontrada"
+            )
+        return restriccion
 
-    def create(self, docente_id: int, tipo: str, valor: str, prioridad: int,
-              restriccion_blanda: str, restriccion_dura: str) -> Restriccion:
-        restriccion_data = RestriccionCreate(
-            docente_id=docente_id,
-            tipo=tipo,
-            valor=valor,
-            prioridad=prioridad,
-            restriccion_blanda=restriccion_blanda,
-            restriccion_dura=restriccion_dura
-        )
-        return self.repo.create(restriccion_data)
+    def create(self, restriccion_data: RestriccionCreate) -> Restriccion:
+        """Crear una nueva restricción"""
+        return self.restriccion_repository.create(restriccion_data)
 
-    def update(self, id: int, tipo: str = None, valor: str = None,
-              prioridad: int = None, restriccion_blanda: str = None,
-              restriccion_dura: str = None) -> Optional[Restriccion]:
-        update_data = {}
-        if tipo is not None:
-            update_data["tipo"] = tipo
-        if valor is not None:
-            update_data["valor"] = valor
-        if prioridad is not None:
-            update_data["prioridad"] = prioridad
-        if restriccion_blanda is not None:
-            update_data["restriccion_blanda"] = restriccion_blanda
-        if restriccion_dura is not None:
-            update_data["restriccion_dura"] = restriccion_dura
+    def update(self, restriccion_id: int, **update_data) -> Restriccion:
+        """Actualizar una restricción"""
+        # Verificar que la restricción existe
+        existing_restriccion = self.restriccion_repository.get_by_id(restriccion_id)
+        if not existing_restriccion:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Restricción no encontrada"
+            )
         
-        if update_data:
-            return self.repo.update(id, update_data)
-        return self.repo.get_by_id(id)
+        updated_restriccion = self.restriccion_repository.update(restriccion_id, update_data)
+        if not updated_restriccion:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al actualizar la restricción"
+            )
+        return updated_restriccion
 
-    def delete(self, id: int) -> bool:
-        return self.repo.delete(id)
+    def delete(self, restriccion_id: int) -> bool:
+        """Eliminar una restricción"""
+        # Verificar que la restricción existe
+        existing_restriccion = self.restriccion_repository.get_by_id(restriccion_id)
+        if not existing_restriccion:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Restricción no encontrada"
+            )
+        
+        success = self.restriccion_repository.delete(restriccion_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al eliminar la restricción"
+            )
+        return success
+
+    def get_by_docente(self, docente_id: int) -> List[Restriccion]:
+        """Obtener restricciones de un docente específico"""
+        return self.restriccion_repository.get_by_docente(docente_id)
+
+    def get_by_tipo(self, tipo: str) -> List[Restriccion]:
+        """Obtener restricciones por tipo"""
+        return self.restriccion_repository.get_by_tipo(tipo)
+
+    def get_by_prioridad(self, prioridad_min: int = None, prioridad_max: int = None) -> List[Restriccion]:
+        """Obtener restricciones por rango de prioridad"""
+        return self.restriccion_repository.get_by_prioridad(prioridad_min, prioridad_max)
+
+    def delete_by_docente(self, docente_id: int) -> int:
+        """Eliminar todas las restricciones de un docente"""
+        return self.restriccion_repository.delete_by_docente(docente_id)

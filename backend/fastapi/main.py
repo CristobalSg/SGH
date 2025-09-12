@@ -2,6 +2,8 @@ from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from infrastructure.controllers.test_db_controller import router as test_db_router
 from infrastructure.controllers.restriccion_controller import router as restriccion_router
+from infrastructure.controllers.restriccion_horario_controller import router as restriccion_horario_router
+from infrastructure.controllers.auth_controller import router as auth_router
 from config import settings
 
 app = FastAPI(title="Gestión de Horarios API", version="0.1.0")
@@ -18,6 +20,8 @@ app.add_middleware(
 # Incluir endpoints
 app.include_router(test_db_router, prefix="/db", tags=["database"])
 app.include_router(restriccion_router, prefix="/restricciones", tags=["restricciones"])
+app.include_router(restriccion_horario_router, prefix="/restricciones-horario", tags=["restricciones-horario"])
+app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 
 @app.get("/")
 def root():

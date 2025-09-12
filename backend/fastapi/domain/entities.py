@@ -1,11 +1,62 @@
-from datetime import time
+from datetime import time, datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, validator
 import re
 
+class UserBase(BaseModel):
+    email: EmailStr = Field(..., description="Email del usuario")
+    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
+    apellido: str = Field(..., min_length=2, max_length=100, description="Apellido del usuario")
+    
+    @validator('nombre', 'apellido')
+    def validate_names(cls, v):
+        if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", v.strip()):
+            raise ValueError('El nombre solo puede contener letras y espacios')
+        return v.strip().title()
+
+class UserCreate(UserBase):
+    contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del usuario")
+    
+    @validator('contrasena')
+    def validate_contrasena(cls, v):
+        if not re.search(r"[A-Z]", v):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        if not re.search(r"[a-z]", v):
+            raise ValueError('La contraseña debe contener al menos una letra minúscula')
+        if not re.search(r"\d", v):
+            raise ValueError('La contraseña debe contener al menos un número')
+        return v
+
+class UserUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
+    apellido: Optional[str] = Field(None, min_length=2, max_length=100)
+
+class User(BaseModel):
+    id: int
+    email: EmailStr
+    nombre: str = Field(alias="first_name")
+    apellido: str = Field(alias="last_name")
+    is_active: bool = Field(default=True, description="Estado activo del usuario")
+    is_superuser: bool = Field(default=False, description="Es superusuario")
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+        by_alias = False
+
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="Email del usuario")
-    password: str = Field(..., min_length=8, max_length=100, description="Contraseña del usuario")
+    contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del usuario")
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
 
 class DocenteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del docente")

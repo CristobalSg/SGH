@@ -1,6 +1,19 @@
-from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 from infrastructure.database.config import Base
+
+class User(Base):
+    __tablename__ = "user"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 class RestriccionHorario(Base):
     __tablename__ = "restriccion_horario"

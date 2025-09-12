@@ -4,12 +4,12 @@ from typing import List
 from infrastructure.database.config import get_db
 from domain.entities import Restriccion, RestriccionCreate, RestriccionBase, RestriccionPatch
 from application.use_cases.restriccion_use_cases import RestriccionUseCases
-from infrastructure.repositories.sql_repository import SQLRestriccionRepository
+from infrastructure.repositories.restriccion_repository import RestriccionRepository
 
 router = APIRouter(tags=["restricciones"])
 
 def get_restriccion_use_cases(db: Session = Depends(get_db)) -> RestriccionUseCases:
-    repo = SQLRestriccionRepository(db)
+    repo = RestriccionRepository(db)
     return RestriccionUseCases(repo)
 
 @router.get("/", response_model=List[Restriccion], status_code=status.HTTP_200_OK, summary="Obtener todas las restricciones")
