@@ -34,17 +34,15 @@ class UserUpdate(BaseModel):
 class User(BaseModel):
     id: int
     email: EmailStr
-    nombre: str = Field(alias="first_name")
-    apellido: str = Field(alias="last_name")
+    nombre: str
+    apellido: str = Field(default="")
     is_active: bool = Field(default=True, description="Estado activo del usuario")
     is_superuser: bool = Field(default=False, description="Es superusuario")
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     
     class Config:
         from_attributes = True
-        populate_by_name = True
-        by_alias = False
 
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="Email del usuario")
@@ -60,8 +58,8 @@ class TokenData(BaseModel):
 
 class DocenteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del docente")
+    apellido: str = Field(..., min_length=2, max_length=100, description="Apellido del docente")
     email: EmailStr = Field(..., description="Email del docente")
-    pass_hash: str = Field(..., min_length=8, description="Hash de la contraseña")
     
     @validator('nombre')
     def validate_nombre(cls, v):
@@ -70,10 +68,11 @@ class DocenteBase(BaseModel):
         return v.strip().title()
 
 class DocenteCreate(DocenteBase):
-    pass
+    contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del docente")
 
 class Docente(DocenteBase):
     id: int
+    
     class Config:
         from_attributes = True
 
@@ -103,6 +102,9 @@ class RestriccionCreate(RestriccionBase):
 class Restriccion(RestriccionBase):
     id: int
     docente_id: int
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    
     class Config:
         from_attributes = True
 
@@ -207,16 +209,22 @@ class SeccionBase(BaseModel):
 
 class SeccionCreate(SeccionBase):
     asignatura_id: int = Field(..., gt=0, description="ID de la asignatura")
+    docente_id: int = Field(..., gt=0, description="ID del docente")
+    periodo: str = Field(..., description="Periodo académico")
 
 class Seccion(SeccionBase):
     id: int
     asignatura_id: int
+    docente_id: int = Field(..., gt=0, description="ID del docente")
+    periodo: str = Field(..., description="Periodo académico")
+    
     class Config:
         from_attributes = True
 
 # ========== SALA DTOs ==========
 class SalaBase(BaseModel):
     codigo: str = Field(..., min_length=1, max_length=20, description="Código de la sala")
+    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre de la sala")
     capacidad: int = Field(..., ge=1, le=500, description="Capacidad de la sala")
     tipo: str = Field(..., min_length=1, max_length=50, description="Tipo de sala")
     
@@ -254,16 +262,17 @@ class ClaseBase(BaseModel):
 
 class ClaseCreate(ClaseBase):
     seccion_id: int = Field(..., gt=0, description="ID de la sección")
-    docente_id: int = Field(..., gt=0, description="ID del docente")
     sala_id: int = Field(..., gt=0, description="ID de la sala")
     bloque_id: int = Field(..., gt=0, description="ID del bloque")
+    fecha: str = Field(..., description="Fecha de la clase en formato YYYY-MM-DD")
 
 class Clase(ClaseBase):
     id: int
     seccion_id: int
-    docente_id: int
     sala_id: int
     bloque_id: int
+    fecha: str = Field(..., description="Fecha de la clase en formato YYYY-MM-DD")
+    
     class Config:
         from_attributes = True
 

@@ -108,3 +108,84 @@ def sample_restriccion_patch_data():
         "prioridad": 9,
         "restriccion_blanda": "Alta prioridad"
     }
+
+
+@pytest.fixture
+def sample_user_data():
+    """Datos de muestra para crear un usuario"""
+    return {
+        "email": "test@example.com",
+        "contrasena": "Password123!",
+        "nombre": "Test",
+        "apellido": "User"
+    }
+
+
+@pytest.fixture
+def sample_restriccion_horario_data():
+    """Datos de muestra para crear una restricción de horario"""
+    return {
+        "docente_id": 1,
+        "dia_semana": 1,  # Lunes
+        "hora_inicio": "08:00",
+        "hora_fin": "10:00",
+        "disponible": True,
+        "descripcion": "Disponible en la mañana"
+    }
+
+
+@pytest.fixture
+def sample_asignatura_data():
+    """Datos de muestra para crear una asignatura"""
+    return {
+        "codigo": "PROG1",
+        "nombre": "Programación I",
+        "horas_semanales": 6,
+        "creditos": 4
+    }
+
+
+@pytest.fixture
+def sample_sala_data():
+    """Datos de muestra para crear una sala"""
+    return {
+        "nombre": "Sala A",
+        "capacidad": 30,
+        "tipo": "Aula",
+        "ubicacion": "Edificio Principal"
+    }
+
+
+@pytest.fixture
+def sample_seccion_data():
+    """Datos de muestra para crear una sección"""
+    return {
+        "asignatura_id": 1,
+        "docente_id": 1,
+        "numero": 1,
+        "cupos": 30,
+        "periodo": "2024-1"
+    }
+
+
+@pytest.fixture
+def sample_bloque_data():
+    """Datos de muestra para crear un bloque"""
+    return {
+        "numero": 1,
+        "hora_inicio": "08:00",
+        "hora_fin": "09:30",
+        "dia_semana": 1
+    }
+
+
+@pytest.fixture
+def sample_clase_data():
+    """Datos de muestra para crear una clase"""
+    return {
+        "seccion_id": 1,
+        "sala_id": 1,
+        "bloque_id": 1,
+        "fecha": "2024-09-14",
+        "estado": "programada"
+    }

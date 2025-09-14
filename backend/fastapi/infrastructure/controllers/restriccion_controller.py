@@ -52,14 +52,7 @@ async def create_restriccion(
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
     try:
-        nueva_restriccion = use_cases.create(
-            docente_id=restriccion_data.docente_id,
-            tipo=restriccion_data.tipo,
-            valor=restriccion_data.valor,
-            prioridad=restriccion_data.prioridad,
-            restriccion_blanda=restriccion_data.restriccion_blanda,
-            restriccion_dura=restriccion_data.restriccion_dura
-        )
+        nueva_restriccion = use_cases.create(restriccion_data)
         return nueva_restriccion
     except HTTPException:
         raise
@@ -81,14 +74,15 @@ async def update_restriccion_complete(
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
     try:
-        restriccion_actualizada = use_cases.update(
-            id=restriccion_id,
-            tipo=restriccion_data.tipo,
-            valor=restriccion_data.valor,
-            prioridad=restriccion_data.prioridad,
-            restriccion_blanda=restriccion_data.restriccion_blanda,
-            restriccion_dura=restriccion_data.restriccion_dura
-        )
+        update_data = {
+            'tipo': restriccion_data.tipo,
+            'valor': restriccion_data.valor,
+            'prioridad': restriccion_data.prioridad,
+            'restriccion_blanda': restriccion_data.restriccion_blanda,
+            'restriccion_dura': restriccion_data.restriccion_dura
+        }
+        
+        restriccion_actualizada = use_cases.update(restriccion_id, **update_data)
         
         if not restriccion_actualizada:
             raise HTTPException(
@@ -118,7 +112,7 @@ async def update_restriccion_partial(
 ):
     try:
         # Validar que se envíen datos usando el modelo Pydantic
-        update_data = restriccion_data.dict(exclude_unset=True)
+        update_data = restriccion_data.model_dump(exclude_unset=True)
         
         if not update_data:
             raise HTTPException(
@@ -126,14 +120,7 @@ async def update_restriccion_partial(
                 detail="No se proporcionaron datos para actualizar"
             )
         
-        restriccion_actualizada = use_cases.update(
-            id=restriccion_id,
-            tipo=update_data.get("tipo"),
-            valor=update_data.get("valor"),
-            prioridad=update_data.get("prioridad"),
-            restriccion_blanda=update_data.get("restriccion_blanda"),
-            restriccion_dura=update_data.get("restriccion_dura")
-        )
+        restriccion_actualizada = use_cases.update(restriccion_id, **update_data)
         
         if not restriccion_actualizada:
             raise HTTPException(

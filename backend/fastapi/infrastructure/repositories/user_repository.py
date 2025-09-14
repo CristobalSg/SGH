@@ -17,8 +17,8 @@ class SQLUserRepository:
         db_user = User(
             email=user.email,
             password_hash=hashed_password,
-            first_name=user.nombre,
-            last_name=user.apellido
+            nombre=user.nombre,
+            apellido=user.apellido
         )
         self.session.add(db_user)
         self.session.commit()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -130,7 +130,7 @@ async def obtener_restricciones_por_docente(
 
 @router.get("/dia/{dia_semana}", response_model=List[RestriccionHorario])
 async def obtener_restricciones_por_dia(
-    dia_semana: int = Query(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)"),
+    dia_semana: int = Path(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)"),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
     """Obtener todas las restricciones de horario para un día específico de la semana"""

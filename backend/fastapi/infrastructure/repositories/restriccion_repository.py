@@ -9,7 +9,7 @@ class RestriccionRepository:
 
     def create(self, restriccion: RestriccionCreate) -> Restriccion:
         """Crear una nueva restricción"""
-        db_restriccion = Restriccion(**restriccion.dict())
+        db_restriccion = Restriccion(**restriccion.model_dump())
         self.session.add(db_restriccion)
         self.session.commit()
         self.session.refresh(db_restriccion)

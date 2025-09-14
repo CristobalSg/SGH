@@ -1,12 +1,14 @@
 import pytest
-from datetime import time
 from unittest.mock import Mock, create_autospec
+from datetime import time
 from typing import List, Optional
+
+from fastapi import HTTPException, status
 
 # Importaciones del sistema bajo prueba
 from application.use_cases.restriccion_horario_use_cases import RestriccionHorarioUseCases
-from domain.ports import RestriccionHorarioRepositoryPort
-from domain.entities import RestriccionHorario
+from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
+from domain.entities import RestriccionHorario, RestriccionHorarioCreate
 
 
 class TestRestriccionHorarioUseCases:
@@ -15,12 +17,12 @@ class TestRestriccionHorarioUseCases:
     def setup_method(self):
         """Configuración que se ejecuta antes de cada prueba"""
         # Crear un mock del repositorio
-        self.mock_repo = create_autospec(RestriccionHorarioRepositoryPort)
+        self.mock_repo = create_autospec(RestriccionHorarioRepository)
         # Crear la instancia del caso de uso con el mock
-        self.use_cases = RestriccionHorarioUseCases(repo=self.mock_repo)
+        self.use_cases = RestriccionHorarioUseCases(self.mock_repo)
 
     def test_get_all_returns_all_restricciones(self):
-        """Prueba que get_all retorna todas las restricciones del repositorio"""
+        """Prueba que get_all retorna todas las restricciones de horario del repositorio"""
         # Arrange
         expected_restricciones = [
             RestriccionHorario(
@@ -30,7 +32,7 @@ class TestRestriccionHorarioUseCases:
                 hora_inicio=time(8, 0),
                 hora_fin=time(10, 0),
                 disponible=True,
-                descripcion="Clases de mañana"
+                descripcion="Disponible mañanas"
             ),
             RestriccionHorario(
                 id=2,
@@ -39,7 +41,7 @@ class TestRestriccionHorarioUseCases:
                 hora_inicio=time(14, 0),
                 hora_fin=time(16, 0),
                 disponible=False,
-                descripcion="No disponible"
+                descripcion="No disponible tardes"
             )
         ]
         self.mock_repo.get_all.return_value = expected_restricciones
@@ -49,7 +51,7 @@ class TestRestriccionHorarioUseCases:
 
         # Assert
         assert result == expected_restricciones
-        self.mock_repo.get_all.assert_called_once()
+        self.mock_repo.get_all.assert_called_once_with(skip=0, limit=100)
 
     def test_get_all_returns_empty_list_when_no_restricciones(self):
         """Prueba que get_all retorna lista vacía cuando no hay restricciones"""
@@ -117,10 +119,11 @@ class TestRestriccionHorarioUseCases:
             disponible=disponible,
             descripcion=descripcion
         )
+        self.mock_repo.get_by_docente_y_horario.return_value = []  # No hay conflictos
         self.mock_repo.create.return_value = expected_restriccion
 
         # Act
-        result = self.use_cases.create(
+        restriccion_data = RestriccionHorarioCreate(
             docente_id=docente_id,
             dia_semana=dia_semana,
             hora_inicio=hora_inicio,
@@ -128,6 +131,7 @@ class TestRestriccionHorarioUseCases:
             disponible=disponible,
             descripcion=descripcion
         )
+        result = self.use_cases.create(restriccion_data)
 
         # Assert
         assert result == expected_restriccion
@@ -160,21 +164,23 @@ class TestRestriccionHorarioUseCases:
             disponible=disponible,
             descripcion=None
         )
+        self.mock_repo.get_by_docente_y_horario.return_value = []  # No hay conflictos
         self.mock_repo.create.return_value = expected_restriccion
 
         # Act
-        result = self.use_cases.create(
+        restriccion_data = RestriccionHorarioCreate(
             docente_id=docente_id,
             dia_semana=dia_semana,
             hora_inicio=hora_inicio,
             hora_fin=hora_fin,
             disponible=disponible
         )
+        result = self.use_cases.create(restriccion_data)
 
         # Assert
         assert result == expected_restriccion
         self.mock_repo.create.assert_called_once()
-        
+
         call_args = self.mock_repo.create.call_args[0][0]
         assert call_args.descripcion is None
 
@@ -206,7 +212,7 @@ class TestRestriccionHorarioUseCases:
         self.mock_repo.update.return_value = updated_restriccion
 
         # Act
-        result = self.use_cases.update(
+        result = self.use_cases.update(restriccion_id, 
             id=restriccion_id,
             dia_semana=2,
             hora_inicio="09:00",
@@ -255,7 +261,7 @@ class TestRestriccionHorarioUseCases:
         self.mock_repo.update.return_value = updated_restriccion
 
         # Act - Solo actualizamos dia_semana
-        result = self.use_cases.update(
+        result = self.use_cases.update(restriccion_id, 
             id=restriccion_id,
             dia_semana=2
         )
@@ -275,7 +281,7 @@ class TestRestriccionHorarioUseCases:
         self.mock_repo.get_by_id.return_value = None
 
         # Act
-        result = self.use_cases.update(
+        result = self.use_cases.update(restriccion_id, 
             id=restriccion_id,
             dia_semana=2
         )
@@ -303,7 +309,7 @@ class TestRestriccionHorarioUseCases:
         self.mock_repo.update.return_value = existing_restriccion
 
         # Act - Establecer disponible explícitamente a False
-        result = self.use_cases.update(
+        result = self.use_cases.update(restriccion_id, 
             id=restriccion_id,
             disponible=False
         )
@@ -344,8 +350,8 @@ class TestRestriccionHorarioUseCasesIntegration:
 
     def setup_method(self):
         """Configuración que se ejecuta antes de cada prueba"""
-        self.mock_repo = create_autospec(RestriccionHorarioRepositoryPort)
-        self.use_cases = RestriccionHorarioUseCases(repo=self.mock_repo)
+        self.mock_repo = create_autospec(RestriccionHorarioRepository)
+        self.use_cases = RestriccionHorarioUseCases(self.mock_repo)
 
     def test_create_update_delete_workflow(self):
         """Prueba el flujo completo de crear, actualizar y eliminar una restricción"""
@@ -387,17 +393,19 @@ class TestRestriccionHorarioUseCasesIntegration:
 
         # Act & Assert - Create
         result_create = self.use_cases.create(
-            docente_id=docente_id,
-            dia_semana=dia_semana,
-            hora_inicio=hora_inicio,
-            hora_fin=hora_fin,
-            disponible=disponible,
-            descripcion=descripcion
+            RestriccionHorarioCreate(
+                docente_id=docente_id,
+                dia_semana=dia_semana,
+                hora_inicio=hora_inicio,
+                hora_fin=hora_fin,
+                disponible=disponible,
+                descripcion=descripcion
+            )
         )
         assert result_create == created_restriccion
 
         # Act & Assert - Update
-        result_update = self.use_cases.update(
+        result_update = self.use_cases.update(1, 
             id=1,
             dia_semana=2,
             disponible=False,
@@ -433,13 +441,13 @@ class TestRestriccionHorarioUseCasesIntegration:
         self.mock_repo.update.return_value = base_restriccion
 
         # Act - Primera actualización
-        self.use_cases.update(id=restriccion_id, dia_semana=2)
+        self.use_cases.update(restriccion_id, id=restriccion_id, dia_semana=2)
         
         # Act - Segunda actualización
-        self.use_cases.update(id=restriccion_id, disponible=False)
+        self.use_cases.update(restriccion_id, id=restriccion_id, disponible=False)
         
         # Act - Tercera actualización
-        self.use_cases.update(id=restriccion_id, descripcion="Final")
+        self.use_cases.update(restriccion_id, id=restriccion_id, descripcion="Final")
 
         # Assert
         assert self.mock_repo.get_by_id.call_count == 3
