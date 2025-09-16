@@ -13,10 +13,35 @@ import {
   IonAvatar 
 } from '@ionic/react';
 
-import { personCircleOutline, createOutline } from 'ionicons/icons';
+import { personCircleOutline, createOutline, logOutOutline } from 'ionicons/icons';
+import { useHistory } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import './Tab2.css';
 
 const Tab2: React.FC = () => {
+  const history = useHistory();
+
+  // Estados para los datos del usuario
+  const [nombre, setNombre] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [tipoUsuario, setTipoUsuario] = useState('');
+
+  useEffect(() => {
+    // Cargar datos desde localStorage
+    const nombreStored = localStorage.getItem('nombre') || '';
+    const correoStored = localStorage.getItem('correo') || '';
+    const tipoStored = localStorage.getItem('tipoUsuario') || '';
+
+    setNombre(nombreStored);
+    setCorreo(correoStored);
+    setTipoUsuario(tipoStored);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.clear(); // limpiar datos del usuario
+    history.push("/"); // redirigir al login
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -41,17 +66,17 @@ const Tab2: React.FC = () => {
         <IonList>
           <IonItem>
             <IonLabel position="stacked">Nombre</IonLabel>
-            <IonText>Benjamin Carrasco</IonText>
+            <IonText>{nombre}</IonText>
           </IonItem>
 
           <IonItem>
             <IonLabel position="stacked">Tipo de perfil</IonLabel>
-            <IonText>Estudiante</IonText>
+            <IonText>{tipoUsuario}</IonText>
           </IonItem>
 
           <IonItem>
             <IonLabel position="stacked">Correo</IonLabel>
-            <IonText>estudiante@alu.uct.cl</IonText>
+            <IonText>{correo}</IonText>
           </IonItem>
 
           <IonItem>
@@ -62,6 +87,14 @@ const Tab2: React.FC = () => {
             </IonButton>
           </IonItem>
         </IonList>
+
+        {/* Botón de Logout */}
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <IonButton color="danger" onClick={handleLogout}>
+            <IonIcon icon={logOutOutline} slot="start" />
+            Cerrar Sesión
+          </IonButton>
+        </div>
       </IonContent>
     </IonPage>
   );
