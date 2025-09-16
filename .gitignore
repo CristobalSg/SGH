@@ -70,3 +70,5 @@ volumes/
 dev-scripts/
 personal-notes.md
 TODO.local.md
+
+node_modules/
