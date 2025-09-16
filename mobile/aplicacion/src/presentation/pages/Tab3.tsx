@@ -8,8 +8,13 @@ import {
   IonAccordionGroup, 
   IonItem, 
   IonLabel, 
-  IonList 
+  IonList, 
+  IonButtons, 
+  IonButton, 
+  IonIcon 
 } from '@ionic/react';
+
+import { searchOutline, createOutline, trashOutline } from 'ionicons/icons';
 import './Tab3.css';
 
 const Tab3: React.FC = () => {
@@ -37,6 +42,11 @@ const Tab3: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Eventos</IonTitle>
+          <IonButtons slot="end">
+            <IonButton>
+              <IonIcon icon={searchOutline} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       
@@ -48,23 +58,31 @@ const Tab3: React.FC = () => {
         </IonHeader>
 
         <IonAccordionGroup>
-        {eventos.map((evento, index) => (
-          <IonAccordion key={index} value={evento.fecha}>
-            <IonItem slot="header">
-              <IonLabel style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{evento.fecha}</IonLabel>
-
-            </IonItem>
-            <IonList slot="content">
-              {evento.items.map((item, i) => (
-                <IonItem key={i}>
-                  <IonLabel>{item}</IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
-          </IonAccordion>
-        ))}
-      </IonAccordionGroup>
-
+          {eventos.map((evento, index) => (
+            <IonAccordion key={index} value={evento.fecha}>
+              <IonItem slot="header">
+                <IonLabel style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>
+                  {evento.fecha}
+                </IonLabel>
+              </IonItem>
+              <IonList slot="content">
+                {evento.items.map((item, i) => (
+                  <IonItem key={i}>
+                    <IonLabel>{item}</IonLabel>
+                    <IonButtons slot="end">
+                      <IonButton fill="clear" color="primary">
+                        <IonIcon icon={createOutline} />
+                      </IonButton>
+                      <IonButton fill="clear" color="danger">
+                        <IonIcon icon={trashOutline} />
+                      </IonButton>
+                    </IonButtons>
+                  </IonItem>
+                ))}
+              </IonList>
+            </IonAccordion>
+          ))}
+        </IonAccordionGroup>
       </IonContent>
     </IonPage>
   );

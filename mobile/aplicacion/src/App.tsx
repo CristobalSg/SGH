@@ -10,12 +10,13 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { calendar, home, person, time } from 'ionicons/icons';
+import { calendar, home, person, time, settings } from 'ionicons/icons';
 import Tab1 from './presentation/pages/Tab1';
 import Tab2 from './presentation/pages/Tab2';
 import Tab3 from './presentation/pages/Tab3';
 import Login from './presentation/pages/login';
 import Restricciones from './presentation/pages/Restricciones';
+import AdminRestricciones from './presentation/pages/AdminRestricciones';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -33,15 +34,9 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
+/* Dark mode */
+// import '@ionic/react/css/palettes/dark.always.css';
+// import '@ionic/react/css/palettes/dark.class.css';
 import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
@@ -66,6 +61,7 @@ const App: React.FC = () => (
                 <Route exact path="/tabs/tab2" component={Tab2} />
                 <Route exact path="/tabs/tab3" component={Tab3} />
                 <Route exact path="/tabs/restricciones" component={Restricciones} />
+                <Route exact path="/tabs/admin-restricciones" component={AdminRestricciones} />
               </IonRouterOutlet>
 
               <IonTabBar slot="bottom">
@@ -84,6 +80,10 @@ const App: React.FC = () => (
                 <IonTabButton tab="restricciones" href="/tabs/restricciones">
                   <IonIcon aria-hidden="true" icon={time} />
                   <IonLabel>Restricciones</IonLabel>
+                </IonTabButton>
+                <IonTabButton tab="admin" href="/tabs/admin-restricciones">
+                  <IonIcon aria-hidden="true" icon={settings} />
+                  <IonLabel>Admin</IonLabel>
                 </IonTabButton>
               </IonTabBar>
             </IonTabs>
