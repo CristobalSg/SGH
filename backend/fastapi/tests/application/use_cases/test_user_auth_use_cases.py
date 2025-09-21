@@ -95,12 +95,20 @@ class TestUserAuthUseCase:
 
         # Act
         with patch("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
-            mock_auth.create_access_token.return_value = "fake_token"
+            # Configurar el mock para que retorne strings, no MagicMock
+            mock_auth_instance = mock_auth.return_value
+            mock_auth_instance.create_access_token.return_value = "fake_access_token"
+            mock_auth_instance.create_refresh_token.return_value = "fake_refresh_token"
+            # También configurar los métodos estáticos
+            mock_auth.create_access_token.return_value = "fake_access_token"
+            mock_auth.create_refresh_token.return_value = "fake_refresh_token"
+            
             result = self.use_case.login_user(login_data)
 
         # Assert
         assert isinstance(result, Token)
-        assert result.access_token == "fake_token"
+        assert result.access_token == "fake_access_token"
+        assert result.refresh_token == "fake_refresh_token"
         assert result.token_type == "bearer"
         self.mock_repo.authenticate.assert_called_once_with("test@example.com", "password123")
         self.mock_repo.is_active.assert_called_once_with(user)

@@ -17,12 +17,12 @@ class TestRestriccionHorarioIntegration:
         db_session.refresh(docente)
         self.docente_id = docente.id
 
-    def test_create_restriccion_horario_success(self, client, sample_restriccion_horario_data):
+    def test_create_restriccion_horario_success(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba POST /restricciones-horario para crear una restricción de horario exitosamente"""
         # Usar el docente_id creado en setup
         sample_restriccion_horario_data["docente_id"] = self.docente_id
         
-        response = client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
+        response = authenticated_client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
         
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
@@ -33,7 +33,7 @@ class TestRestriccionHorarioIntegration:
         assert data["disponible"] == sample_restriccion_horario_data["disponible"]
         assert "id" in data
 
-    def test_create_restriccion_horario_invalid_data(self, client):
+    def test_create_restriccion_horario_invalid_data(self, authenticated_client):
         """Prueba POST /restricciones-horario con datos inválidos"""
         invalid_data = {
             "docente_id": -1,  # ID negativo
@@ -43,7 +43,7 @@ class TestRestriccionHorarioIntegration:
             "disponible": "not_boolean"  # No es booleano
         }
         
-        response = client.post("/restricciones-horario/", json=invalid_data)
+        response = authenticated_client.post("/restricciones-horario/", json=invalid_data)
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -54,32 +54,32 @@ class TestRestriccionHorarioIntegration:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
 
-    def test_get_all_restricciones_horario_with_pagination(self, client, sample_restriccion_horario_data):
+    def test_get_all_restricciones_horario_with_pagination(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba GET /restricciones-horario con paginación"""
         # Crear varias restricciones
         sample_restriccion_horario_data["docente_id"] = self.docente_id
         for i in range(5):
             restriccion_data = sample_restriccion_horario_data.copy()
             restriccion_data["dia_semana"] = i % 7
-            client.post("/restricciones-horario/", json=restriccion_data)
+            authenticated_client.post("/restricciones-horario/", json=restriccion_data)
         
         # Probar paginación
-        response = client.get("/restricciones-horario/?skip=2&limit=2")
+        response = authenticated_client.get("/restricciones-horario/?skip=2&limit=2")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) <= 2
 
-    def test_get_restriccion_horario_by_id_success(self, client, sample_restriccion_horario_data):
+    def test_get_restriccion_horario_by_id_success(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba GET /restricciones-horario/{id} para obtener una restricción existente"""
         # Crear restricción primero
         sample_restriccion_horario_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
+        create_response = authenticated_client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
         created_restriccion = create_response.json()
         restriccion_id = created_restriccion["id"]
         
         # Obtener restricción por ID
-        response = client.get(f"/restricciones-horario/{restriccion_id}")
+        response = authenticated_client.get(f"/restricciones-horario/{restriccion_id}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -92,11 +92,11 @@ class TestRestriccionHorarioIntegration:
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_update_restriccion_horario_success(self, client, sample_restriccion_horario_data):
+    def test_update_restriccion_horario_success(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba PATCH /restricciones-horario/{id} para actualización parcial"""
         # Crear restricción primero
         sample_restriccion_horario_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
+        create_response = authenticated_client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
         restriccion_id = create_response.json()["id"]
         
         # Actualizar restricción parcialmente
@@ -104,7 +104,7 @@ class TestRestriccionHorarioIntegration:
             "disponible": False,
             "descripcion": "Actualizada"
         }
-        response = client.patch(f"/restricciones-horario/{restriccion_id}", json=update_data)
+        response = authenticated_client.patch(f"/restricciones-horario/{restriccion_id}", json=update_data)
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -112,65 +112,65 @@ class TestRestriccionHorarioIntegration:
         assert data["disponible"] is False
         assert data["descripcion"] == "Actualizada"
 
-    def test_update_restriccion_horario_not_found(self, client):
+    def test_update_restriccion_horario_not_found(self, authenticated_client):
         """Prueba PATCH /restricciones-horario/{id} cuando la restricción no existe"""
         update_data = {"disponible": False}
-        response = client.patch("/restricciones-horario/999", json=update_data)
+        response = authenticated_client.patch("/restricciones-horario/999", json=update_data)
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_update_restriccion_horario_empty_data(self, client, sample_restriccion_horario_data):
+    def test_update_restriccion_horario_empty_data(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba PATCH /restricciones-horario/{id} sin datos para actualizar"""
         # Crear restricción primero
         sample_restriccion_horario_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
+        create_response = authenticated_client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
         restriccion_id = create_response.json()["id"]
         
         # Intentar actualizar sin datos
-        response = client.patch(f"/restricciones-horario/{restriccion_id}", json={})
+        response = authenticated_client.patch(f"/restricciones-horario/{restriccion_id}", json={})
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "No se proporcionaron campos para actualizar" in response.json()["detail"]
 
-    def test_delete_restriccion_horario_success(self, client, sample_restriccion_horario_data):
+    def test_delete_restriccion_horario_success(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba DELETE /restricciones-horario/{id} para eliminar una restricción"""
         # Crear restricción primero
         sample_restriccion_horario_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
+        create_response = authenticated_client.post("/restricciones-horario/", json=sample_restriccion_horario_data)
         restriccion_id = create_response.json()["id"]
         
         # Eliminar restricción
-        response = client.delete(f"/restricciones-horario/{restriccion_id}")
+        response = authenticated_client.delete(f"/restricciones-horario/{restriccion_id}")
         
         assert response.status_code == status.HTTP_204_NO_CONTENT
         
         # Verificar que la restricción fue eliminada
-        get_response = client.get(f"/restricciones-horario/{restriccion_id}")
+        get_response = authenticated_client.get(f"/restricciones-horario/{restriccion_id}")
         assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_delete_restriccion_horario_not_found(self, client):
+    def test_delete_restriccion_horario_not_found(self, authenticated_client):
         """Prueba DELETE /restricciones-horario/{id} cuando la restricción no existe"""
-        response = client.delete("/restricciones-horario/999")
+        response = authenticated_client.delete("/restricciones-horario/999")
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_get_restricciones_by_docente(self, client, sample_restriccion_horario_data):
+    def test_get_restricciones_by_docente(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba GET /restricciones-horario/docente/{docente_id}"""
         # Crear varias restricciones para el mismo docente
         sample_restriccion_horario_data["docente_id"] = self.docente_id
         for dia in [1, 2, 3]:
             restriccion_data = sample_restriccion_horario_data.copy()
             restriccion_data["dia_semana"] = dia
-            client.post("/restricciones-horario/", json=restriccion_data)
+            authenticated_client.post("/restricciones-horario/", json=restriccion_data)
         
-        response = client.get(f"/restricciones-horario/docente/{self.docente_id}")
+        response = authenticated_client.get(f"/restricciones-horario/docente/{self.docente_id}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 3
         assert all(restriccion["docente_id"] == self.docente_id for restriccion in data)
 
-    def test_get_restricciones_by_dia(self, client, sample_restriccion_horario_data):
+    def test_get_restricciones_by_dia(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba GET /restricciones-horario/dia/{dia_semana}"""
         # Crear restricciones para diferentes días
         sample_restriccion_horario_data["docente_id"] = self.docente_id
@@ -180,7 +180,7 @@ class TestRestriccionHorarioIntegration:
         restriccion_data_1["dia_semana"] = 1
         restriccion_data_1["hora_inicio"] = "08:00:00"
         restriccion_data_1["hora_fin"] = "10:00:00"
-        client.post("/restricciones-horario/", json=restriccion_data_1)
+        authenticated_client.post("/restricciones-horario/", json=restriccion_data_1)
         
         # Segunda restricción para el lunes (día 1) con horario diferente
         restriccion_data_2 = sample_restriccion_horario_data.copy()
@@ -188,14 +188,14 @@ class TestRestriccionHorarioIntegration:
         restriccion_data_2["hora_inicio"] = "14:00:00"
         restriccion_data_2["hora_fin"] = "16:00:00"
         restriccion_data_2["descripcion"] = "Disponible en la tarde"
-        client.post("/restricciones-horario/", json=restriccion_data_2)
+        authenticated_client.post("/restricciones-horario/", json=restriccion_data_2)
         
         # Restricción para el martes (día 2)
         restriccion_data_3 = sample_restriccion_horario_data.copy()
         restriccion_data_3["dia_semana"] = 2
-        client.post("/restricciones-horario/", json=restriccion_data_3)
+        authenticated_client.post("/restricciones-horario/", json=restriccion_data_3)
         
-        response = client.get("/restricciones-horario/dia/1")
+        response = authenticated_client.get("/restricciones-horario/dia/1")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -208,7 +208,7 @@ class TestRestriccionHorarioIntegration:
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_get_disponibilidad_docente(self, client, sample_restriccion_horario_data):
+    def test_get_disponibilidad_docente(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba GET /restricciones-horario/disponibilidad/{docente_id}"""
         # Crear restricciones con diferentes disponibilidades
         sample_restriccion_horario_data["docente_id"] = self.docente_id
@@ -216,32 +216,32 @@ class TestRestriccionHorarioIntegration:
         # Restricción disponible
         disponible_data = sample_restriccion_horario_data.copy()
         disponible_data["disponible"] = True
-        client.post("/restricciones-horario/", json=disponible_data)
+        authenticated_client.post("/restricciones-horario/", json=disponible_data)
         
         # Restricción no disponible
         no_disponible_data = sample_restriccion_horario_data.copy()
         no_disponible_data["dia_semana"] = 2
         no_disponible_data["disponible"] = False
-        client.post("/restricciones-horario/", json=no_disponible_data)
+        authenticated_client.post("/restricciones-horario/", json=no_disponible_data)
         
-        response = client.get(f"/restricciones-horario/disponibilidad/{self.docente_id}")
+        response = authenticated_client.get(f"/restricciones-horario/disponibilidad/{self.docente_id}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1  # Solo la disponible
         assert data[0]["disponible"] is True
 
-    def test_delete_restricciones_by_docente(self, client, sample_restriccion_horario_data):
+    def test_delete_restricciones_by_docente(self, authenticated_client, sample_restriccion_horario_data):
         """Prueba DELETE /restricciones-horario/docente/{docente_id}"""
         # Crear varias restricciones para el docente
         sample_restriccion_horario_data["docente_id"] = self.docente_id
         for dia in [1, 2, 3]:
             restriccion_data = sample_restriccion_horario_data.copy()
             restriccion_data["dia_semana"] = dia
-            client.post("/restricciones-horario/", json=restriccion_data)
+            authenticated_client.post("/restricciones-horario/", json=restriccion_data)
         
         # Eliminar todas las restricciones del docente
-        response = client.delete(f"/restricciones-horario/docente/{self.docente_id}")
+        response = authenticated_client.delete(f"/restricciones-horario/docente/{self.docente_id}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -249,5 +249,5 @@ class TestRestriccionHorarioIntegration:
         assert "Se eliminaron 3 restricciones" in data["mensaje"]
         
         # Verificar que se eliminaron
-        get_response = client.get(f"/restricciones-horario/docente/{self.docente_id}")
+        get_response = authenticated_client.get(f"/restricciones-horario/docente/{self.docente_id}")
         assert get_response.json() == []

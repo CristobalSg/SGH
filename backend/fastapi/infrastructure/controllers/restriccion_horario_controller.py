@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from domain.entities import RestriccionHorario, RestriccionHorarioCreate, RestriccionHorarioPatch
+from domain.entities import RestriccionHorario, RestriccionHorarioCreate, RestriccionHorarioPatch, User
 from infrastructure.database.config import get_db
 from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
 from application.use_cases.restriccion_horario_use_cases import RestriccionHorarioUseCases
+from infrastructure.dependencies import get_current_active_user
 
 router = APIRouter()
 
@@ -22,7 +23,8 @@ def get_restriccion_horario_use_cases(
 @router.post("/", response_model=RestriccionHorario, status_code=status.HTTP_201_CREATED)
 async def crear_restriccion_horario(
     restriccion_data: RestriccionHorarioCreate,
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Crear una nueva restricción de horario"""
     try:
@@ -73,7 +75,8 @@ async def obtener_restriccion_horario(
 async def actualizar_restriccion_horario(
     restriccion_id: int,
     restriccion_patch: RestriccionHorarioPatch,
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Actualizar parcialmente una restricción de horario"""
     try:
@@ -99,7 +102,8 @@ async def actualizar_restriccion_horario(
 @router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def eliminar_restriccion_horario(
     restriccion_id: int,
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Eliminar una restricción de horario"""
     try:
@@ -162,7 +166,8 @@ async def obtener_disponibilidad_docente(
 @router.delete("/docente/{docente_id}", status_code=status.HTTP_200_OK)
 async def eliminar_restricciones_por_docente(
     docente_id: int,
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Eliminar todas las restricciones de horario de un docente"""
     try:

@@ -5,11 +5,10 @@ import re
 
 class UserBase(BaseModel):
     email: EmailStr = Field(..., description="Email del usuario")
-    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
-    apellido: str = Field(..., min_length=2, max_length=100, description="Apellido del usuario")
+    first_name: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
+    last_name: str = Field(..., min_length=2, max_length=100, description="Apellido del usuario")
     
-    @field_validator('nombre', 'apellido')
-    @classmethod
+    @field_validator('first_name', 'last_name')
     @classmethod
     def validate_names(cls, v):
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", v.strip()):
@@ -21,7 +20,6 @@ class UserCreate(UserBase):
     
     @field_validator('contrasena')
     @classmethod
-    @classmethod
     def validate_contrasena(cls, v):
         if not re.search(r"[A-Z]", v):
             raise ValueError('La contraseña debe contener al menos una letra mayúscula')
@@ -32,21 +30,20 @@ class UserCreate(UserBase):
         return v
 
 class UserUpdate(BaseModel):
-    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
-    apellido: Optional[str] = Field(None, min_length=2, max_length=100)
+    first_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    last_name: Optional[str] = Field(None, min_length=2, max_length=100)
 
 class User(BaseModel):
     id: int
     email: EmailStr
-    nombre: str
-    apellido: str = Field(default="")
+    first_name: str
+    last_name: str = Field(default="")
     is_active: bool = Field(default=True, description="Estado activo del usuario")
     is_superuser: bool = Field(default=False, description="Es superusuario")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     
-    model_config = ConfigDict(
-from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="Email del usuario")
@@ -54,11 +51,17 @@ class UserLogin(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
-    expires_in: int
+    expires_in: int  # En segundos
+    user: 'User'  # Información del usuario
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+    exp: Optional[int] = None
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 class DocenteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del docente")
