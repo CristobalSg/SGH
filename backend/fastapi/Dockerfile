@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     wget \
     postgresql-client \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
