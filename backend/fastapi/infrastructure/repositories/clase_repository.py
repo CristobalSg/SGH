@@ -9,7 +9,7 @@ class ClaseRepository:
 
     def create(self, clase: ClaseCreate) -> Clase:
         """Crear una nueva clase"""
-        db_clase = Clase(**clase.dict())
+        db_clase = Clase(**clase.model_dump())
         self.session.add(db_clase)
         self.session.commit()
         self.session.refresh(db_clase)
@@ -94,3 +94,31 @@ class ClaseRepository:
             Seccion.anio == anio,
             Seccion.semestre == semestre
         ).all()
+
+    def get_by_sala_bloque_fecha(self, sala_id: int, bloque_id: int, fecha: str) -> Optional[Clase]:
+        """Obtener clase por sala, bloque y fecha específica"""
+        return self.session.query(Clase).filter(
+            Clase.sala_id == sala_id,
+            Clase.bloque_id == bloque_id,
+            Clase.fecha == fecha
+        ).first()
+
+    def get_conflictos_docente(self, docente_id: int, bloque_id: int, fecha: str = None) -> List[Clase]:
+        """Obtener conflictos de horario para un docente en un bloque y fecha específicos"""
+        query = self.session.query(Clase).filter(
+            Clase.docente_id == docente_id,
+            Clase.bloque_id == bloque_id
+        )
+        if fecha:
+            query = query.filter(Clase.fecha == fecha)
+        return query.all()
+
+    def get_conflictos_sala(self, sala_id: int, bloque_id: int, fecha: str = None) -> List[Clase]:
+        """Obtener conflictos de horario para una sala en un bloque y fecha específicos"""
+        query = self.session.query(Clase).filter(
+            Clase.sala_id == sala_id,
+            Clase.bloque_id == bloque_id
+        )
+        if fecha:
+            query = query.filter(Clase.fecha == fecha)
+        return query.all()

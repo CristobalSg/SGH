@@ -9,7 +9,7 @@ class DocenteRepository:
 
     def create(self, docente: DocenteCreate) -> Docente:
         """Crear un nuevo docente"""
-        db_docente = Docente(**docente.dict())
+        db_docente = Docente(**docente.model_dump())
         self.session.add(db_docente)
         self.session.commit()
         self.session.refresh(db_docente)

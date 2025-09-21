@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, create_autospec, call
 from datetime import time
 from typing import List, Optional
 
@@ -88,16 +88,17 @@ class TestRestriccionHorarioUseCases:
         self.mock_repo.get_by_id.assert_called_once_with(restriccion_id)
 
     def test_get_by_id_returns_none_when_not_exists(self):
-        """Prueba que get_by_id retorna None cuando la restricción no existe"""
+        """Prueba que get_by_id lanza HTTPException cuando la restricción no existe"""
         # Arrange
         restriccion_id = 999
         self.mock_repo.get_by_id.return_value = None
 
-        # Act
-        result = self.use_cases.get_by_id(restriccion_id)
-
-        # Assert
-        assert result is None
+        # Act & Assert
+        with pytest.raises(HTTPException) as exc_info:
+            self.use_cases.get_by_id(restriccion_id)
+        
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "Restricción de horario no encontrada" in str(exc_info.value.detail)
         self.mock_repo.get_by_id.assert_called_once_with(restriccion_id)
 
     def test_create_creates_and_returns_new_restriccion(self):
@@ -224,14 +225,15 @@ class TestRestriccionHorarioUseCases:
         # Assert
         assert result == updated_restriccion
         self.mock_repo.get_by_id.assert_called_once_with(restriccion_id)
-        self.mock_repo.update.assert_called_once_with(existing_restriccion)
-        
-        # Verificar que los campos se actualizaron
-        assert existing_restriccion.dia_semana == 2
-        assert existing_restriccion.hora_inicio == "09:00"
-        assert existing_restriccion.hora_fin == "11:00"
-        assert existing_restriccion.disponible == False
-        assert existing_restriccion.descripcion == "Actualizada"
+        # Verificar que se llamó update con el ID y los datos de actualización
+        self.mock_repo.update.assert_called_once_with(restriccion_id, {
+            'id': restriccion_id,
+            'dia_semana': 2,
+            'hora_inicio': '09:00',
+            'hora_fin': '11:00',
+            'disponible': False,
+            'descripcion': 'Actualizada'
+        })
 
     def test_update_partial_update(self):
         """Prueba que update funciona con actualización parcial"""
@@ -269,25 +271,27 @@ class TestRestriccionHorarioUseCases:
         # Assert
         assert result == updated_restriccion
         self.mock_repo.get_by_id.assert_called_once_with(restriccion_id)
-        self.mock_repo.update.assert_called_once_with(existing_restriccion)
-        
-        # Solo dia_semana debe haber cambiado
-        assert existing_restriccion.dia_semana == 2
+        # Verificar que se llamó update con el ID y los datos de actualización
+        self.mock_repo.update.assert_called_once_with(restriccion_id, {
+            'id': restriccion_id,
+            'dia_semana': 2
+        })
 
     def test_update_returns_none_when_restriccion_not_exists(self):
-        """Prueba que update retorna None cuando la restricción no existe"""
+        """Prueba que update lanza HTTPException cuando la restricción no existe"""
         # Arrange
         restriccion_id = 999
         self.mock_repo.get_by_id.return_value = None
 
-        # Act
-        result = self.use_cases.update(restriccion_id, 
-            id=restriccion_id,
-            dia_semana=2
-        )
-
-        # Assert
-        assert result is None
+        # Act & Assert
+        with pytest.raises(HTTPException) as exc_info:
+            self.use_cases.update(restriccion_id, 
+                id=restriccion_id,
+                dia_semana=2
+            )
+        
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "Restricción de horario no encontrada" in str(exc_info.value.detail)
         self.mock_repo.get_by_id.assert_called_once_with(restriccion_id)
         self.mock_repo.update.assert_not_called()
 
@@ -315,8 +319,11 @@ class TestRestriccionHorarioUseCases:
         )
 
         # Assert
-        assert existing_restriccion.disponible == False
-        self.mock_repo.update.assert_called_once_with(existing_restriccion)
+        # Verificar que se llamó update con los datos correctos
+        self.mock_repo.update.assert_called_once_with(restriccion_id, {
+            'id': restriccion_id,
+            'disponible': False
+        })
 
     def test_delete_returns_true_when_successful(self):
         """Prueba que delete retorna True cuando la eliminación es exitosa"""
@@ -332,16 +339,27 @@ class TestRestriccionHorarioUseCases:
         self.mock_repo.delete.assert_called_once_with(restriccion_id)
 
     def test_delete_returns_false_when_fails(self):
-        """Prueba que delete retorna False cuando la eliminación falla"""
+        """Prueba que delete lanza HTTPException cuando la eliminación falla"""
         # Arrange
         restriccion_id = 999
+        existing_restriccion = RestriccionHorario(
+            id=restriccion_id,
+            docente_id=1,
+            dia_semana=1,
+            hora_inicio=time(8, 0),
+            hora_fin=time(10, 0),
+            disponible=True,
+            descripcion="Restricción de prueba"
+        )
+        self.mock_repo.get_by_id.return_value = existing_restriccion
         self.mock_repo.delete.return_value = False
 
-        # Act
-        result = self.use_cases.delete(restriccion_id)
-
-        # Assert
-        assert result == False
+        # Act & Assert
+        with pytest.raises(HTTPException) as exc_info:
+            self.use_cases.delete(restriccion_id)
+        
+        assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert "Error al eliminar la restricción de horario" in str(exc_info.value.detail)
         self.mock_repo.delete.assert_called_once_with(restriccion_id)
 
 
@@ -386,6 +404,7 @@ class TestRestriccionHorarioUseCasesIntegration:
         )
 
         # Setup mocks
+        self.mock_repo.get_by_docente_y_horario.return_value = []  # No hay conflictos para crear
         self.mock_repo.create.return_value = created_restriccion
         self.mock_repo.get_by_id.return_value = created_restriccion
         self.mock_repo.update.return_value = updated_restriccion
@@ -419,7 +438,8 @@ class TestRestriccionHorarioUseCasesIntegration:
 
         # Verificar que todos los métodos del repositorio fueron llamados
         self.mock_repo.create.assert_called_once()
-        self.mock_repo.get_by_id.assert_called_once_with(1)
+        # get_by_id se llama 2 veces: una en update y otra en delete
+        assert self.mock_repo.get_by_id.call_count == 2
         self.mock_repo.update.assert_called_once()
         self.mock_repo.delete.assert_called_once_with(1)
 
@@ -453,7 +473,10 @@ class TestRestriccionHorarioUseCasesIntegration:
         assert self.mock_repo.get_by_id.call_count == 3
         assert self.mock_repo.update.call_count == 3
         
-        # Verificar que los valores finales son correctos
-        assert base_restriccion.dia_semana == 2
-        assert base_restriccion.disponible == False
-        assert base_restriccion.descripcion == "Final"
+        # Verificar las llamadas individuales de update
+        expected_calls = [
+            call(restriccion_id, {'id': restriccion_id, 'dia_semana': 2}),
+            call(restriccion_id, {'id': restriccion_id, 'disponible': False}),
+            call(restriccion_id, {'id': restriccion_id, 'descripcion': 'Final'})
+        ]
+        self.mock_repo.update.assert_has_calls(expected_calls)

@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 # Importaciones del sistema bajo prueba
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
 from infrastructure.repositories.user_repository import SQLUserRepository
-from domain.entities import UserCreate, User, UserLogin, Token
+from domain.entities import UserCreate, User, UserLogin, Token, TokenData
 
 
 class TestUserAuthUseCase:
@@ -94,7 +94,7 @@ class TestUserAuthUseCase:
         self.mock_repo.is_active.return_value = True
 
         # Act
-        with unittest.mock("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
+        with patch("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
             mock_auth.create_access_token.return_value = "fake_token"
             result = self.use_case.login_user(login_data)
 
@@ -170,13 +170,13 @@ class TestUserAuthUseCase:
         self.mock_repo.get_by_email.return_value = expected_user
 
         # Act
-        with unittest.mock("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
-            mock_auth.decode_access_token.return_value = "test@example.com"
+        with patch("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
+            mock_auth.verify_token.return_value = TokenData(email="test@example.com")
             result = self.use_case.get_current_active_user(token)
 
         # Assert
         assert result == expected_user
-        mock_auth.decode_access_token.assert_called_once_with(token)
+        mock_auth.verify_token.assert_called_once_with(token)
         self.mock_repo.get_by_email.assert_called_once_with("test@example.com")
 
     def test_get_current_active_user_invalid_token(self):
@@ -185,8 +185,8 @@ class TestUserAuthUseCase:
         token = "invalid_token"
 
         # Act & Assert
-        with unittest.mock("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
-            mock_auth.decode_access_token.side_effect = HTTPException(
+        with patch("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
+            mock_auth.verify_token.side_effect = HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido"
             )
@@ -204,11 +204,11 @@ class TestUserAuthUseCase:
         self.mock_repo.get_by_email.return_value = None
 
         # Act & Assert
-        with unittest.mock("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
-            mock_auth.decode_access_token.return_value = "nonexistent@example.com"
+        with patch("application.use_cases.user_auth_use_cases.AuthService") as mock_auth:
+            mock_auth.verify_token.return_value = TokenData(email="nonexistent@example.com")
             
             with pytest.raises(HTTPException) as exc_info:
                 self.use_case.get_current_active_user(token)
             
             assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
-            assert "Usuario no encontrado" in str(exc_info.value.detail)
+            assert "No se pudieron validar las credenciales" in str(exc_info.value.detail)

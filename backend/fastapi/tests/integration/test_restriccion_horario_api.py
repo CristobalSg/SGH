@@ -174,10 +174,26 @@ class TestRestriccionHorarioIntegration:
         """Prueba GET /restricciones-horario/dia/{dia_semana}"""
         # Crear restricciones para diferentes días
         sample_restriccion_horario_data["docente_id"] = self.docente_id
-        for dia in [1, 2, 1]:  # Dos para lunes (1), una para martes (2)
-            restriccion_data = sample_restriccion_horario_data.copy()
-            restriccion_data["dia_semana"] = dia
-            client.post("/restricciones-horario/", json=restriccion_data)
+        
+        # Primera restricción para el lunes (día 1)
+        restriccion_data_1 = sample_restriccion_horario_data.copy()
+        restriccion_data_1["dia_semana"] = 1
+        restriccion_data_1["hora_inicio"] = "08:00:00"
+        restriccion_data_1["hora_fin"] = "10:00:00"
+        client.post("/restricciones-horario/", json=restriccion_data_1)
+        
+        # Segunda restricción para el lunes (día 1) con horario diferente
+        restriccion_data_2 = sample_restriccion_horario_data.copy()
+        restriccion_data_2["dia_semana"] = 1
+        restriccion_data_2["hora_inicio"] = "14:00:00"
+        restriccion_data_2["hora_fin"] = "16:00:00"
+        restriccion_data_2["descripcion"] = "Disponible en la tarde"
+        client.post("/restricciones-horario/", json=restriccion_data_2)
+        
+        # Restricción para el martes (día 2)
+        restriccion_data_3 = sample_restriccion_horario_data.copy()
+        restriccion_data_3["dia_semana"] = 2
+        client.post("/restricciones-horario/", json=restriccion_data_3)
         
         response = client.get("/restricciones-horario/dia/1")
         

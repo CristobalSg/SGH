@@ -101,7 +101,9 @@ class TestClaseUseCases:
             fecha="2024-09-14",
             estado="programada"
         )
-        self.mock_repo.get_by_sala_bloque_fecha.return_value = None  # No hay conflicto
+        self.mock_repo.get_by_sala_bloque_fecha.return_value = None  # No hay conflicto de sala
+        self.mock_repo.get_conflictos_docente.return_value = []  # No hay conflictos de docente
+        self.mock_repo.get_conflictos_sala.return_value = []  # No hay conflictos de sala (método nuevo)
         self.mock_repo.create.return_value = expected_clase
 
         # Act
@@ -109,7 +111,7 @@ class TestClaseUseCases:
 
         # Assert
         assert result == expected_clase
-        self.mock_repo.get_by_sala_bloque_fecha.assert_called_once_with(1, 1, "2024-09-14")
+        self.mock_repo.get_conflictos_sala.assert_called_once_with(1, 1)
         self.mock_repo.create.assert_called_once_with(clase_data)
 
     def test_create_clase_conflict_exists(self):
@@ -130,20 +132,21 @@ class TestClaseUseCases:
             fecha="2024-09-14",
             estado="programada"
         )
-        self.mock_repo.get_by_sala_bloque_fecha.return_value = conflicting_clase
+        self.mock_repo.get_conflictos_docente.return_value = []  # No conflictos de docente primero
+        self.mock_repo.get_conflictos_sala.return_value = [conflicting_clase]  # Sí hay conflicto de sala
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             self.use_cases.create(clase_data)
         
         assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Ya existe una clase programada" in str(exc_info.value.detail)
+        assert "La sala ya está ocupada en ese bloque" in str(exc_info.value.detail)
 
     def test_update_clase_success(self):
         """Prueba actualización exitosa de clase"""
         # Arrange
         clase_id = 1
-        update_data = {"sala_id": 2, "estado": "realizada"}
+        update_data = {"sala_id": 2, "estado": "finalizada"}
         existing_clase = Clase(
             id=clase_id,
             seccion_id=1,
@@ -158,7 +161,7 @@ class TestClaseUseCases:
             sala_id=2,
             bloque_id=1,
             fecha="2024-09-14",
-            estado="realizada"
+            estado="finalizada"
         )
         
         self.mock_repo.get_by_id.return_value = existing_clase

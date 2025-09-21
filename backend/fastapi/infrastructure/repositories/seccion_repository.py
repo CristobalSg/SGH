@@ -9,7 +9,7 @@ class SeccionRepository:
 
     def create(self, seccion: SeccionCreate) -> Seccion:
         """Crear una nueva sección"""
-        db_seccion = Seccion(**seccion.dict())
+        db_seccion = Seccion(**seccion.model_dump())
         self.session.add(db_seccion)
         self.session.commit()
         self.session.refresh(db_seccion)
@@ -74,3 +74,11 @@ class SeccionRepository:
         from domain.models import Clase
         count = self.session.query(Clase).filter(Clase.seccion_id == seccion_id).count()
         return count > 0
+
+    def tiene_clases(self, seccion_id: int) -> bool:
+        """Alias para has_clases - verificar si una sección tiene clases programadas"""
+        return self.has_clases(seccion_id)
+
+    def get_by_codigo(self, codigo: str) -> Optional[Seccion]:
+        """Obtener sección por código"""
+        return self.session.query(Seccion).filter(Seccion.codigo == codigo).first()

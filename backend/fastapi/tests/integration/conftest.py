@@ -127,8 +127,8 @@ def sample_restriccion_horario_data():
     return {
         "docente_id": 1,
         "dia_semana": 1,  # Lunes
-        "hora_inicio": "08:00",
-        "hora_fin": "10:00",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "10:00:00",
         "disponible": True,
         "descripcion": "Disponible en la mañana"
     }

@@ -23,6 +23,14 @@ class SeccionUseCases:
 
     def create(self, seccion_data: SeccionCreate) -> Seccion:
         """Crear una nueva sección"""
+        # Verificar si ya existe una sección con el mismo código
+        existing_seccion = self.seccion_repository.get_by_codigo(seccion_data.codigo)
+        if existing_seccion:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ya existe una sección con ese código"
+            )
+        
         return self.seccion_repository.create(seccion_data)
 
     def update(self, seccion_id: int, **update_data) -> Seccion:

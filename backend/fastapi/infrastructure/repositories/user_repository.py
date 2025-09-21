@@ -41,7 +41,7 @@ class SQLUserRepository:
         """Actualizar un usuario"""
         db_user = self.get_by_id(user_id)
         if db_user:
-            update_data = user_data.dict(exclude_unset=True)
+            update_data = user_data.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(db_user, key, value)
             self.session.commit()

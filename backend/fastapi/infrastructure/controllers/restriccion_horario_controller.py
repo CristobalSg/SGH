@@ -78,7 +78,7 @@ async def actualizar_restriccion_horario(
     """Actualizar parcialmente una restricción de horario"""
     try:
         # Convertir a dict y filtrar valores None
-        update_data = {k: v for k, v in restriccion_patch.dict(exclude_unset=True).items() if v is not None}
+        update_data = {k: v for k, v in restriccion_patch.model_dump(exclude_unset=True).items() if v is not None}
         
         if not update_data:
             raise HTTPException(

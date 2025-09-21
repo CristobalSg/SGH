@@ -9,7 +9,7 @@ class BloqueRepository:
 
     def create(self, bloque: BloqueCreate) -> Bloque:
         """Crear un nuevo bloque"""
-        db_bloque = Bloque(**bloque.dict())
+        db_bloque = Bloque(**bloque.model_dump())
         self.session.add(db_bloque)
         self.session.commit()
         self.session.refresh(db_bloque)
@@ -68,3 +68,33 @@ class BloqueRepository:
         from domain.models import Clase
         count = self.session.query(Clase).filter(Clase.bloque_id == bloque_id).count()
         return count > 0
+
+    def get_by_numero_and_dia(self, numero: int, dia_semana: int) -> Optional[Bloque]:
+        """Obtener bloque por número y día de la semana"""
+        return self.session.query(Bloque).filter(
+            Bloque.numero == numero, 
+            Bloque.dia_semana == dia_semana
+        ).first()
+
+    def get_conflictos_horario(self, dia_semana: int, hora_inicio, hora_fin) -> List[Bloque]:
+        """Obtener bloques que tienen conflictos de horario"""
+        return self.session.query(Bloque).filter(
+            Bloque.dia_semana == dia_semana,
+            # Verificar solapamiento de horarios
+            ((Bloque.hora_inicio <= hora_inicio) & (Bloque.hora_fin > hora_inicio)) |
+            ((Bloque.hora_inicio < hora_fin) & (Bloque.hora_fin >= hora_fin)) |
+            ((Bloque.hora_inicio >= hora_inicio) & (Bloque.hora_fin <= hora_fin))
+        ).all()
+
+    def tiene_clases_activas(self, bloque_id: int) -> bool:
+        """Verificar si un bloque tiene clases activas"""
+        from domain.models import Clase
+        count = self.session.query(Clase).filter(
+            Clase.bloque_id == bloque_id,
+            Clase.estado.in_(['programada', 'en_curso'])
+        ).count()
+        return count > 0
+
+    def get_bloques_libres(self, dia_semana: int = None) -> List[Bloque]:
+        """Obtener bloques que no tienen clases asignadas (alias para compatibilidad)"""
+        return self.get_bloques_disponibles(dia_semana)

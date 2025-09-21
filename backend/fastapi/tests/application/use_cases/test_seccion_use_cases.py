@@ -206,6 +206,7 @@ class TestSeccionUseCases:
         )
         
         self.mock_repo.get_by_id.return_value = existing_seccion
+        self.mock_repo.tiene_clases.return_value = False  # No tiene clases asociadas
         self.mock_repo.delete.return_value = True
 
         # Act
@@ -214,4 +215,5 @@ class TestSeccionUseCases:
         # Assert
         assert result is True
         self.mock_repo.get_by_id.assert_called_once_with(seccion_id)
+        self.mock_repo.tiene_clases.assert_called_once_with(seccion_id)
         self.mock_repo.delete.assert_called_once_with(seccion_id)
