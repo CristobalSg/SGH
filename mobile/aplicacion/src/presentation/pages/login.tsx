@@ -5,49 +5,28 @@ import {
 import './Login.css';
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // ✅ importar contexto de auth
 
 const Login: React.FC = () => {
   const history = useHistory();
+  const { login } = useAuth(); // ✅ función login del caso de uso
 
-  // Estados para inputs
   const [correo, setCorreo] = useState('');
-  const [password, setPassword] = useState('');
+  const [contraseña, setPassword] = useState('');
   const [showAlert, setShowAlert] = useState(false);
 
-  // Cuentas de prueba con datos completos
-  const cuentas: { 
-    [key: string]: { 
-      password: string; 
-      tipo: string; 
-      nombre: string; 
-    } 
-  } = {
-    "estudiante@uct.cl": { password: "estudiante", tipo: "estudiante", nombre: "Benjamin Carrasco" },
-    "admin@uct.cl": { password: "admin", tipo: "admin", nombre: "Administrador" },
-    "profesor@uct.cl": { password: "profesor", tipo: "profesor", nombre: "Profesor Pérez" },
-  };
+  const handleLogin = async () => {
+    try {
+      const user = await login(correo, contraseña); // 🔥 login contra backend
+      // puedes guardar más info en localStorage si quieres
+      //localStorage.setItem("nombre", user);
+      //localStorage.setItem("correo", user.email);
+      //localStorage.setItem("tipoUsuario", "estudiante"); // o lo que mande tu backend
 
-  const handleLogin = () => {
-    const cuenta = cuentas[correo.trim().toLowerCase()]; // normaliza correo
-    if (cuenta && cuenta.password === password) {
-      // Guardar datos en localStorage
-      localStorage.setItem('tipoUsuario', cuenta.tipo);
-      localStorage.setItem('nombre', cuenta.nombre);
-      localStorage.setItem('correo', correo.trim().toLowerCase());
-      // Redirigir según tipo de usuario
-      switch (cuenta.tipo) {
-        case "estudiante":
-          history.push("/tabs/tab1"); 
-          break;
-        case "admin":
-          history.push("/tabs/adminrestricciones"); 
-          break;
-        case "profesor":
-          history.push("/tabs/tab1"); 
-          break;
-      }
-    } else {
-      setShowAlert(true); // Mostrar alerta de error
+      // redirigir según lógica de negocio
+      history.push("/tabs/tab1");
+    } catch (error) {
+      setShowAlert(true);
     }
   };
 
@@ -79,7 +58,7 @@ const Login: React.FC = () => {
                     labelPlacement="floating"
                     type="password"
                     placeholder="Contraseña"
-                    value={password}
+                    value={contraseña}
                     onIonInput={e => setPassword(e.detail.value!)}
                   ></IonInput>
                 </IonItem>
