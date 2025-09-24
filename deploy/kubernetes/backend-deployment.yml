@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: sgh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sgh-backend
+  template:
+    metadata:
+      labels:
+        app: sgh-backend
+    spec:
+      containers:
+        - name: sgh-backend
+          image: registry.inf.uct.cl/omellado/sgh/backend
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: 100m
+              memory: "256Mi"
+          env:
+            - name: POSTGRES_DB
+              value: sgh_production
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: POSTGRES_HOST
+              value: postgres-cluster-rw.sgh.svc
+            - name: POSTGRES_PORT
+              value: 5432
+            - name: DB_URL
+              valueFrom: 
+                secretKeyRef:
+                  secret: postgres-url-secret
+                  key: url
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  secret: jwt-secret
+                  key: secret
+            - name: JWT_ALGORITHM
+              value: HS256
+            - name: JWT_EXPIRE_MINUTES
+              value: 30
+            - name: PYTHONPATH
+              value: /app
+            - name: PYTHONDONTWRITEBYTECODE
+              value: 1
+            - name: PYTHONUNBUFFERED
+              value: 1
+            - name: NODE_ENV
+              value: development
+            - name: CORS_ORIGINS
+              value: https://sgh.inf.uct.cl/

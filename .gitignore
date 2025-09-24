@@ -4,6 +4,7 @@
 .env.development
 .env.production
 .env.*.local
+env_development.txt
 
 # Docker
 docker-compose.override.yml
