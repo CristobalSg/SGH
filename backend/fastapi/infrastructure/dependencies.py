@@ -5,6 +5,7 @@ from typing import Optional
 from domain.entities import User
 from infrastructure.database.config import get_db
 from infrastructure.repositories.user_repository import SQLUserRepository
+from application.use_cases.user_management_use_cases import UserManagementUseCase
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
 
 def get_user_repository(db: Session = Depends(get_db)) -> SQLUserRepository:
@@ -59,3 +60,7 @@ def get_current_active_user(
             detail="Usuario inactivo"
         )
     return current_user
+
+
+def get_user_management_use_case() -> UserManagementUseCase:
+    return UserManagementUseCase(SQLUserRepository())

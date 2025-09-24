@@ -5,11 +5,11 @@ import {
 import './Login.css';
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // ✅ importar contexto de auth
+import { useAuth } from '../context/AuthContext';
 
 const Login: React.FC = () => {
   const history = useHistory();
-  const { login } = useAuth(); // ✅ función login del caso de uso
+  const { login } = useAuth();
 
   const [correo, setCorreo] = useState('');
   const [contraseña, setPassword] = useState('');
@@ -17,11 +17,11 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     try {
-      const user = await login(correo, contraseña); // 🔥 login contra backend
+      const data = await login(correo, contraseña);
       // puedes guardar más info en localStorage si quieres
-      //localStorage.setItem("nombre", user);
-      //localStorage.setItem("correo", user.email);
-      //localStorage.setItem("tipoUsuario", "estudiante"); // o lo que mande tu backend
+      localStorage.setItem("nombre", data.apellido);
+      localStorage.setItem("correo", data.email);
+      localStorage.setItem("tipoUsuario", data.nombre);
 
       // redirigir según lógica de negocio
       history.push("/tabs/tab1");

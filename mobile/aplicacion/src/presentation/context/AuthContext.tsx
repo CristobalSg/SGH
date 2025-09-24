@@ -8,7 +8,7 @@ const loginUseCase = new LoginUseCase(authRepository);
 
 interface AuthContextProps {
   user?: User;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
 }
 
@@ -21,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loggedUser = await loginUseCase.execute(email, password);
     setUser(loggedUser);
     localStorage.setItem("token", loggedUser.token || "");
+    return loggedUser
   };
 
   const logout = () => {

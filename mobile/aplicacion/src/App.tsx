@@ -60,7 +60,7 @@ const App: React.FC = () => {
                     exact
                     path="/tabs/restricciones"
                     render={() =>
-                      tipoUsuario !== "estudiante" ? (
+                      tipoUsuario !== "Estudiante" ? (
                         <Restricciones />
                       ) : (
                         <Redirect to="/tabs/tab1" />
@@ -107,7 +107,7 @@ const App: React.FC = () => {
                   </IonTabButton>
 
                   {/* Restricciones → mostrar solo profesor */}
-                  {tipoUsuario === "profesor" && (
+                  {tipoUsuario === "Profesor" && (
                     <IonTabButton tab="restricciones" href="/tabs/restricciones">
                       <IonIcon aria-hidden="true" icon={time} />
                       <IonLabel>Restricciones</IonLabel>

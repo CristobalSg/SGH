@@ -10,11 +10,16 @@ export class AuthApiRepository implements AuthRepository {
       email,
       contrasena,
     });
+
+    const data = response.data
+    //console.log("Data User", email, data.user.first_name, data.user.last_name)
+    //console.log("token", data.access_token)
+
     return {
       email,
-      nombre: response.data.nombre,
-      apellido: response.data.apellido,
-      token: response.data.access_token,
+      nombre: data.user.first_name,
+      apellido: data.user.last_name,
+      token: data.access_token,
     };
   }
 
