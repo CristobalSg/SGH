@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import os
 from jose import JWTError, jwt
@@ -11,8 +11,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configuración JWT desde variables de entorno
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback_secret_key_for_development")
+REFRESH_SECRET_KEY = os.getenv("JWT_REFRESH_SECRET_KEY", "fallback_refresh_secret_key_for_development")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "15"))  # 15 minutos
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "7"))  # 7 días
 
 class AuthService:
     @staticmethod
@@ -27,19 +29,32 @@ class AuthService:
 
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-        """Crea un token JWT"""
+        """Crea un token JWT de acceso"""
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = datetime.now(timezone.utc) + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "type": "access"})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
     @staticmethod
-    def verify_token(token: str) -> TokenData:
+    def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+        """Crea un token JWT de refresh"""
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.now(timezone.utc) + expires_delta
+        else:
+            expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        
+        to_encode.update({"exp": expire, "type": "refresh"})
+        encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    @staticmethod
+    def verify_token(token: str, token_type: str = "access") -> TokenData:
         """Verifica y decodifica un token JWT"""
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -48,11 +63,26 @@ class AuthService:
         )
         
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            email: str = payload.get("sub")
-            if email is None:
+            if token_type == "access":
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            elif token_type == "refresh":
+                payload = jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+            else:
                 raise credentials_exception
-            token_data = TokenData(email=email)
+            
+            email: str = payload.get("sub")
+            exp: int = payload.get("exp")
+            token_type_payload: str = payload.get("type")
+            
+            if email is None or token_type_payload != token_type:
+                raise credentials_exception
+                
+            token_data = TokenData(email=email, exp=exp)
             return token_data
         except JWTError:
             raise credentials_exception
+
+    @staticmethod
+    def verify_refresh_token(token: str) -> TokenData:
+        """Verifica específicamente un refresh token"""
+        return AuthService.verify_token(token, token_type="refresh")

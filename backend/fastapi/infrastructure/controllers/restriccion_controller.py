@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List
 from infrastructure.database.config import get_db
-from domain.entities import Restriccion, RestriccionCreate, RestriccionBase, RestriccionPatch
+from domain.entities import Restriccion, RestriccionCreate, RestriccionBase, RestriccionPatch, User
 from application.use_cases.restriccion_use_cases import RestriccionUseCases
 from infrastructure.repositories.restriccion_repository import RestriccionRepository
+from infrastructure.dependencies import get_current_active_user
 
 router = APIRouter(tags=["restricciones"])
 
@@ -49,7 +50,8 @@ async def get_restriccion(
 @router.post("/", response_model=Restriccion, status_code=status.HTTP_201_CREATED, summary="Crear nueva restricción")
 async def create_restriccion(
     restriccion_data: RestriccionCreate,
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     try:
         nueva_restriccion = use_cases.create(restriccion_data)
@@ -71,7 +73,8 @@ async def create_restriccion(
 async def update_restriccion_complete(
     restriccion_data: RestriccionBase,
     restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     try:
         update_data = {
@@ -108,7 +111,8 @@ async def update_restriccion_complete(
 async def update_restriccion_partial(
     restriccion_data: RestriccionPatch,
     restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
     try:
         # Validar que se envíen datos usando el modelo Pydantic
@@ -145,7 +149,8 @@ async def update_restriccion_partial(
 @router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar restricción")
 async def delete_restriccion(
     restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
+    current_user: User = Depends(get_current_active_user)
 ):
 
     try:

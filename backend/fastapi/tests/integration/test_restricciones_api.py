@@ -23,12 +23,12 @@ class TestRestriccionesIntegration:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
 
-    def test_create_restriccion_success(self, client, sample_restriccion_data):
+    def test_create_restriccion_success(self, authenticated_client, sample_restriccion_data):
         """Prueba POST /restricciones para crear una restricción exitosamente"""
         # Usar el docente_id creado en setup
         sample_restriccion_data["docente_id"] = self.docente_id
         
-        response = client.post("/restricciones/", json=sample_restriccion_data)
+        response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
@@ -40,7 +40,7 @@ class TestRestriccionesIntegration:
         assert data["restriccion_dura"] == sample_restriccion_data["restriccion_dura"]
         assert "id" in data
 
-    def test_create_restriccion_invalid_data(self, client):
+    def test_create_restriccion_invalid_data(self, authenticated_client):
         """Prueba POST /restricciones con datos inválidos"""
         invalid_data = {
             "docente_id": -1,  # ID negativo
@@ -49,11 +49,11 @@ class TestRestriccionesIntegration:
             "prioridad": 15  # Prioridad fuera de rango
         }
         
-        response = client.post("/restricciones/", json=invalid_data)
+        response = authenticated_client.post("/restricciones/", json=invalid_data)
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_create_restriccion_missing_fields(self, client):
+    def test_create_restriccion_missing_fields(self, authenticated_client):
         """Prueba POST /restricciones con campos requeridos faltantes"""
         incomplete_data = {
             "docente_id": self.docente_id,
@@ -61,20 +61,20 @@ class TestRestriccionesIntegration:
             # Faltan campos requeridos
         }
         
-        response = client.post("/restricciones/", json=incomplete_data)
+        response = authenticated_client.post("/restricciones/", json=incomplete_data)
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_get_restriccion_by_id_success(self, client, sample_restriccion_data):
+    def test_get_restriccion_by_id_success(self, authenticated_client, sample_restriccion_data):
         """Prueba GET /restricciones/{id} para obtener una restricción existente"""
         # Crear restricción primero
         sample_restriccion_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones/", json=sample_restriccion_data)
+        create_response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         created_restriccion = create_response.json()
         restriccion_id = created_restriccion["id"]
         
         # Obtener restricción por ID
-        response = client.get(f"/restricciones/{restriccion_id}")
+        response = authenticated_client.get(f"/restricciones/{restriccion_id}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -95,7 +95,7 @@ class TestRestriccionesIntegration:
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_get_all_restricciones_with_data(self, client, sample_restriccion_data):
+    def test_get_all_restricciones_with_data(self, authenticated_client, sample_restriccion_data):
         """Prueba GET /restricciones cuando hay restricciones en la base de datos"""
         # Crear múltiples restricciones
         sample_restriccion_data["docente_id"] = self.docente_id
@@ -105,11 +105,11 @@ class TestRestriccionesIntegration:
         restriccion2_data["tipo"] = "aula"
         restriccion2_data["valor"] = "Sala A"
         
-        client.post("/restricciones/", json=restriccion1_data)
-        client.post("/restricciones/", json=restriccion2_data)
+        authenticated_client.post("/restricciones/", json=restriccion1_data)
+        authenticated_client.post("/restricciones/", json=restriccion2_data)
         
         # Obtener todas las restricciones
-        response = client.get("/restricciones/")
+        response = authenticated_client.get("/restricciones/")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -118,15 +118,15 @@ class TestRestriccionesIntegration:
         assert any(restriccion["tipo"] == "horario" for restriccion in data)
         assert any(restriccion["tipo"] == "aula" for restriccion in data)
 
-    def test_update_restriccion_complete_success(self, client, sample_restriccion_data, sample_restriccion_update_data):
+    def test_update_restriccion_complete_success(self, authenticated_client, sample_restriccion_data, sample_restriccion_update_data):
         """Prueba PUT /restricciones/{id} para actualización completa"""
         # Crear restricción primero
         sample_restriccion_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones/", json=sample_restriccion_data)
+        create_response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         restriccion_id = create_response.json()["id"]
         
         # Actualizar restricción completa
-        response = client.put(f"/restricciones/{restriccion_id}", json=sample_restriccion_update_data)
+        response = authenticated_client.put(f"/restricciones/{restriccion_id}", json=sample_restriccion_update_data)
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -135,23 +135,23 @@ class TestRestriccionesIntegration:
         assert data["valor"] == sample_restriccion_update_data["valor"]
         assert data["prioridad"] == sample_restriccion_update_data["prioridad"]
 
-    def test_update_restriccion_complete_not_found(self, client, sample_restriccion_update_data):
+    def test_update_restriccion_complete_not_found(self, authenticated_client, sample_restriccion_update_data):
         """Prueba PUT /restricciones/{id} cuando la restricción no existe"""
-        response = client.put("/restricciones/999", json=sample_restriccion_update_data)
+        response = authenticated_client.put("/restricciones/999", json=sample_restriccion_update_data)
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "no encontrada" in response.json()["detail"]
 
-    def test_update_restriccion_partial_success(self, client, sample_restriccion_data, sample_restriccion_patch_data):
+    def test_update_restriccion_partial_success(self, authenticated_client, sample_restriccion_data, sample_restriccion_patch_data):
         """Prueba PATCH /restricciones/{id} para actualización parcial"""
         # Crear restricción primero
         sample_restriccion_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones/", json=sample_restriccion_data)
+        create_response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         created_data = create_response.json()
         restriccion_id = created_data["id"]
         
         # Actualizar restricción parcialmente
-        response = client.patch(f"/restricciones/{restriccion_id}", json=sample_restriccion_patch_data)
+        response = authenticated_client.patch(f"/restricciones/{restriccion_id}", json=sample_restriccion_patch_data)
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -162,53 +162,53 @@ class TestRestriccionesIntegration:
         assert data["tipo"] == sample_restriccion_data["tipo"]
         assert data["valor"] == sample_restriccion_data["valor"]
 
-    def test_update_restriccion_partial_empty_data(self, client, sample_restriccion_data):
+    def test_update_restriccion_partial_empty_data(self, authenticated_client, sample_restriccion_data):
         """Prueba PATCH /restricciones/{id} sin datos para actualizar"""
         # Crear restricción primero
         sample_restriccion_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones/", json=sample_restriccion_data)
+        create_response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         restriccion_id = create_response.json()["id"]
         
         # Intentar actualizar sin datos
-        response = client.patch(f"/restricciones/{restriccion_id}", json={})
+        response = authenticated_client.patch(f"/restricciones/{restriccion_id}", json={})
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert "No se proporcionaron datos" in response.json()["detail"]
 
-    def test_update_restriccion_partial_not_found(self, client, sample_restriccion_patch_data):
+    def test_update_restriccion_partial_not_found(self, authenticated_client, sample_restriccion_patch_data):
         """Prueba PATCH /restricciones/{id} cuando la restricción no existe"""
-        response = client.patch("/restricciones/999", json=sample_restriccion_patch_data)
+        response = authenticated_client.patch("/restricciones/999", json=sample_restriccion_patch_data)
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "no encontrada" in response.json()["detail"]
 
-    def test_delete_restriccion_success(self, client, sample_restriccion_data):
+    def test_delete_restriccion_success(self, authenticated_client, sample_restriccion_data):
         """Prueba DELETE /restricciones/{id} para eliminar una restricción"""
         # Crear restricción primero
         sample_restriccion_data["docente_id"] = self.docente_id
-        create_response = client.post("/restricciones/", json=sample_restriccion_data)
+        create_response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         restriccion_id = create_response.json()["id"]
         
         # Eliminar restricción
-        response = client.delete(f"/restricciones/{restriccion_id}")
+        response = authenticated_client.delete(f"/restricciones/{restriccion_id}")
         
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert response.content == b''
         
         # Verificar que la restricción fue eliminada
-        get_response = client.get(f"/restricciones/{restriccion_id}")
+        get_response = authenticated_client.get(f"/restricciones/{restriccion_id}")
         assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_delete_restriccion_not_found(self, client):
+    def test_delete_restriccion_not_found(self, authenticated_client):
         """Prueba DELETE /restricciones/{id} cuando la restricción no existe"""
-        response = client.delete("/restricciones/999")
+        response = authenticated_client.delete("/restricciones/999")
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "no encontrada" in response.json()["detail"]
 
-    def test_delete_restriccion_invalid_id(self, client):
+    def test_delete_restriccion_invalid_id(self, authenticated_client):
         """Prueba DELETE /restricciones/{id} con ID inválido"""
-        response = client.delete("/restricciones/0")
+        response = authenticated_client.delete("/restricciones/0")
         
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -225,54 +225,54 @@ class TestRestriccionesWorkflow:
         db_session.refresh(docente)
         self.docente_id = docente.id
 
-    def test_full_crud_workflow(self, client, sample_restriccion_data, sample_restriccion_update_data, sample_restriccion_patch_data):
+    def test_full_crud_workflow(self, authenticated_client, sample_restriccion_data, sample_restriccion_update_data, sample_restriccion_patch_data):
         """Prueba el flujo completo CRUD: Create, Read, Update, Delete"""
         sample_restriccion_data["docente_id"] = self.docente_id
         
         # 1. CREATE - Crear restricción
-        create_response = client.post("/restricciones/", json=sample_restriccion_data)
+        create_response = authenticated_client.post("/restricciones/", json=sample_restriccion_data)
         assert create_response.status_code == status.HTTP_201_CREATED
         created_data = create_response.json()
         restriccion_id = created_data["id"]
         
         # 2. READ - Obtener restricción creada
-        get_response = client.get(f"/restricciones/{restriccion_id}")
+        get_response = authenticated_client.get(f"/restricciones/{restriccion_id}")
         assert get_response.status_code == status.HTTP_200_OK
         assert get_response.json()["id"] == restriccion_id
         
         # 3. UPDATE (completa) - Actualizar restricción
-        update_response = client.put(f"/restricciones/{restriccion_id}", json=sample_restriccion_update_data)
+        update_response = authenticated_client.put(f"/restricciones/{restriccion_id}", json=sample_restriccion_update_data)
         assert update_response.status_code == status.HTTP_200_OK
         updated_data = update_response.json()
         assert updated_data["tipo"] == sample_restriccion_update_data["tipo"]
         
         # 4. UPDATE (parcial) - Actualizar parcialmente
-        patch_response = client.patch(f"/restricciones/{restriccion_id}", json=sample_restriccion_patch_data)
+        patch_response = authenticated_client.patch(f"/restricciones/{restriccion_id}", json=sample_restriccion_patch_data)
         assert patch_response.status_code == status.HTTP_200_OK
         patched_data = patch_response.json()
         assert patched_data["prioridad"] == sample_restriccion_patch_data["prioridad"]
         
         # 5. READ ALL - Verificar que aparece en la lista
-        list_response = client.get("/restricciones/")
+        list_response = authenticated_client.get("/restricciones/")
         assert list_response.status_code == status.HTTP_200_OK
         restricciones = list_response.json()
         assert len(restricciones) == 1
         assert restricciones[0]["id"] == restriccion_id
         
         # 6. DELETE - Eliminar restricción
-        delete_response = client.delete(f"/restricciones/{restriccion_id}")
+        delete_response = authenticated_client.delete(f"/restricciones/{restriccion_id}")
         assert delete_response.status_code == status.HTTP_204_NO_CONTENT
         
         # 7. VERIFY DELETE - Verificar que fue eliminada
-        final_get_response = client.get(f"/restricciones/{restriccion_id}")
+        final_get_response = authenticated_client.get(f"/restricciones/{restriccion_id}")
         assert final_get_response.status_code == status.HTTP_404_NOT_FOUND
         
         # 8. VERIFY EMPTY LIST - Verificar que la lista está vacía
-        final_list_response = client.get("/restricciones/")
+        final_list_response = authenticated_client.get("/restricciones/")
         assert final_list_response.status_code == status.HTTP_200_OK
         assert final_list_response.json() == []
 
-    def test_multiple_restricciones_management(self, client, sample_restriccion_data):
+    def test_multiple_restricciones_management(self, authenticated_client, sample_restriccion_data):
         """Prueba gestión de múltiples restricciones"""
         sample_restriccion_data["docente_id"] = self.docente_id
         created_ids = []
@@ -285,12 +285,12 @@ class TestRestriccionesWorkflow:
             data["valor"] = f"valor_{i}"
             data["prioridad"] = i + 1
             
-            response = client.post("/restricciones/", json=data)
+            response = authenticated_client.post("/restricciones/", json=data)
             assert response.status_code == status.HTTP_201_CREATED
             created_ids.append(response.json()["id"])
         
         # Verificar que todas aparecen en la lista
-        list_response = client.get("/restricciones/")
+        list_response = authenticated_client.get("/restricciones/")
         assert list_response.status_code == status.HTTP_200_OK
         restricciones = list_response.json()
         assert len(restricciones) == 3
@@ -300,10 +300,10 @@ class TestRestriccionesWorkflow:
         assert set(response_ids) == set(created_ids)
         
         # Eliminar una restricción
-        delete_response = client.delete(f"/restricciones/{created_ids[1]}")
+        delete_response = authenticated_client.delete(f"/restricciones/{created_ids[1]}")
         assert delete_response.status_code == status.HTTP_204_NO_CONTENT
         
         # Verificar que quedan solo 2
-        final_list_response = client.get("/restricciones/")
+        final_list_response = authenticated_client.get("/restricciones/")
         assert final_list_response.status_code == status.HTTP_200_OK
         assert len(final_list_response.json()) == 2

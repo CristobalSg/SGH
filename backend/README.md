@@ -1,547 +1,223 @@
+# Backend API - Sistema de Gestión de Horarios
 
----
+API REST desarrollada con **FastAPI** y **arquitectura hexagonal** para la gestión de horarios académicos.
 
-### **/backend/README.md**
+## 🛠️ Stack Tecnológico
+- **FastAPI** + *## 📝 Notas
 
-# Gestión de horarios API (Hexagonal + FastAPI)
+**Días de la semana**: 1=Lunes, 2=Martes, ..., 7=Domingo  
+**Formato hora**: `HH:MM` (ej: `"08:00"`, `"14:30"`)  
+**Códigos HTTP**: 200/201/204 (éxito), 400/401/404/409 (error cliente), 500 (error servidor)
 
-## 🛠️ Tecnologías Utilizadas
-- **FastAPI**: Framework web para APIs REST
-- **SQLAlchemy**: ORM para manejo de base de datos
-- **Alembic**: Migraciones de base de datos
-- **Pydantic**: Validación y serialización de datos
-- **PostgreSQL**: Base de datos relacional
-- **pytest**: Framework de pruebas unitarias
-- **pytest-cov**: Análisis de cobertura de código
+### Endpoints Disponibles
+- ✅ **Autenticación** (`/auth`) - Registro, login, información de usuario
+- ✅ **Restricciones** (`/restricciones`) - CRUD completo de restricciones generales
+- ✅ **Restricciones de Horario** (`/restricciones-horario`) - CRUD + consultas específicas
+- ✅ **Base de Datos** (`/db`) - Testing de conexión
+- ✅ **Sistema** (`/`, `/health`) - Información y estado
 
+### Próximos Endpoints
+- 🔄 **Docentes** (`/docentes`) - Gestión de docentes
+- 🔄 **Asignaturas** (`/asignaturas`) - Gestión de asignaturas  
+- 🔄 **Bloques** (`/bloques`) - Gestión de bloques horarios
+- 🔄 **Secciones** (`/secciones`) - Gestión de secciones
+- 🔄 **Clases** (`/clases`) - Gestión de clases programadaslchemy** + **PostgreSQL**
+- **Alembic** (migraciones) + **pytest** (testing)
+- **Docker** + **Docker Compose**
 
-## 📂 Estructura del Proyecto
+## 📂 Estructura (Arquitectura Hexagonal)
 ```
 fastapi/
-├── domain/              # Entidades y puertos (reglas del negocio)
-├── application/         # Casos de uso (orquestación del dominio)
-├── infrastructure/      # Adaptadores (repositorios, controladores HTTP, DB)
-├── tests/              # Pruebas unitarias e integración
-│   └── application/
-│       └── use_cases/
-├── migrations/         # Migraciones de base de datos (Alembic)
-├── main.py            # Composición de la app (inyección de dependencias)
-├── requirements.txt   # Dependencias del proyecto
-├── pytest.ini       # Configuración de pruebas
-└── Makefile.tests   # Comandos para ejecutar pruebas
+├── domain/              # Entidades y reglas de negocio
+├── application/         # Casos de uso
+├── infrastructure/      # Adaptadores (DB, HTTP, Auth)
+├── tests/              # Pruebas unitarias e integración  
+├── migrations/         # Migraciones de DB
+└── main.py            # Configuración de la aplicación
 ```
 
-## 🚀 Inicio Rápido con Docker
+## 🚀 Inicio Rápido
 
-### 1. Levantar los servicios
+### Levantar servicios
 ```bash
-# Desde el directorio raíz del proyecto
-cd /path/to/SGH
+# Desde la raíz del proyecto SGH
 docker compose --env-file .env.development up -d
+
+# Verificar estado
+curl http://localhost:8000/db/test-db
 ```
 
-### 2. Verificar que todo funciona
+### Comandos útiles
 ```bash
-# Probar la conexión a la base de datos
-curl -X GET http://localhost:8000/db/test-db
+# Rebuild tras cambios (ahora incluye make)
+docker compose --env-file .env.development build backend 
 
-# Ver los logs del backend
-docker compose logs backend
+# Levantar contenedores
+docker compose --env-file .env.development up -d
+
+# Logs y debug
+docker compose --env-file .env.development logs backend
+docker compose --env-file .env.development exec backend bash
+
+# Estado de los contenedores
+docker compose --env-file .env.development ps 
+
+# Detener
+docker compose --env-file .env.development down
 ```
 
-### 3. Comandos útiles
+## 🧪 Testing
+
 ```bash
-# Reconstruir después de cambios en código
-docker compose build backend --no-cache
-docker compose up -d
+# Todas las pruebas
+docker compose --env-file .env.development exec backend pytest -v
 
-# Entrar al contenedor para debugging
-docker compose exec backend bash
+# Comandos específicos con make (ahora completamente actualizados)
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-unit
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-integration
 
-# Detener servicios
-docker compose down
+# Pruebas específicas por módulo
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-docente
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-asignatura
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-clase
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-seccion
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-bloque
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-restriccion
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-restriccion-horario
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-auth
+
+# Pruebas de API específicas
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-auth-api
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-db-api
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-restricciones-api
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-restriccion-horario-api
+
+# Con cobertura específica
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-cov
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-docente-cov
+docker compose --env-file .env.development exec backend make -f Makefile.tests test-auth-cov
+
+# Ver ayuda completa con todos los comandos disponibles
+docker compose --env-file .env.development exec backend make -f Makefile.tests help
 ```
 
-## 🧪 Sistema de Pruebas
+## 📖 Documentación API
 
-### Comandos de Pruebas con Docker
-```bash
-# Ejecutar todas las pruebas
-docker compose exec backend pytest -v
-
-# Solo pruebas unitarias
-docker compose exec backend make -f Makefile.tests test-unit
-
-# Solo pruebas de integración  
-docker compose exec backend make -f Makefile.tests test-integration
-
-# Pruebas con reporte de cobertura
-docker compose exec backend make -f Makefile.tests test-cov
-```
-
-## 📖 API Documentation
-
-Una vez que el servidor esté ejecutándose, puedes acceder a la documentación interactiva de la API:
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+**Documentación interactiva**: http://localhost:8000/docs  
+**ReDoc**: http://localhost:8000/redoc
 
 ## 🎯 Endpoints Principales
 
-### Autenticación
-
-#### POST `/auth/login` - Iniciar sesión
+### Autenticación (`/auth`)
 ```bash
-# Request
-curl -X POST "http://localhost:8000/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@universidad.edu",
-    "password": "admin123"
-  }'
-```
-
-**Response (200 OK):**
-```json
+# Registro de usuario
+POST /auth/register
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "user": {
-    "id": 1,
-    "email": "admin@universidad.edu",
-    "nombre": "Administrador",
-    "apellido": "Sistema",
-    "role": "admin",
-    "is_active": true
-  }
-}
-```
-
-#### POST `/auth/register` - Registrar nuevo usuario
-```bash
-# Request
-curl -X POST "http://localhost:8000/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "docente@universidad.edu",
-    "password": "docente123",
-    "nombre": "Juan Carlos",
-    "apellido": "Pérez González",
-    "role": "docente"
-  }'
-```
-
-**Response (201 Created):**
-```json
-{
-  "id": 2,
   "email": "docente@universidad.edu",
+  "contrasena": "Docente123",
   "nombre": "Juan Carlos",
-  "apellido": "Pérez González",
-  "role": "docente",
-  "is_active": true,
-  "created_at": "2025-09-14T10:30:00Z"
+  "apellido": "Pérez"
 }
-```
 
-### Docentes
+# Login con formulario
+POST /auth/login
+Content-Type: application/x-www-form-urlencoded
+username=admin@universidad.edu&password=admin123
 
-#### GET `/docentes` - Listar docentes
-```bash
-# Request
-curl -X GET "http://localhost:8000/docentes?skip=0&limit=10" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-**Response (200 OK):**
-```json
+# Login con JSON
+POST /auth/login-json
 {
-  "items": [
-    {
-      "id": 1,
-      "nombre": "María Elena",
-      "apellido": "García Rodríguez",
-      "email": "maria.garcia@universidad.edu",
-      "telefono": "+56912345678",
-      "departamento": "Ingeniería Informática",
-      "especialidad": "Desarrollo de Software",
-      "is_active": true,
-      "created_at": "2025-09-01T08:00:00Z"
-    },
-    {
-      "id": 2,
-      "nombre": "Carlos Alberto",
-      "apellido": "Mendoza Silva",
-      "email": "carlos.mendoza@universidad.edu",
-      "telefono": "+56987654321",
-      "departamento": "Matemáticas",
-      "especialidad": "Análisis Numérico",
-      "is_active": true,
-      "created_at": "2025-09-02T09:15:00Z"
-    }
-  ],
-  "total": 25,
-  "page": 1,
-  "size": 10,
-  "pages": 3
+  "email": "admin@universidad.edu",
+  "password": "admin123"
 }
+
+# Obtener información del usuario actual
+GET /auth/me
+Authorization: Bearer YOUR_TOKEN
 ```
 
-#### POST `/docentes` - Crear nuevo docente
+### Restricciones (`/restricciones`)
 ```bash
-# Request
-curl -X POST "http://localhost:8000/docentes" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "nombre": "Ana Patricia",
-    "apellido": "López Fernández",
-    "email": "ana.lopez@universidad.edu",
-    "telefono": "+56998765432",
-    "departamento": "Ciencias de la Computación",
-    "especialidad": "Inteligencia Artificial"
-  }'
+GET    /restricciones                    # Listar todas las restricciones
+GET    /restricciones/{id}               # Obtener restricción por ID
+POST   /restricciones                    # Crear nueva restricción
+PUT    /restricciones/{id}               # Actualizar restricción completa
+PATCH  /restricciones/{id}               # Actualizar restricción parcial
+DELETE /restricciones/{id}               # Eliminar restricción
 ```
 
-**Response (201 Created):**
-```json
-{
-  "id": 3,
-  "nombre": "Ana Patricia",
-  "apellido": "López Fernández",
-  "email": "ana.lopez@universidad.edu",
-  "telefono": "+56998765432",
-  "departamento": "Ciencias de la Computación",
-  "especialidad": "Inteligencia Artificial",
-  "is_active": true,
-  "created_at": "2025-09-14T11:45:00Z"
-}
-```
-
-### Restricciones de Horario
-
-#### GET `/restricciones-horario` - Listar restricciones de horario
+### Restricciones de Horario (`/restricciones-horario`)
 ```bash
-# Request
-curl -X GET "http://localhost:8000/restricciones-horario?skip=0&limit=10" \
-  -H "Authorization: Bearer YOUR_TOKEN"
+# Operaciones CRUD básicas
+GET    /restricciones-horario            # Listar todas
+GET    /restricciones-horario/{id}       # Obtener por ID
+POST   /restricciones-horario            # Crear nueva
+PATCH  /restricciones-horario/{id}       # Actualizar parcial
+DELETE /restricciones-horario/{id}       # Eliminar
+
+# Consultas específicas
+GET    /restricciones-horario/docente/{docente_id}     # Por docente
+GET    /restricciones-horario/dia/{dia_semana}         # Por día (1-7)
+GET    /restricciones-horario/disponibilidad/{docente_id}  # Disponibilidad de docente
+DELETE /restricciones-horario/docente/{docente_id}     # Eliminar todas las restricciones de un docente
 ```
 
-**Response (200 OK):**
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "docente_id": 1,
-      "dia_semana": 1,
-      "hora_inicio": "08:00:00",
-      "hora_fin": "12:00:00",
-      "disponible": true,
-      "descripcion": "Disponible para clases matutinas - Lunes",
-      "docente": {
-        "id": 1,
-        "nombre": "María Elena",
-        "apellido": "García Rodríguez",
-        "email": "maria.garcia@universidad.edu"
-      }
-    },
-    {
-      "id": 2,
-      "docente_id": 1,
-      "dia_semana": 2,
-      "hora_inicio": "14:00:00",
-      "hora_fin": "18:00:00",
-      "disponible": false,
-      "descripcion": "No disponible - Reunión departamental",
-      "docente": {
-        "id": 1,
-        "nombre": "María Elena",
-        "apellido": "García Rodríguez",
-        "email": "maria.garcia@universidad.edu"
-      }
-    },
-    {
-      "id": 3,
-      "docente_id": 2,
-      "dia_semana": 3,
-      "hora_inicio": "09:00:00",
-      "hora_fin": "13:00:00",
-      "disponible": true,
-      "descripcion": "Disponible para laboratorios - Miércoles",
-      "docente": {
-        "id": 2,
-        "nombre": "Carlos Alberto",
-        "apellido": "Mendoza Silva",
-        "email": "carlos.mendoza@universidad.edu"
-      }
-    }
-  ],
-  "total": 45,
-  "page": 1,
-  "size": 10,
-  "pages": 5
-}
-```
-
-#### GET `/restricciones-horario/{id}` - Obtener restricción por ID
+### Base de Datos (`/db`)
 ```bash
-# Request
-curl -X GET "http://localhost:8000/restricciones-horario/1" \
-  -H "Authorization: Bearer YOUR_TOKEN"
+GET /db/test-db                          # Verificar conexión a la base de datos
 ```
 
-**Response (200 OK):**
-```json
-{
-  "id": 1,
-  "docente_id": 1,
-  "dia_semana": 1,
-  "hora_inicio": "08:00:00",
-  "hora_fin": "12:00:00",
-  "disponible": true,
-  "descripcion": "Disponible para clases matutinas - Lunes",
-  "created_at": "2025-09-10T08:00:00Z",
-  "updated_at": "2025-09-12T10:30:00Z",
-  "docente": {
-    "id": 1,
-    "nombre": "María Elena",
-    "apellido": "García Rodríguez",
-    "email": "maria.garcia@universidad.edu",
-    "departamento": "Ingeniería Informática"
-  }
-}
-```
-
-#### POST `/restricciones-horario` - Crear nueva restricción
+### Sistema
 ```bash
-# Request
+GET /                                    # Información de la API
+GET /health                              # Estado de salud del sistema
+```
+
+## 📋 Ejemplos de Uso
+
+### Crear Restricción de Horario
+```bash
 curl -X POST "http://localhost:8000/restricciones-horario" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
-    "docente_id": 2,
-    "dia_semana": 4,
-    "hora_inicio": "10:00",
-    "hora_fin": "14:00",
-    "disponible": true,
-    "descripcion": "Disponible para clases teóricas - Jueves"
-  }'
-```
-
-**Response (201 Created):**
-```json
-{
-  "id": 4,
-  "docente_id": 2,
-  "dia_semana": 4,
-  "hora_inicio": "10:00:00",
-  "hora_fin": "14:00:00",
-  "disponible": true,
-  "descripcion": "Disponible para clases teóricas - Jueves",
-  "created_at": "2025-09-14T12:00:00Z",
-  "updated_at": "2025-09-14T12:00:00Z"
-}
-```
-
-#### PUT `/restricciones-horario/{id}` - Actualizar restricción completa
-```bash
-# Request
-curl -X PUT "http://localhost:8000/restricciones-horario/4" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "docente_id": 2,
-    "dia_semana": 4,
-    "hora_inicio": "09:00",
-    "hora_fin": "13:00",
-    "disponible": true,
-    "descripcion": "Horario actualizado - Disponible jueves mañana"
-  }'
-```
-
-**Response (200 OK):**
-```json
-{
-  "id": 4,
-  "docente_id": 2,
-  "dia_semana": 4,
-  "hora_inicio": "09:00:00",
-  "hora_fin": "13:00:00",
-  "disponible": true,
-  "descripcion": "Horario actualizado - Disponible jueves mañana",
-  "created_at": "2025-09-14T12:00:00Z",
-  "updated_at": "2025-09-14T12:15:00Z"
-}
-```
-
-#### PATCH `/restricciones-horario/{id}` - Actualizar restricción parcial
-```bash
-# Request
-curl -X PATCH "http://localhost:8000/restricciones-horario/4" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "disponible": false,
-    "descripcion": "No disponible - Actividad especial"
-  }'
-```
-
-**Response (200 OK):**
-```json
-{
-  "id": 4,
-  "docente_id": 2,
-  "dia_semana": 4,
-  "hora_inicio": "09:00:00",
-  "hora_fin": "13:00:00",
-  "disponible": false,
-  "descripcion": "No disponible - Actividad especial",
-  "created_at": "2025-09-14T12:00:00Z",
-  "updated_at": "2025-09-14T12:30:00Z"
-}
-```
-
-#### DELETE `/restricciones-horario/{id}` - Eliminar restricción
-```bash
-# Request
-curl -X DELETE "http://localhost:8000/restricciones-horario/4" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-**Response (204 No Content):**
-```
-(Sin contenido - eliminación exitosa)
-```
-
-#### GET `/restricciones-horario/docente/{docente_id}` - Restricciones por docente
-```bash
-# Request
-curl -X GET "http://localhost:8000/restricciones-horario/docente/1" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-**Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
     "docente_id": 1,
     "dia_semana": 1,
-    "hora_inicio": "08:00:00",
-    "hora_fin": "12:00:00",
+    "hora_inicio": "08:00",
+    "hora_fin": "12:00",
     "disponible": true,
     "descripcion": "Disponible para clases matutinas - Lunes"
-  },
-  {
-    "id": 2,
-    "docente_id": 1,
-    "dia_semana": 2,
-    "hora_inicio": "14:00:00",
-    "hora_fin": "18:00:00",
-    "disponible": false,
-    "descripcion": "No disponible - Reunión departamental"
-  }
-]
+  }'
 ```
 
-#### GET `/restricciones-horario/dia/{dia_semana}` - Restricciones por día
+### Obtener Disponibilidad de Docente
 ```bash
-# Request
-curl -X GET "http://localhost:8000/restricciones-horario/dia/1?disponible=true" \
+curl -X GET "http://localhost:8000/restricciones-horario/disponibilidad/1" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-**Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "docente_id": 1,
-    "dia_semana": 1,
-    "hora_inicio": "08:00:00",
-    "hora_fin": "12:00:00",
-    "disponible": true,
-    "descripcion": "Disponible para clases matutinas - Lunes",
-    "docente": {
-      "nombre": "María Elena",
-      "apellido": "García Rodríguez",
-      "email": "maria.garcia@universidad.edu"
-    }
-  },
-  {
-    "id": 5,
-    "docente_id": 3,
-    "dia_semana": 1,
-    "hora_inicio": "14:00:00",
-    "hora_fin": "17:00:00",
-    "disponible": true,
-    "descripcion": "Disponible para tutorías - Lunes tarde",
-    "docente": {
-      "nombre": "Ana Patricia",
-      "apellido": "López Fernández",
-      "email": "ana.lopez@universidad.edu"
-    }
-  }
-]
-```
-
-### Testing Database
-- `GET /db/test-db` - Verificar conexión a la base de datos
-
+### Crear Restricción General
 ```bash
-# Request
-curl -X GET "http://localhost:8000/db/test-db"
+curl -X POST "http://localhost:8000/restricciones" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "titulo": "No disponible en feriados",
+    "descripcion": "Restricción para días feriados",
+    "tipo": "FERIADO",
+    "activa": true
+  }'
 ```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Conexión exitosa a la base de datos",
-  "database": "sgh_db",
-  "timestamp": "2025-09-14T12:45:00Z"
-}
-```
-
-## 📝 Códigos de Estado HTTP
-
-### Respuestas Exitosas
-- `200 OK` - Solicitud procesada exitosamente
-- `201 Created` - Recurso creado exitosamente
-- `204 No Content` - Eliminación exitosa
-
-### Errores del Cliente
-- `400 Bad Request` - Datos de entrada inválidos
-- `401 Unauthorized` - Token de autenticación requerido o inválido
-- `403 Forbidden` - Permisos insuficientes
-- `404 Not Found` - Recurso no encontrado
-- `409 Conflict` - Conflicto con el estado actual del recurso
-
-### Errores del Servidor
-- `500 Internal Server Error` - Error interno del servidor
 
 ## 🔐 Autenticación
 
-Todos los endpoints (excepto `/auth/login` y `/auth/register`) requieren autenticación mediante Bearer Token:
-
+Incluir en headers (excepto login/register):
 ```bash
-# Incluir en todas las peticiones autenticadas
--H "Authorization: Bearer YOUR_TOKEN_HERE"
+Authorization: Bearer YOUR_TOKEN
 ```
 
-## 📅 Referencia de Días de la Semana
+## � Notas
 
-Para el campo `dia_semana` en restricciones de horario:
-- `1` = Lunes
-- `2` = Martes  
-- `3` = Miércoles
-- `4` = Jueves
-- `5` = Viernes
-- `6` = Sábado
-- `7` = Domingo
-
-## ⏰ Formato de Horas
-
-Las horas deben enviarse en formato `HH:MM` (24 horas):
-- Ejemplo: `"08:00"`, `"14:30"`, `"23:59"`
-- La API responde con formato completo: `"08:00:00"`
+**Días de la semana**: 1=Lunes, 2=Martes, ..., 7=Domingo  
+**Formato hora**: `HH:MM` (ej: `"08:00"`, `"14:30"`)  
+**Códigos HTTP**: 200/201/204 (éxito), 400/401/404/409 (error cliente), 500 (error servidor)

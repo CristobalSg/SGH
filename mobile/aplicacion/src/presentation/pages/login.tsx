@@ -1,16 +1,33 @@
 import { 
   IonContent, IonHeader, IonPage, IonTitle, IonToolbar,
-  IonList, IonItem, IonInput, IonButton, IonCard, IonCardContent
+  IonList, IonItem, IonInput, IonButton, IonCard, IonCardContent, IonAlert
 } from '@ionic/react';
 import './Login.css';
+import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // ✅ importar contexto de auth
 
 const Login: React.FC = () => {
   const history = useHistory();
+  const { login } = useAuth(); // ✅ función login del caso de uso
 
-  const handleLogin = () => {
-    // Aquí puedes validar usuario/contraseña si quieres
-    history.push("/tabs/tab1"); // 👉 redirige al Tab1
+  const [correo, setCorreo] = useState('');
+  const [contraseña, setPassword] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+
+  const handleLogin = async () => {
+    try {
+      const user = await login(correo, contraseña); // 🔥 login contra backend
+      // puedes guardar más info en localStorage si quieres
+      //localStorage.setItem("nombre", user);
+      //localStorage.setItem("correo", user.email);
+      //localStorage.setItem("tipoUsuario", "estudiante"); // o lo que mande tu backend
+
+      // redirigir según lógica de negocio
+      history.push("/tabs/tab1");
+    } catch (error) {
+      setShowAlert(true);
+    }
   };
 
   return (
@@ -29,7 +46,9 @@ const Login: React.FC = () => {
                   <IonInput
                     label="Correo"
                     labelPlacement="floating"
-                    placeholder="estudiante@alu.uct.cl"
+                    placeholder="ej: estudiante@uct.cl"
+                    value={correo}
+                    onIonInput={e => setCorreo(e.detail.value!)}
                   ></IonInput>
                 </IonItem>
 
@@ -38,7 +57,9 @@ const Login: React.FC = () => {
                     label="Contraseña"
                     labelPlacement="floating"
                     type="password"
-                    placeholder="123"
+                    placeholder="Contraseña"
+                    value={contraseña}
+                    onIonInput={e => setPassword(e.detail.value!)}
                   ></IonInput>
                 </IonItem>
               </IonList>
@@ -49,6 +70,14 @@ const Login: React.FC = () => {
             </IonCardContent>
           </IonCard>
         </div>
+
+        <IonAlert
+          isOpen={showAlert}
+          onDidDismiss={() => setShowAlert(false)}
+          header={'Error'}
+          message={'Usuario o contraseña incorrectos'}
+          buttons={['OK']}
+        />
       </IonContent>
     </IonPage>
   );

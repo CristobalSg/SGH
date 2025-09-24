@@ -6,6 +6,9 @@ from sqlalchemy.pool import StaticPool
 
 from main import app
 from infrastructure.database.config import get_db, Base
+from infrastructure.auth import AuthService
+from domain.entities import UserCreate, User
+from infrastructure.repositories.user_repository import SQLUserRepository
 
 # Base de datos en memoria para las pruebas
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -127,8 +130,8 @@ def sample_restriccion_horario_data():
     return {
         "docente_id": 1,
         "dia_semana": 1,  # Lunes
-        "hora_inicio": "08:00",
-        "hora_fin": "10:00",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "10:00:00",
         "disponible": True,
         "descripcion": "Disponible en la mañana"
     }
@@ -189,3 +192,60 @@ def sample_clase_data():
         "fecha": "2024-09-14",
         "estado": "programada"
     }
+
+
+@pytest.fixture
+def test_user(db_session):
+    """Crea un usuario de prueba en la base de datos"""
+    user_repo = SQLUserRepository(db_session)
+    user_data = UserCreate(
+        email="testuser@example.com",
+        contrasena="TestPassword123!",
+        nombre="Test",
+        apellido="User"
+    )
+    user = user_repo.create(user_data)
+    return user
+
+
+@pytest.fixture
+def access_token(test_user):
+    """Genera un token de acceso válido para el usuario de prueba"""
+    return AuthService.create_access_token(data={"sub": test_user.email})
+
+
+@pytest.fixture
+def auth_headers(access_token):
+    """Headers de autorización con token válido"""
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+def authenticated_client(client, auth_headers):
+    """Cliente con autenticación configurada automáticamente"""
+    class AuthenticatedClient:
+        def __init__(self, client, auth_headers):
+            self.client = client
+            self.auth_headers = auth_headers
+        
+        def get(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.get(url, **kwargs)
+        
+        def post(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.post(url, **kwargs)
+        
+        def put(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.put(url, **kwargs)
+        
+        def patch(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.patch(url, **kwargs)
+        
+        def delete(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.delete(url, **kwargs)
+    
+    return AuthenticatedClient(client, auth_headers)

@@ -9,7 +9,7 @@ class AsignaturaRepository:
 
     def create(self, asignatura: AsignaturaCreate) -> Asignatura:
         """Crear una nueva asignatura"""
-        db_asignatura = Asignatura(**asignatura.dict())
+        db_asignatura = Asignatura(**asignatura.model_dump())
         self.session.add(db_asignatura)
         self.session.commit()
         self.session.refresh(db_asignatura)

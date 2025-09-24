@@ -9,7 +9,7 @@ class SalaRepository:
 
     def create(self, sala: SalaCreate) -> Sala:
         """Crear una nueva sala"""
-        db_sala = Sala(**sala.dict())
+        db_sala = Sala(**sala.model_dump())
         self.session.add(db_sala)
         self.session.commit()
         self.session.refresh(db_sala)

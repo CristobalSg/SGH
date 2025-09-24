@@ -1,14 +1,15 @@
 from datetime import time, datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, model_validator
 import re
 
 class UserBase(BaseModel):
     email: EmailStr = Field(..., description="Email del usuario")
-    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
-    apellido: str = Field(..., min_length=2, max_length=100, description="Apellido del usuario")
+    first_name: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
+    last_name: str = Field(..., min_length=2, max_length=100, description="Apellido del usuario")
     
-    @validator('nombre', 'apellido')
+    @field_validator('first_name', 'last_name')
+    @classmethod
     def validate_names(cls, v):
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", v.strip()):
             raise ValueError('El nombre solo puede contener letras y espacios')
@@ -17,7 +18,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del usuario")
     
-    @validator('contrasena')
+    @field_validator('contrasena')
+    @classmethod
     def validate_contrasena(cls, v):
         if not re.search(r"[A-Z]", v):
             raise ValueError('La contraseña debe contener al menos una letra mayúscula')
@@ -28,21 +30,20 @@ class UserCreate(UserBase):
         return v
 
 class UserUpdate(BaseModel):
-    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
-    apellido: Optional[str] = Field(None, min_length=2, max_length=100)
+    first_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    last_name: Optional[str] = Field(None, min_length=2, max_length=100)
 
 class User(BaseModel):
     id: int
     email: EmailStr
-    nombre: str
-    apellido: str = Field(default="")
+    first_name: str
+    last_name: str = Field(default="")
     is_active: bool = Field(default=True, description="Estado activo del usuario")
     is_superuser: bool = Field(default=False, description="Es superusuario")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="Email del usuario")
@@ -50,18 +51,25 @@ class UserLogin(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
-    expires_in: int
+    expires_in: int  # En segundos
+    user: 'User'  # Información del usuario
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+    exp: Optional[int] = None
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 class DocenteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del docente")
     apellido: str = Field(..., min_length=2, max_length=100, description="Apellido del docente")
     email: EmailStr = Field(..., description="Email del docente")
     
-    @validator('nombre')
+    @field_validator('nombre')
+    @classmethod
     def validate_nombre(cls, v):
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", v.strip()):
             raise ValueError('El nombre solo puede contener letras y espacios')
@@ -73,8 +81,8 @@ class DocenteCreate(DocenteBase):
 class Docente(DocenteBase):
     id: int
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 class RestriccionBase(BaseModel):
     tipo: str = Field(..., min_length=1, max_length=50, description="Tipo de restricción")
@@ -83,14 +91,16 @@ class RestriccionBase(BaseModel):
     restriccion_blanda: Optional[str] = Field(None, max_length=255, description="Restricción blanda opcional")
     restriccion_dura: Optional[str] = Field(None, max_length=255, description="Restricción dura opcional")
     
-    @validator('tipo')
+    @field_validator('tipo')
+    @classmethod
     def validate_tipo(cls, v):
         tipos_validos = ['horario', 'aula', 'materia', 'periodo', 'disponibilidad']
         if v.lower() not in tipos_validos:
             raise ValueError(f'Tipo debe ser uno de: {", ".join(tipos_validos)}')
         return v.lower()
     
-    @validator('valor')
+    @field_validator('valor')
+    @classmethod
     def validate_valor(cls, v):
         if not v.strip():
             raise ValueError('El valor no puede estar vacío')
@@ -105,21 +115,22 @@ class Restriccion(RestriccionBase):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 class BloqueBase(BaseModel):
     dia_semana: int = Field(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)")
     hora_inicio: time = Field(..., description="Hora de inicio del bloque")
     hora_fin: time = Field(..., description="Hora de fin del bloque")
     
-    @validator('hora_fin')
-    def validate_hora_fin(cls, v, values):
-        if 'hora_inicio' in values and v <= values['hora_inicio']:
+    @model_validator(mode='after')
+    def validate_hours(self):
+        if self.hora_fin <= self.hora_inicio:
             raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
-        return v
+        return self
     
-    @validator('dia_semana')
+    @field_validator('dia_semana')
+    @classmethod
     def validate_dia_semana(cls, v):
         dias_validos = [0, 1, 2, 3, 4, 5, 6]  # 0=Domingo, 1=Lunes, ..., 6=Sábado
         if v not in dias_validos:
@@ -131,8 +142,8 @@ class BloqueCreate(BloqueBase):
 
 class Bloque(BloqueBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 class RestriccionHorarioBase(BaseModel):
     dia_semana: int = Field(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)")
@@ -141,19 +152,21 @@ class RestriccionHorarioBase(BaseModel):
     disponible: bool = Field(..., description="Indica si el docente está disponible en este horario")
     descripcion: Optional[str] = Field(None, max_length=255, description="Descripción opcional de la restricción")
     
-    @validator('hora_fin')
-    def validate_hora_fin(cls, v, values):
-        if 'hora_inicio' in values and v <= values['hora_inicio']:
+    @model_validator(mode='after')
+    def validate_hours(self):
+        if self.hora_fin <= self.hora_inicio:
             raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
-        return v
+        return self
     
-    @validator('dia_semana')
+    @field_validator('dia_semana')
+    @classmethod
     def validate_dia_semana(cls, v):
         if v not in range(0, 7):
             raise ValueError('Día de la semana debe estar entre 0 (Domingo) y 6 (Sábado)')
         return v
     
-    @validator('descripcion')
+    @field_validator('descripcion')
+    @classmethod
     def validate_descripcion(cls, v):
         if v is not None and not v.strip():
             return None
@@ -165,8 +178,8 @@ class RestriccionHorarioCreate(RestriccionHorarioBase):
 class RestriccionHorario(RestriccionHorarioBase):
     id: int
     docente_id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 # ========== ASIGNATURA DTOs ==========
 class AsignaturaBase(BaseModel):
@@ -174,13 +187,15 @@ class AsignaturaBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre de la asignatura")
     creditos: int = Field(..., ge=1, le=20, description="Número de créditos (1-20)")
     
-    @validator('codigo')
+    @field_validator('codigo')
+    @classmethod
     def validate_codigo(cls, v):
         if not re.match(r"^[A-Z0-9-]+$", v.strip().upper()):
             raise ValueError('El código debe contener solo letras mayúsculas, números y guiones')
         return v.strip().upper()
     
-    @validator('nombre')
+    @field_validator('nombre')
+    @classmethod
     def validate_nombre(cls, v):
         if not v.strip():
             raise ValueError('El nombre no puede estar vacío')
@@ -191,8 +206,8 @@ class AsignaturaCreate(AsignaturaBase):
 
 class Asignatura(AsignaturaBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 # ========== SECCION DTOs ==========
 class SeccionBase(BaseModel):
@@ -201,7 +216,8 @@ class SeccionBase(BaseModel):
     semestre: int = Field(..., ge=1, le=2, description="Semestre (1 o 2)")
     cupos: int = Field(..., ge=1, le=100, description="Número de cupos disponibles")
     
-    @validator('codigo')
+    @field_validator('codigo')
+    @classmethod
     def validate_codigo(cls, v):
         if not re.match(r"^[A-Z0-9-]+$", v.strip().upper()):
             raise ValueError('El código debe contener solo letras mayúsculas, números y guiones')
@@ -218,8 +234,8 @@ class Seccion(SeccionBase):
     docente_id: int = Field(..., gt=0, description="ID del docente")
     periodo: str = Field(..., description="Periodo académico")
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 # ========== SALA DTOs ==========
 class SalaBase(BaseModel):
@@ -228,13 +244,15 @@ class SalaBase(BaseModel):
     capacidad: int = Field(..., ge=1, le=500, description="Capacidad de la sala")
     tipo: str = Field(..., min_length=1, max_length=50, description="Tipo de sala")
     
-    @validator('codigo')
+    @field_validator('codigo')
+    @classmethod
     def validate_codigo(cls, v):
         if not re.match(r"^[A-Z0-9-]+$", v.strip().upper()):
             raise ValueError('El código debe contener solo letras mayúsculas, números y guiones')
         return v.strip().upper()
     
-    @validator('tipo')
+    @field_validator('tipo')
+    @classmethod
     def validate_tipo(cls, v):
         tipos_validos = ['aula', 'laboratorio', 'auditorio', 'taller', 'sala_conferencias']
         if v.lower() not in tipos_validos:
@@ -246,14 +264,15 @@ class SalaCreate(SalaBase):
 
 class Sala(SalaBase):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 # ========== CLASE DTOs ==========
 class ClaseBase(BaseModel):
     estado: str = Field(..., min_length=1, max_length=20, description="Estado de la clase")
     
-    @validator('estado')
+    @field_validator('estado')
+    @classmethod
     def validate_estado(cls, v):
         estados_validos = ['programada', 'en_curso', 'finalizada', 'cancelada', 'suspendida']
         if v.lower() not in estados_validos:
@@ -273,8 +292,8 @@ class Clase(ClaseBase):
     bloque_id: int
     fecha: str = Field(..., description="Fecha de la clase en formato YYYY-MM-DD")
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+from_attributes=True)
 
 # ========== DTOs para operaciones complejas ==========
 class RestriccionPatch(BaseModel):
@@ -285,7 +304,8 @@ class RestriccionPatch(BaseModel):
     restriccion_blanda: Optional[str] = Field(None, max_length=255)
     restriccion_dura: Optional[str] = Field(None, max_length=255)
     
-    @validator('tipo')
+    @field_validator('tipo')
+    @classmethod
     def validate_tipo(cls, v):
         if v is None:
             return v
@@ -302,9 +322,10 @@ class RestriccionHorarioPatch(BaseModel):
     disponible: Optional[bool] = None
     descripcion: Optional[str] = Field(None, max_length=255)
     
-    @validator('hora_fin')
-    def validate_hora_fin(cls, v, values):
-        if v is not None and 'hora_inicio' in values and values['hora_inicio'] is not None:
-            if v <= values['hora_inicio']:
-                raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
-        return v
+    @model_validator(mode='after')
+    def validate_hours(self):
+        if (self.hora_fin is not None and 
+            self.hora_inicio is not None and 
+            self.hora_fin <= self.hora_inicio):
+            raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
+        return self

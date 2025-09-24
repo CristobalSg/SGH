@@ -96,7 +96,7 @@ class TestBloqueUseCases:
             hora_fin="09:30",
             dia_semana=1
         )
-        self.mock_repo.get_by_numero_and_dia.return_value = None  # No existe
+        self.mock_repo.get_conflictos_horario.return_value = []  # No hay conflictos
         self.mock_repo.create.return_value = expected_bloque
 
         # Act
@@ -104,7 +104,8 @@ class TestBloqueUseCases:
 
         # Assert
         assert result == expected_bloque
-        self.mock_repo.get_by_numero_and_dia.assert_called_once_with(1, 1)
+        from datetime import time
+        self.mock_repo.get_conflictos_horario.assert_called_once_with(1, time(8, 0), time(9, 30))
         self.mock_repo.create.assert_called_once_with(bloque_data)
 
     def test_create_bloque_already_exists(self):
@@ -176,6 +177,7 @@ class TestBloqueUseCases:
         )
         
         self.mock_repo.get_by_id.return_value = existing_bloque
+        self.mock_repo.tiene_clases_activas.return_value = False  # No tiene clases activas
         self.mock_repo.delete.return_value = True
 
         # Act

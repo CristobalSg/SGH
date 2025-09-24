@@ -10,7 +10,7 @@ class RestriccionHorarioRepository:
 
     def create(self, restriccion: RestriccionHorarioCreate) -> RestriccionHorario:
         """Crear una nueva restricción de horario"""
-        db_restriccion = RestriccionHorario(**restriccion.dict())
+        db_restriccion = RestriccionHorario(**restriccion.model_dump())
         self.session.add(db_restriccion)
         self.session.commit()
         self.session.refresh(db_restriccion)
