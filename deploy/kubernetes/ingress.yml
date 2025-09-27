@@ -1,13 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: overleaf-ingress
-  namespace: overleaf
+  name: sgh
+  namespace: sgh
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     external-dns.alpha.kubernetes.io/hostname: sgh.inf.uct.cl
     external-dns.alpha.kubernetes.io/target: proxy.inf.uct.cl
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target:  /
 spec:
   ingressClassName: nginx
   tls:
@@ -21,13 +21,13 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: sgh-frontend
+                name: frontend
                 port:
                   number: 3000
           - path: /api
             pathType: Prefix
             backend:
               service:
-                name: sgh-backend
+                name: backend
                 port:
                   number: 8000
