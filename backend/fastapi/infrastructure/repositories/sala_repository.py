@@ -9,7 +9,14 @@ class SalaRepository:
 
     def create(self, sala: SalaCreate) -> Sala:
         """Crear una nueva sala"""
-        db_sala = Sala(**sala.model_dump())
+        db_sala = Sala(
+            edificio_id=sala.edificio_id,
+            codigo=sala.codigo,
+            capacidad=sala.capacidad,
+            tipo=sala.tipo,
+            disponible=sala.disponible,
+            equipamiento=sala.equipamiento
+        )
         self.session.add(db_sala)
         self.session.commit()
         self.session.refresh(db_sala)
@@ -41,14 +48,18 @@ class SalaRepository:
         return query.all()
 
     def get_salas_disponibles(self, bloque_id: int = None) -> List[Sala]:
-        """Obtener salas que no tienen clases en un bloque específico"""
+        """Obtener salas disponibles y opcionalmente que no tienen clases en un bloque específico"""
         from domain.models import Clase
-        query = self.session.query(Sala)
+        query = self.session.query(Sala).filter(Sala.disponible == True)
         if bloque_id:
             query = query.outerjoin(Clase).filter(
                 (Clase.sala_id == None) | (Clase.bloque_id != bloque_id)
             )
         return query.all()
+
+    def get_by_edificio(self, edificio_id: int) -> List[Sala]:
+        """Obtener salas por edificio"""
+        return self.session.query(Sala).filter(Sala.edificio_id == edificio_id).all()
 
     def search_by_codigo_or_tipo(self, search_term: str) -> List[Sala]:
         """Buscar salas por código o tipo"""

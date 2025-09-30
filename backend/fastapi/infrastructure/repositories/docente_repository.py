@@ -9,7 +9,10 @@ class DocenteRepository:
 
     def create(self, docente: DocenteCreate) -> Docente:
         """Crear un nuevo docente"""
-        db_docente = Docente(**docente.model_dump())
+        db_docente = Docente(
+            user_id=docente.user_id,
+            departamento=docente.departamento
+        )
         self.session.add(db_docente)
         self.session.commit()
         self.session.refresh(db_docente)
@@ -19,9 +22,13 @@ class DocenteRepository:
         """Obtener docente por ID"""
         return self.session.query(Docente).filter(Docente.id == docente_id).first()
 
-    def get_by_email(self, email: str) -> Optional[Docente]:
-        """Obtener docente por email"""
-        return self.session.query(Docente).filter(Docente.email == email).first()
+    def get_by_user_id(self, user_id: int) -> Optional[Docente]:
+        """Obtener docente por user_id"""
+        return self.session.query(Docente).filter(Docente.user_id == user_id).first()
+
+    def get_by_departamento(self, departamento: str) -> List[Docente]:
+        """Obtener docentes por departamento"""
+        return self.session.query(Docente).filter(Docente.departamento == departamento).all()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Docente]:
         """Obtener todos los docentes con paginación"""
