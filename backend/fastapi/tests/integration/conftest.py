@@ -119,8 +119,41 @@ def sample_user_data():
     return {
         "email": "test@example.com",
         "contrasena": "Password123!",
-        "nombre": "Test",
-        "apellido": "User"
+        "nombre": "Test User",
+        "rol": "docente"
+    }
+
+
+@pytest.fixture
+def sample_admin_user_data():
+    """Datos de muestra para crear un usuario administrador"""
+    return {
+        "email": "admin@example.com",
+        "contrasena": "AdminPass123!",
+        "nombre": "Admin User",
+        "rol": "administrador"
+    }
+
+
+@pytest.fixture
+def sample_docente_user_data():
+    """Datos de muestra para crear un usuario docente"""
+    return {
+        "email": "docente@example.com",
+        "contrasena": "DocentePass123!",
+        "nombre": "Docente User",
+        "rol": "docente"
+    }
+
+
+@pytest.fixture
+def sample_estudiante_user_data():
+    """Datos de muestra para crear un usuario estudiante"""
+    return {
+        "email": "estudiante@example.com",
+        "contrasena": "EstudiantePass123!",
+        "nombre": "Estudiante User",
+        "rol": "estudiante"
     }
 
 

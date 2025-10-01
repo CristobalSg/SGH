@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from domain.models import User
 from domain.entities import UserCreate, UserUpdate
 from infrastructure.auth import AuthService
@@ -27,12 +27,22 @@ class SQLUserRepository:
         return db_user
 
     def get_by_id(self, user_id: int) -> Optional[User]:
-        """Obtener usuario por ID"""
-        return self.session.query(User).filter(User.id == user_id).first()
+        """Obtener usuario por ID con las relaciones cargadas"""
+        return (self.session.query(User)
+                .options(joinedload(User.docente))
+                .options(joinedload(User.estudiante))
+                .options(joinedload(User.administrador))
+                .filter(User.id == user_id)
+                .first())
 
     def get_by_email(self, email: str) -> Optional[User]:
-        """Obtener usuario por email"""
-        return self.session.query(User).filter(User.email == email).first()
+        """Obtener usuario por email con las relaciones cargadas"""
+        return (self.session.query(User)
+                .options(joinedload(User.docente))
+                .options(joinedload(User.estudiante))
+                .options(joinedload(User.administrador))
+                .filter(User.email == email)
+                .first())
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[User]:
         """Obtener todos los usuarios con paginación"""
