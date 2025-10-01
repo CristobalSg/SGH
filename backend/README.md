@@ -49,7 +49,7 @@ curl http://localhost:8000/db/test-db
 
 ### Comandos útiles
 ```bash
-# Rebuild tras cambios (ahora incluye make)
+# Rebuild tras cambios
 docker compose --env-file .env.development build backend 
 
 # Levantar contenedores

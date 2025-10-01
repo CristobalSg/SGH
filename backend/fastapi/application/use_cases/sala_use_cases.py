@@ -2,10 +2,12 @@ from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import SalaCreate, Sala
 from infrastructure.repositories.sala_repository import SalaRepository
+from infrastructure.repositories.edificio_repository import SQLEdificioRepository
 
 class SalaUseCases:
-    def __init__(self, sala_repository: SalaRepository):
+    def __init__(self, sala_repository: SalaRepository, edificio_repository: SQLEdificioRepository):
         self.sala_repository = sala_repository
+        self.edificio_repository = edificio_repository
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Sala]:
         """Obtener todas las salas con paginación"""
@@ -33,6 +35,14 @@ class SalaUseCases:
 
     def create(self, sala_data: SalaCreate) -> Sala:
         """Crear una nueva sala"""
+        # Verificar que el edificio existe
+        edificio = self.edificio_repository.get_by_id(sala_data.edificio_id)
+        if not edificio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Edificio con id {sala_data.edificio_id} no encontrado"
+            )
+        
         # Verificar si el código ya existe
         existing_sala = self.sala_repository.get_by_codigo(sala_data.codigo)
         if existing_sala:
@@ -42,6 +52,24 @@ class SalaUseCases:
             )
         
         return self.sala_repository.create(sala_data)
+
+    def get_by_edificio(self, edificio_id: int) -> List[Sala]:
+        """Obtener salas por edificio"""
+        # Verificar que el edificio existe
+        edificio = self.edificio_repository.get_by_id(edificio_id)
+        if not edificio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Edificio con id {edificio_id} no encontrado"
+            )
+        
+        salas = self.sala_repository.get_by_edificio(edificio_id)
+        if not salas:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No hay salas en el edificio {edificio_id}"
+            )
+        return salas
 
     def update(self, sala_id: int, **update_data) -> Sala:
         """Actualizar una sala"""

@@ -4,16 +4,25 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, mo
 import re
 
 class UserBase(BaseModel):
+    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
     email: EmailStr = Field(..., description="Email del usuario")
-    first_name: str = Field(..., min_length=2, max_length=100, description="Nombre del usuario")
-    last_name: str = Field(..., min_length=2, max_length=100, description="Apellido del usuario")
+    rol: str = Field(..., description="Rol del usuario (docente, estudiante, administrador)")
+    activo: bool = Field(default=True, description="Estado activo del usuario")
     
-    @field_validator('first_name', 'last_name')
+    @field_validator('nombre')
     @classmethod
-    def validate_names(cls, v):
+    def validate_nombre(cls, v):
         if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", v.strip()):
             raise ValueError('El nombre solo puede contener letras y espacios')
-        return v.strip().title()
+        return v.strip()
+    
+    @field_validator('rol')
+    @classmethod
+    def validate_rol(cls, v):
+        roles_validos = ['docente', 'estudiante', 'administrador']
+        if v.lower() not in roles_validos:
+            raise ValueError(f'Rol debe ser uno de: {", ".join(roles_validos)}')
+        return v.lower()
 
 class UserCreate(UserBase):
     contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del usuario")
@@ -30,16 +39,15 @@ class UserCreate(UserBase):
         return v
 
 class UserUpdate(BaseModel):
-    first_name: Optional[str] = Field(None, min_length=2, max_length=100)
-    last_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
+    activo: Optional[bool] = None
 
 class User(BaseModel):
     id: int
+    nombre: str
     email: EmailStr
-    first_name: str
-    last_name: str = Field(default="")
-    is_active: bool = Field(default=True, description="Estado activo del usuario")
-    is_superuser: bool = Field(default=False, description="Es superusuario")
+    rol: str
+    activo: bool = Field(default=True, description="Estado activo del usuario")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     
@@ -64,32 +72,73 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 class DocenteBase(BaseModel):
-    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del docente")
-    apellido: str = Field(..., min_length=2, max_length=100, description="Apellido del docente")
-    email: EmailStr = Field(..., description="Email del docente")
-    
-    @field_validator('nombre')
-    @classmethod
-    def validate_nombre(cls, v):
-        if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", v.strip()):
-            raise ValueError('El nombre solo puede contener letras y espacios')
-        return v.strip().title()
+    departamento: Optional[str] = Field(None, description="Departamento del docente")
 
 class DocenteCreate(DocenteBase):
-    contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del docente")
+    user_id: int = Field(..., gt=0, description="ID del usuario asociado")
 
 class Docente(DocenteBase):
     id: int
+    user_id: int
     
-    model_config = ConfigDict(
-from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+class EstudianteBase(BaseModel):
+    matricula: Optional[str] = Field(None, description="Matrícula del estudiante")
+
+class EstudianteCreate(EstudianteBase):
+    user_id: int = Field(..., gt=0, description="ID del usuario asociado")
+
+class Estudiante(EstudianteBase):
+    id: int
+    user_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class AdministradorBase(BaseModel):
+    permisos: Optional[str] = Field(None, description="Permisos del administrador")
+
+class AdministradorCreate(AdministradorBase):
+    user_id: int = Field(..., gt=0, description="ID del usuario asociado")
+
+class Administrador(AdministradorBase):
+    id: int
+    user_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class CampusBase(BaseModel):
+    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del campus")
+    direccion: Optional[str] = Field(None, description="Dirección del campus")
+
+class CampusCreate(CampusBase):
+    pass
+
+class Campus(CampusBase):
+    id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class EdificioBase(BaseModel):
+    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del edificio")
+    pisos: Optional[int] = Field(None, ge=1, description="Número de pisos")
+
+class EdificioCreate(EdificioBase):
+    campus_id: int = Field(..., gt=0, description="ID del campus")
+
+class Edificio(EdificioBase):
+    id: int
+    campus_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class RestriccionBase(BaseModel):
     tipo: str = Field(..., min_length=1, max_length=50, description="Tipo de restricción")
     valor: str = Field(..., min_length=1, max_length=255, description="Valor de la restricción")
     prioridad: int = Field(..., ge=1, le=10, description="Prioridad de la restricción (1-10)")
-    restriccion_blanda: Optional[str] = Field(None, max_length=255, description="Restricción blanda opcional")
-    restriccion_dura: Optional[str] = Field(None, max_length=255, description="Restricción dura opcional")
+    restriccion_blanda: bool = Field(default=False, description="Es restricción blanda")
+    restriccion_dura: bool = Field(default=False, description="Es restricción dura")
+    activa: bool = Field(default=True, description="Restricción activa")
     
     @field_validator('tipo')
     @classmethod
@@ -112,11 +161,8 @@ class RestriccionCreate(RestriccionBase):
 class Restriccion(RestriccionBase):
     id: int
     docente_id: int
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
     
-    model_config = ConfigDict(
-from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 class BloqueBase(BaseModel):
     dia_semana: int = Field(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)")
@@ -151,6 +197,7 @@ class RestriccionHorarioBase(BaseModel):
     hora_fin: time = Field(..., description="Hora de fin de la restricción")
     disponible: bool = Field(..., description="Indica si el docente está disponible en este horario")
     descripcion: Optional[str] = Field(None, max_length=255, description="Descripción opcional de la restricción")
+    activa: bool = Field(default=True, description="Restricción activa")
     
     @model_validator(mode='after')
     def validate_hours(self):
@@ -178,8 +225,7 @@ class RestriccionHorarioCreate(RestriccionHorarioBase):
 class RestriccionHorario(RestriccionHorarioBase):
     id: int
     docente_id: int
-    model_config = ConfigDict(
-from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 # ========== ASIGNATURA DTOs ==========
 class AsignaturaBase(BaseModel):
@@ -225,24 +271,20 @@ class SeccionBase(BaseModel):
 
 class SeccionCreate(SeccionBase):
     asignatura_id: int = Field(..., gt=0, description="ID de la asignatura")
-    docente_id: int = Field(..., gt=0, description="ID del docente")
-    periodo: str = Field(..., description="Periodo académico")
 
 class Seccion(SeccionBase):
     id: int
     asignatura_id: int
-    docente_id: int = Field(..., gt=0, description="ID del docente")
-    periodo: str = Field(..., description="Periodo académico")
     
-    model_config = ConfigDict(
-from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 # ========== SALA DTOs ==========
 class SalaBase(BaseModel):
     codigo: str = Field(..., min_length=1, max_length=20, description="Código de la sala")
-    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre de la sala")
     capacidad: int = Field(..., ge=1, le=500, description="Capacidad de la sala")
     tipo: str = Field(..., min_length=1, max_length=50, description="Tipo de sala")
+    disponible: bool = Field(default=True, description="Disponibilidad de la sala")
+    equipamiento: Optional[str] = Field(None, description="Equipamiento de la sala")
     
     @field_validator('codigo')
     @classmethod
@@ -260,12 +302,12 @@ class SalaBase(BaseModel):
         return v.lower()
 
 class SalaCreate(SalaBase):
-    pass
+    edificio_id: int = Field(..., gt=0, description="ID del edificio")
 
 class Sala(SalaBase):
     id: int
-    model_config = ConfigDict(
-from_attributes=True)
+    edificio_id: int
+    model_config = ConfigDict(from_attributes=True)
 
 # ========== CLASE DTOs ==========
 class ClaseBase(BaseModel):
@@ -281,28 +323,27 @@ class ClaseBase(BaseModel):
 
 class ClaseCreate(ClaseBase):
     seccion_id: int = Field(..., gt=0, description="ID de la sección")
+    docente_id: int = Field(..., gt=0, description="ID del docente")
     sala_id: int = Field(..., gt=0, description="ID de la sala")
     bloque_id: int = Field(..., gt=0, description="ID del bloque")
-    fecha: str = Field(..., description="Fecha de la clase en formato YYYY-MM-DD")
 
 class Clase(ClaseBase):
     id: int
     seccion_id: int
+    docente_id: int
     sala_id: int
     bloque_id: int
-    fecha: str = Field(..., description="Fecha de la clase en formato YYYY-MM-DD")
     
-    model_config = ConfigDict(
-from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
-# ========== DTOs para operaciones complejas ==========
 class RestriccionPatch(BaseModel):
     """DTO para actualizaciones parciales de restricciones"""
     tipo: Optional[str] = Field(None, min_length=1, max_length=50)
     valor: Optional[str] = Field(None, min_length=1, max_length=255)
     prioridad: Optional[int] = Field(None, ge=1, le=10)
-    restriccion_blanda: Optional[str] = Field(None, max_length=255)
-    restriccion_dura: Optional[str] = Field(None, max_length=255)
+    restriccion_blanda: Optional[bool] = None
+    restriccion_dura: Optional[bool] = None
+    activa: Optional[bool] = None
     
     @field_validator('tipo')
     @classmethod
@@ -321,6 +362,7 @@ class RestriccionHorarioPatch(BaseModel):
     hora_fin: Optional[time] = None
     disponible: Optional[bool] = None
     descripcion: Optional[str] = Field(None, max_length=255)
+    activa: Optional[bool] = None
     
     @model_validator(mode='after')
     def validate_hours(self):

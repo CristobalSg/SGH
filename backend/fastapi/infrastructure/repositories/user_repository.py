@@ -15,10 +15,11 @@ class SQLUserRepository:
         
         # Crear el objeto User con los campos correctos
         db_user = User(
+            nombre=user.nombre,
             email=user.email,
-            password_hash=hashed_password,
-            first_name=user.first_name,
-            last_name=user.last_name
+            pass_hash=hashed_password,
+            rol=user.rol,
+            activo=user.activo
         )
         self.session.add(db_user)
         self.session.commit()
@@ -60,14 +61,14 @@ class SQLUserRepository:
     def authenticate(self, email: str, password: str) -> Optional[User]:
         """Autenticar usuario con email y contraseña"""
         user = self.get_by_email(email)
-        if user and AuthService.verify_password(password, user.password_hash):
+        if user and AuthService.verify_password(password, user.pass_hash):
             return user
         return None
 
     def is_active(self, user: User) -> bool:
         """Verificar si el usuario está activo"""
-        return user.is_active
+        return user.activo
 
-    def is_superuser(self, user: User) -> bool:
-        """Verificar si el usuario es superusuario"""
-        return user.is_superuser
+    def get_by_rol(self, rol: str) -> List[User]:
+        """Obtener usuarios por rol"""
+        return self.session.query(User).filter(User.rol == rol).all()
