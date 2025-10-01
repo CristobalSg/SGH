@@ -71,13 +71,15 @@ class AuthService:
                 raise credentials_exception
             
             email: str = payload.get("sub")
+            user_id: int = payload.get("user_id")
+            rol: str = payload.get("rol")
             exp: int = payload.get("exp")
             token_type_payload: str = payload.get("type")
             
             if email is None or token_type_payload != token_type:
                 raise credentials_exception
                 
-            token_data = TokenData(email=email, exp=exp)
+            token_data = TokenData(email=email, user_id=user_id, rol=rol, exp=exp)
             return token_data
         except JWTError:
             raise credentials_exception
@@ -86,3 +88,23 @@ class AuthService:
     def verify_refresh_token(token: str) -> TokenData:
         """Verifica específicamente un refresh token"""
         return AuthService.verify_token(token, token_type="refresh")
+
+    @staticmethod
+    def create_tokens_for_user(user_data: dict) -> dict:
+        """Crea tanto access token como refresh token para un usuario"""
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        
+        access_token = AuthService.create_access_token(
+            data=user_data, expires_delta=access_token_expires
+        )
+        
+        refresh_token = AuthService.create_refresh_token(
+            data=user_data, expires_delta=refresh_token_expires
+        )
+        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        }

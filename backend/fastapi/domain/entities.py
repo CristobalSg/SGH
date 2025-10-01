@@ -63,9 +63,12 @@ class Token(BaseModel):
     token_type: str = "bearer"
     expires_in: int  # En segundos
     user: 'User'  # Información del usuario
+    rol: str  # Rol del usuario para acceso rápido
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+    user_id: Optional[int] = None
+    rol: Optional[str] = None
     exp: Optional[int] = None
 
 class RefreshTokenRequest(BaseModel):

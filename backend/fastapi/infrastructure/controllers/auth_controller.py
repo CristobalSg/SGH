@@ -63,6 +63,14 @@ async def read_users_me(
     """Obtener información del usuario actual"""
     return current_user
 
+@router.get("/me/detailed")
+async def read_users_me_detailed(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+):
+    """Obtener información detallada del usuario actual incluyendo datos específicos del rol"""
+    return auth_use_case.get_user_specific_data(current_user)
+
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
     refresh_request: RefreshTokenRequest,
@@ -79,3 +87,26 @@ async def refresh_token(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor"
         )
+
+@router.get("/validate-role/{required_role}")
+async def validate_user_role(
+    required_role: str,
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+):
+    """Validar si el usuario actual tiene el rol requerido"""
+    try:
+        has_role = auth_use_case.require_role(current_user, [required_role])
+        return {
+            "valid": has_role,
+            "user_rol": current_user.rol,
+            "required_role": required_role,
+            "message": f"Usuario tiene el rol {current_user.rol}"
+        }
+    except HTTPException as e:
+        return {
+            "valid": False,
+            "user_rol": current_user.rol,
+            "required_role": required_role,
+            "message": e.detail
+        }
