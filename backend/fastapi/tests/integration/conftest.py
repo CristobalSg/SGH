@@ -1,4 +1,5 @@
 import pytest
+import os
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -282,3 +283,119 @@ def authenticated_client(client, auth_headers):
             return self.client.delete(url, **kwargs)
     
     return AuthenticatedClient(client, auth_headers)
+
+
+@pytest.fixture
+def admin_user(db_session):
+    """Crea un usuario administrador de prueba en la base de datos"""
+    user_repo = SQLUserRepository(db_session)
+    user_data = UserCreate(
+        email="admin@test.com",
+        contrasena="AdminPassword123!",
+        nombre="Admin",
+        apellido="Test",
+        rol="administrador"
+    )
+    user = user_repo.create(user_data)
+    return user
+
+
+@pytest.fixture
+def docente_user(db_session):
+    """Crea un usuario docente de prueba en la base de datos"""
+    user_repo = SQLUserRepository(db_session)
+    user_data = UserCreate(
+        email="docente@test.com",
+        contrasena="DocentePassword123!",
+        nombre="Docente",
+        apellido="Test", 
+        rol="docente"
+    )
+    user = user_repo.create(user_data)
+    return user
+
+
+@pytest.fixture
+def admin_token(admin_user):
+    """Genera un token de acceso válido para el usuario administrador"""
+    return AuthService.create_access_token(data={"sub": admin_user.email})
+
+
+@pytest.fixture
+def docente_token(docente_user):
+    """Genera un token de acceso válido para el usuario docente"""
+    return AuthService.create_access_token(data={"sub": docente_user.email})
+
+
+@pytest.fixture
+def admin_headers(admin_token):
+    """Headers de autorización con token de administrador"""
+    return {"Authorization": f"Bearer {admin_token}"}
+
+
+@pytest.fixture
+def docente_headers(docente_token):
+    """Headers de autorización con token de docente"""
+    return {"Authorization": f"Bearer {docente_token}"}
+
+
+@pytest.fixture
+def admin_client(client, admin_headers):
+    """Cliente autenticado como administrador"""
+    class AuthenticatedClient:
+        def __init__(self, client, auth_headers):
+            self.client = client
+            self.auth_headers = auth_headers
+        
+        def get(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.get(url, **kwargs)
+        
+        def post(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.post(url, **kwargs)
+        
+        def put(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.put(url, **kwargs)
+        
+        def patch(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.patch(url, **kwargs)
+        
+        def delete(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.delete(url, **kwargs)
+    
+    return AuthenticatedClient(client, admin_headers)
+
+
+@pytest.fixture
+def docente_client(client, docente_headers):
+    """Cliente autenticado como docente"""
+    class AuthenticatedClient:
+        def __init__(self, client, auth_headers):
+            self.client = client
+            self.auth_headers = auth_headers
+        
+        def get(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.get(url, **kwargs)
+        
+        def post(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.post(url, **kwargs)
+        
+        def put(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.put(url, **kwargs)
+        
+        def patch(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.patch(url, **kwargs)
+        
+        def delete(self, url, **kwargs):
+            kwargs.setdefault("headers", {}).update(self.auth_headers)
+            return self.client.delete(url, **kwargs)
+    
+    return AuthenticatedClient(client, docente_headers)
