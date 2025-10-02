@@ -106,7 +106,10 @@ const Restricciones: React.FC = () => {
               presentation="time"
               hourCycle="h23"
               value={inicio}
-              onIonChange={e => setInicio(extractHora(e.detail.value))}
+              onIonChange={e => {
+                const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
+                setInicio(extractHora(value ?? null));
+              }}
             />
           </IonItem>
 
@@ -116,7 +119,10 @@ const Restricciones: React.FC = () => {
               presentation="time"
               hourCycle="h23"
               value={fin}
-              onIonChange={e => setFin(extractHora(e.detail.value))}
+              onIonChange={e => {
+                const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
+                setFin(extractHora(value ?? null));
+              }}
             />
           </IonItem>
 
