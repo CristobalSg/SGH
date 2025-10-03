@@ -7,3 +7,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: ls -l
+      - run: pwd > path.txt
+      - run: ls -l
