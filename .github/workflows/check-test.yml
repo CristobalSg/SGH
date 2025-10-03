@@ -9,3 +9,19 @@ jobs:
       - run: ls -l
       - run: pwd > path.txt
       - run: ls -l
+  build:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - run: echo "Building the application..."
+      - run: pwd > build_path.txt
+      - run: ls -l
+  deploy:
+    runs-on: ubuntu-latest
+    needs: 
+      - build
+      - wireguard
+    steps:
+      - run: echo "Deploying the application..."
+      - run: ping ${{ variables.KUBERNETES_ENDPOINT }} -c 3 > deploy.txt
+      - run: cat deploy.txt

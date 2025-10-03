@@ -1,0 +1,17 @@
+name: Connect WireGuard
+run-name: Connect to WireGuard VPN
+on:
+  workflow_dispatch:
+
+jobs:
+  wireguard:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get install -y wireguard
+      - run: echo "${{ secrets.WIREGUARD_PRIVATE_KEY }}" > privatekey
+      - run: echo "${{ secrets.WIREGUARD_PRESHARED_KEY}}" > presharedkey
+      - run: sudo ip link add dev wg0 type wireguard
+      - run: sudo ip address add dev wg0 ${{ variables.WIREGUARD_IP }} peer ${{ variables.WIREGUARD_PEER }}
+      - run: wg set wg0 private-key privatekey peer j6qLpp3wAg2cw7VZabotPCzxpaRzIvDV4zHP1xt5DQY= preshared-key presharedkey endpoint ${{ variables.WIREGUARD_ENDPOINT }}:51821 allowed-ips ${{ variables.KUBERNETES_ENDPOINT }}/32,${{ variables.WIREGUARD_PEER }}/32
+      - run: sudo ip link set up dev wg0
+      - run: sudo ip route add ${{ variables.KUBERNETES_ENDPOINT }}/32 via ${{ variables.WIREGUARD_PEER }} dev wg0
