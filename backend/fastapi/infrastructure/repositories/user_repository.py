@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from domain.models import User
 from domain.entities import UserCreate, UserUpdate
 from infrastructure.auth import AuthService
@@ -15,10 +15,11 @@ class SQLUserRepository:
         
         # Crear el objeto User con los campos correctos
         db_user = User(
+            nombre=user.nombre,
             email=user.email,
-            password_hash=hashed_password,
-            first_name=user.first_name,
-            last_name=user.last_name
+            pass_hash=hashed_password,
+            rol=user.rol,
+            activo=user.activo
         )
         self.session.add(db_user)
         self.session.commit()
@@ -26,12 +27,22 @@ class SQLUserRepository:
         return db_user
 
     def get_by_id(self, user_id: int) -> Optional[User]:
-        """Obtener usuario por ID"""
-        return self.session.query(User).filter(User.id == user_id).first()
+        """Obtener usuario por ID con las relaciones cargadas"""
+        return (self.session.query(User)
+                .options(joinedload(User.docente))
+                .options(joinedload(User.estudiante))
+                .options(joinedload(User.administrador))
+                .filter(User.id == user_id)
+                .first())
 
     def get_by_email(self, email: str) -> Optional[User]:
-        """Obtener usuario por email"""
-        return self.session.query(User).filter(User.email == email).first()
+        """Obtener usuario por email con las relaciones cargadas"""
+        return (self.session.query(User)
+                .options(joinedload(User.docente))
+                .options(joinedload(User.estudiante))
+                .options(joinedload(User.administrador))
+                .filter(User.email == email)
+                .first())
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[User]:
         """Obtener todos los usuarios con paginación"""
@@ -60,14 +71,14 @@ class SQLUserRepository:
     def authenticate(self, email: str, password: str) -> Optional[User]:
         """Autenticar usuario con email y contraseña"""
         user = self.get_by_email(email)
-        if user and AuthService.verify_password(password, user.password_hash):
+        if user and AuthService.verify_password(password, user.pass_hash):
             return user
         return None
 
     def is_active(self, user: User) -> bool:
         """Verificar si el usuario está activo"""
-        return user.is_active
+        return user.activo
 
-    def is_superuser(self, user: User) -> bool:
-        """Verificar si el usuario es superusuario"""
-        return user.is_superuser
+    def get_by_rol(self, rol: str) -> List[User]:
+        """Obtener usuarios por rol"""
+        return self.session.query(User).filter(User.rol == rol).all()

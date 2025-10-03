@@ -5,20 +5,27 @@ from infrastructure.database.config import get_db
 from domain.entities import Restriccion, RestriccionCreate, RestriccionBase, RestriccionPatch, User
 from application.use_cases.restriccion_use_cases import RestriccionUseCases
 from infrastructure.repositories.restriccion_repository import RestriccionRepository
-from infrastructure.dependencies import get_current_active_user
+from infrastructure.repositories.docente_repository import DocenteRepository
+from infrastructure.dependencies import get_current_active_user, get_current_docente_user, get_current_admin_user, get_current_docente_or_admin_user
 
-router = APIRouter(tags=["restricciones"])
+router = APIRouter()
 
 def get_restriccion_use_cases(db: Session = Depends(get_db)) -> RestriccionUseCases:
     repo = RestriccionRepository(db)
-    return RestriccionUseCases(repo)
+    docente_repo = DocenteRepository(db)
+    return RestriccionUseCases(repo, docente_repo)
 
-@router.get("/", response_model=List[Restriccion], status_code=status.HTTP_200_OK, summary="Obtener todas las restricciones")
+@router.get("/", response_model=List[Restriccion], status_code=status.HTTP_200_OK, summary="Obtener restricciones", tags=["restricciones"])
 async def get_restricciones(
+    current_user: User = Depends(get_current_docente_or_admin_user),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
+    """Obtener restricciones (docentes: sus propias / administradores: todas)"""
     try:
-        restricciones = use_cases.get_all()
+        if current_user.rol == "administrador":
+            restricciones = use_cases.get_all()
+        else:  # docente
+            restricciones = use_cases.get_by_docente_user(current_user)
         return restricciones
     except Exception as e:
         raise HTTPException(
@@ -26,18 +33,14 @@ async def get_restricciones(
             detail=f"Error al obtener las restricciones: {str(e)}"
         )
 
-@router.get("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Obtener restricción por ID")
-async def get_restriccion(
-    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
+@router.get("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Obtener restricción por ID", tags=["restricciones"])
+async def obtener_restriccion(
+    restriccion_id: int,
+    current_user: User = Depends(get_current_docente_or_admin_user),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
     try:
-        restriccion = use_cases.get_by_id(restriccion_id)
-        if not restriccion:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Restricción con ID {restriccion_id} no encontrada"
-            )
+        restriccion = use_cases.get_by_id_and_docente_user(restriccion_id, current_user)
         return restriccion
     except HTTPException:
         raise
@@ -47,14 +50,14 @@ async def get_restriccion(
             detail=f"Error al obtener la restricción: {str(e)}"
         )
 
-@router.post("/", response_model=Restriccion, status_code=status.HTTP_201_CREATED, summary="Crear nueva restricción")
+@router.post("/", response_model=Restriccion, status_code=status.HTTP_201_CREATED, summary="Crear nueva restricción", tags=["restricciones"])
 async def create_restriccion(
     restriccion_data: RestriccionCreate,
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_docente_or_admin_user)
 ):
     try:
-        nueva_restriccion = use_cases.create(restriccion_data)
+        nueva_restriccion = use_cases.create_for_docente_user(restriccion_data, current_user)
         return nueva_restriccion
     except HTTPException:
         raise
@@ -69,12 +72,12 @@ async def create_restriccion(
             detail=f"Error al crear la restricción: {str(e)}"
         )
 
-@router.put("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Actualizar restricción completa")
-async def update_restriccion_complete(
-    restriccion_data: RestriccionBase,
-    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
-    current_user: User = Depends(get_current_active_user)
+@router.put("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Actualizar restricción completa", tags=["restricciones"])
+async def update_restriccion(
+    restriccion_id: int,
+    restriccion_data: RestriccionCreate,
+    current_user: User = Depends(get_current_docente_or_admin_user),
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
     try:
         update_data = {
@@ -85,7 +88,7 @@ async def update_restriccion_complete(
             'restriccion_dura': restriccion_data.restriccion_dura
         }
         
-        restriccion_actualizada = use_cases.update(restriccion_id, **update_data)
+        restriccion_actualizada = use_cases.update_for_docente_user(restriccion_id, current_user, **update_data)
         
         if not restriccion_actualizada:
             raise HTTPException(
@@ -107,16 +110,16 @@ async def update_restriccion_complete(
             detail=f"Error al actualizar la restricción: {str(e)}"
         )
 
-@router.patch("/{restriccion_id}", response_model=Restriccion, summary="Actualizar restricción parcial")
-async def update_restriccion_partial(
-    restriccion_data: RestriccionPatch,
-    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
-    current_user: User = Depends(get_current_active_user)
+@router.patch("/{restriccion_id}", response_model=Restriccion, summary="Actualizar restricción parcial", tags=["restricciones"])
+async def patch_restriccion(
+    restriccion_id: int,
+    patch_data: RestriccionPatch,
+    current_user: User = Depends(get_current_docente_or_admin_user),
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
     try:
         # Validar que se envíen datos usando el modelo Pydantic
-        update_data = restriccion_data.model_dump(exclude_unset=True)
+        update_data = patch_data.model_dump(exclude_unset=True)
         
         if not update_data:
             raise HTTPException(
@@ -124,7 +127,7 @@ async def update_restriccion_partial(
                 detail="No se proporcionaron datos para actualizar"
             )
         
-        restriccion_actualizada = use_cases.update(restriccion_id, **update_data)
+        restriccion_actualizada = use_cases.update_for_docente_user(restriccion_id, current_user, **update_data)
         
         if not restriccion_actualizada:
             raise HTTPException(
@@ -146,15 +149,15 @@ async def update_restriccion_partial(
             detail=f"Error al actualizar la restricción: {str(e)}"
         )
 
-@router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar restricción")
+@router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar restricción", tags=["restricciones"])
 async def delete_restriccion(
-    restriccion_id: int = Path(..., gt=0, description="ID de la restricción (debe ser positivo)"),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
-    current_user: User = Depends(get_current_active_user)
+    restriccion_id: int,
+    current_user: User = Depends(get_current_docente_or_admin_user),
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
 
     try:
-        deleted = use_cases.delete(restriccion_id)
+        deleted = use_cases.delete_for_docente_user(restriccion_id, current_user)
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -167,4 +170,50 @@ async def delete_restriccion(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar la restricción: {str(e)}"
+        )
+
+# =====================================
+# ENDPOINTS ÚNICOS PARA ADMINISTRADORES
+# =====================================
+
+@router.get("/admin/docente/{docente_id}", response_model=List[Restriccion], status_code=status.HTTP_200_OK, summary="[ADMIN] Obtener restricciones de un docente específico", tags=["admin-restricciones"])
+async def admin_get_restricciones_by_docente(
+    docente_id: int,
+    current_user: User = Depends(get_current_admin_user),
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+):
+    """Obtener todas las restricciones de un docente específico (solo administradores)"""
+    try:
+        restricciones = use_cases.get_by_docente(docente_id)
+        return restricciones
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener las restricciones del docente: {str(e)}"
+        )
+
+@router.post("/admin/docente/{docente_id}", response_model=Restriccion, status_code=status.HTTP_201_CREATED, summary="[ADMIN] Crear restricción para un docente específico", tags=["admin-restricciones"])
+async def admin_create_restriccion_for_docente(
+    docente_id: int,
+    restriccion_data: RestriccionCreate,
+    current_user: User = Depends(get_current_admin_user),
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+):
+    """Crear una nueva restricción para un docente específico (solo administradores)"""
+    try:
+        # Forzar el docente_id al valor del parámetro
+        restriccion_data.docente_id = docente_id
+        nueva_restriccion = use_cases.create(restriccion_data)
+        return nueva_restriccion
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error de validación: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al crear la restricción: {str(e)}"
         )

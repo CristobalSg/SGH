@@ -54,11 +54,43 @@ def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
     """Dependency para obtener el usuario actual activo"""
-    if not current_user.is_active:
+    if not current_user.activo:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Usuario inactivo"
         )
+    return current_user
+
+def get_current_admin_user(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+) -> User:
+    """Dependency para obtener el usuario actual que debe ser administrador"""
+    auth_use_case.require_admin(current_user)
+    return current_user
+
+def get_current_docente_user(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+) -> User:
+    """Dependency para obtener el usuario actual que debe ser docente"""
+    auth_use_case.require_docente(current_user)
+    return current_user
+
+def get_current_estudiante_user(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+) -> User:
+    """Dependency para obtener el usuario actual que debe ser estudiante"""
+    auth_use_case.require_estudiante(current_user)
+    return current_user
+
+def get_current_docente_or_admin_user(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+) -> User:
+    """Dependency para obtener el usuario actual que debe ser docente o administrador"""
+    auth_use_case.require_docente_or_admin(current_user)
     return current_user
 
 

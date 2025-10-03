@@ -9,7 +9,13 @@ class ClaseRepository:
 
     def create(self, clase: ClaseCreate) -> Clase:
         """Crear una nueva clase"""
-        db_clase = Clase(**clase.model_dump())
+        db_clase = Clase(
+            seccion_id=clase.seccion_id,
+            docente_id=clase.docente_id,
+            sala_id=clase.sala_id,
+            bloque_id=clase.bloque_id,
+            estado=clase.estado
+        )
         self.session.add(db_clase)
         self.session.commit()
         self.session.refresh(db_clase)

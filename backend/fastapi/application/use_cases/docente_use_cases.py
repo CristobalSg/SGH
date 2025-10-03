@@ -2,10 +2,12 @@ from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import DocenteCreate, Docente
 from infrastructure.repositories.docente_repository import DocenteRepository
+from infrastructure.repositories.user_repository import SQLUserRepository
 
 class DocenteUseCases:
-    def __init__(self, docente_repository: DocenteRepository):
+    def __init__(self, docente_repository: DocenteRepository, user_repository: SQLUserRepository):
         self.docente_repository = docente_repository
+        self.user_repository = user_repository
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Docente]:
         """Obtener todos los docentes con paginación"""
@@ -23,42 +25,39 @@ class DocenteUseCases:
 
     def create(self, docente_data: DocenteCreate) -> Docente:
         """Crear un nuevo docente"""
-        # Verificar si el email ya existe
-        existing_docente = self.docente_repository.get_by_email(docente_data.email)
+        # Verificar que el usuario existe y tiene rol de docente
+        user = self.user_repository.get_by_id(docente_data.user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuario con id {docente_data.user_id} no encontrado"
+            )
+        
+        if user.rol != 'docente':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El usuario debe tener rol de docente"
+            )
+        
+        # Verificar que no exista ya un docente para este usuario
+        existing_docente = self.docente_repository.get_by_user_id(docente_data.user_id)
         if existing_docente:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El email ya está registrado"
+                detail=f"Ya existe un docente asociado al usuario {docente_data.user_id}"
             )
         
         return self.docente_repository.create(docente_data)
 
-    def update(self, docente_id: int, **update_data) -> Docente:
-        """Actualizar un docente"""
-        # Verificar que el docente existe
-        existing_docente = self.docente_repository.get_by_id(docente_id)
-        if not existing_docente:
+    def get_by_departamento(self, departamento: str) -> List[Docente]:
+        """Obtener docentes por departamento"""
+        docentes = self.docente_repository.get_by_departamento(departamento)
+        if not docentes:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Docente no encontrado"
+                detail=f"No hay docentes en el departamento {departamento}"
             )
-        
-        # Si se actualiza el email, verificar que no exista otro docente con ese email
-        if 'email' in update_data:
-            docente_with_email = self.docente_repository.get_by_email(update_data['email'])
-            if docente_with_email and docente_with_email.id != docente_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="El email ya está registrado por otro docente"
-                )
-        
-        updated_docente = self.docente_repository.update(docente_id, update_data)
-        if not updated_docente:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al actualizar el docente"
-            )
-        return updated_docente
+        return docentes
 
     def delete(self, docente_id: int) -> bool:
         """Eliminar un docente"""
@@ -77,7 +76,3 @@ class DocenteUseCases:
                 detail="Error al eliminar el docente"
             )
         return success
-
-    def search_by_nombre(self, nombre: str) -> List[Docente]:
-        """Buscar docentes por nombre"""
-        return self.docente_repository.search_by_nombre(nombre)

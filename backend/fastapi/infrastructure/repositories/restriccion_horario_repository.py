@@ -28,6 +28,12 @@ class RestriccionHorarioRepository:
         """Obtener restricciones de horario de un docente específico"""
         return self.session.query(RestriccionHorario).filter(RestriccionHorario.docente_id == docente_id).all()
 
+    def get_by_docente_with_pagination(self, docente_id: int, skip: int = 0, limit: int = 100) -> List[RestriccionHorario]:
+        """Obtener restricciones de horario de un docente específico con paginación"""
+        return self.session.query(RestriccionHorario).filter(
+            RestriccionHorario.docente_id == docente_id
+        ).offset(skip).limit(limit).all()
+
     def get_by_dia_semana(self, dia_semana: int) -> List[RestriccionHorario]:
         """Obtener restricciones por día de la semana (1=Lunes, 7=Domingo)"""
         return self.session.query(RestriccionHorario).filter(RestriccionHorario.dia_semana == dia_semana).all()

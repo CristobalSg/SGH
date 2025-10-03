@@ -7,7 +7,7 @@ class TestTestDbIntegration:
 
     def test_test_database_connection_success(self, client):
         """Prueba GET /db/test-db para verificar conexión a la base de datos"""
-        response = client.get("/db/test-db")
+        response = client.get("/api/db/test-db")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -31,7 +31,7 @@ class TestTestDbIntegration:
         db_session.commit()
         db_session.refresh(docente)
         
-        response = client.get("/db/test-db")
+        response = client.get("/api/db/test-db")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -42,7 +42,7 @@ class TestTestDbIntegration:
 
     def test_test_database_returns_null_when_no_docentes(self, client):
         """Prueba que el endpoint retorna null en primera_consulta cuando no hay docentes"""
-        response = client.get("/db/test-db")
+        response = client.get("/api/db/test-db")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
