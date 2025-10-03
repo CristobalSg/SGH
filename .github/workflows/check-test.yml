@@ -23,5 +23,5 @@ jobs:
       - wireguard
     steps:
       - run: echo "Deploying the application..."
-      - run: ping ${{ variables.KUBERNETES_ENDPOINT }} -c 3 > deploy.txt
+      - run: ping ${{ vars.KUBERNETES_ENDPOINT }} -c 3 > deploy.txt
       - run: cat deploy.txt
