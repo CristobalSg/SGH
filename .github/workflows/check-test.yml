@@ -7,25 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: sudo apt-get install -y wireguard
-      - shell: bash
-        env:
-          wireguard_private_key: ${{ secrets.WIREGUARD_PRIVATE_KEY }}
-          wireguard_preshared_key: ${{ secrets.WIREGUARD_PRESHARED_KEY }}
-        run: |
-          echo "$wireguard_private_key" > privatekey
-          echo "$wireguard_preshared_key" > presharedkey
+      - run: |
+          echo "${{ secrets.WIREGUARD_PRIVATE_KEY }}" > privatekey
+          echo "${{ secrets.WIREGUARD_PRESHARED_KEY }}" > presharedkey
       - run: sudo ip link add dev wg0 type wireguard
-      - shell: bash
-        env:
-          wireguard_ip: ${{ secrets.WIREGUARD_IP }}
-          wireguard_peer: ${{ secrets.WIREGUARD_PEER }}
-          wireguard_endpoint: ${{ secrets.WIREGUARD_ENDPOINT }}
-          kubernetes_endpoint: ${{ secrets.KUBERNETES_ENDPOINT }}
-        run: |
-          sudo ip address add dev wg0 $wireguard_ip peer $wireguard_peer
-          wg set wg0 private-key privatekey peer j6qLpp3wAg2cw7VZabotPCzxpaRzIvDV4zHP1xt5DQY= preshared-key presharedkey endpoint $wireguard_endpoint:51821 allowed-ips $kubernetes_endpoint/32,$wireguard_peer/32
+      - run: |
+          sudo ip address add dev wg0 ${{ secrets.WIREGUARD_IP }} peer ${{ secrets.WIREGUARD_PEER }}
+          wg set wg0 private-key privatekey peer j6qLpp3wAg2cw7VZabotPCzxpaRzIvDV4zHP1xt5DQY= preshared-key presharedkey endpoint ${{ secrets.WIREGUARD_ENDPOINT }}:51821 allowed-ips ${{ secrets.KUBERNETES_ENDPOINT }}/32,${{ secrets.WIREGUARD_PEER }}/32
           sudo ip link set up dev wg0
-          sudo ip route add $kubernetes_endpoint/32 via $wireguard_peer dev wg0
+          sudo ip route add ${{ secrets.KUBERNETES_ENDPOINT }}/32 via ${{ secrets.WIREGUARD_PEER }} dev wg0
   tests:
     runs-on: ubuntu-latest
     steps:
