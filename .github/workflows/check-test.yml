@@ -1,6 +1,6 @@
 name: Integración Continua
 run-name: Se estan corriendo los tests de la aplicación
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   wireguard:
