@@ -1,0 +1,9 @@
+name: Integración Continua
+run-name: Se estan corriendo los tests de la aplicación
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ls -l
