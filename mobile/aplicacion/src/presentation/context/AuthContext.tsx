@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from "react";
 import { User } from "../../domain/models/User";
 import { AuthApiRepository } from "../../infrastructure/repositories/AuthApiRepository";
 import { LoginUseCase } from "../../application/usecases/LoginUseCase";
+import { jwtDecode } from "jwt-decode";
 
 const authRepository = new AuthApiRepository();
 const loginUseCase = new LoginUseCase(authRepository);
@@ -18,15 +19,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | undefined>(undefined);
 
   const login = async (email: string, password: string) => {
-    const loggedUser = await loginUseCase.execute(email, password);
+    // Llama al caso de uso → este debería devolver AuthResponse (tokens)
+    const authResponse = await loginUseCase.execute(email, password);
+
+    // Guarda tokens
+    localStorage.setItem("access_token", authResponse.access_token);
+    localStorage.setItem("refresh_token", authResponse.refresh_token);
+
+    // Decodifica el access_token
+    const decoded: any = jwtDecode(authResponse.access_token);
+
+    const loggedUser: User = {
+      id: decoded.user_id,
+      email: decoded.sub,
+      rol: decoded.rol,
+    };
+
     setUser(loggedUser);
-    localStorage.setItem("token", loggedUser.token || "");
-    return loggedUser
+    return loggedUser;
   };
 
   const logout = () => {
     setUser(undefined);
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
   };
 
   return (

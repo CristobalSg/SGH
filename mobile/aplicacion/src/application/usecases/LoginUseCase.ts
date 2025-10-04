@@ -1,10 +1,11 @@
-import { AuthRepository } from "../../domain/repositories/AuthRepository";
-import { User } from "../../domain/models/User";
+// application/usecases/LoginUseCase.ts
+import { AuthApiRepository } from "../../infrastructure/repositories/AuthApiRepository";
+import { AuthResponse } from "../../domain/models/AuthResponse";
 
 export class LoginUseCase {
-  constructor(private authRepository: AuthRepository) {}
+  constructor(private authRepo: AuthApiRepository) {}
 
-  async execute(email: string, contrasena: string): Promise<User> {
-    return await this.authRepository.login(email, contrasena);
+  async execute(email: string, password: string): Promise<AuthResponse> {
+    return await this.authRepo.login(email, password);
   }
 }

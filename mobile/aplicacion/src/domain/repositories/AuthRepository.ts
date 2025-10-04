@@ -1,7 +1,7 @@
-import { User } from "../models/User";
+// domain/repositories/AuthRepository.ts
+import { AuthResponse } from "../models/AuthResponse";
 
 export interface AuthRepository {
-  login(email: string, contrasena: string): Promise<User>;
-  register(user: Omit<User, "id" | "token"> & { contrasena: string }): Promise<User>;
-  getProfile(token: string): Promise<User>;
+  login(email: string, contrasena: string): Promise<AuthResponse>;
+  logout(): Promise<void>;
 }

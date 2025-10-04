@@ -1,26 +1,32 @@
 import { AuthRepository } from "../../domain/repositories/AuthRepository";
 import { User } from "../../domain/models/User";
+import { AuthResponse } from "../../domain/models/AuthResponse";
+
+
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export class AuthApiRepository implements AuthRepository {
-  async login(email: string, contrasena: string): Promise<User> {
-    const response = await axios.post(`${API_URL}/auth/login-json`, {
-      email,
-      contrasena,
+  async login(email: string, contrasena: string): Promise<AuthResponse> {
+    const res = await fetch("http://localhost:8000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, contrasena })
     });
 
-    const data = response.data
-    //console.log("Data User", email, data.user.first_name, data.user.last_name)
-    //console.log("token", data.access_token)
+    if (!res.ok) throw new Error("Credenciales inválidas");
 
-    return {
-      email,
-      nombre: data.user.first_name,
-      apellido: data.user.last_name,
-      token: data.access_token,
-    };
+    return res.json() as Promise<AuthResponse>;
+  }
+
+  async logout(): Promise<void> {
+    // Opción 1: Llamar al backend para invalidar token si tu API lo soporta
+    // await fetch("http://localhost:8000/api/auth/logout", { method: "POST" });
+
+    // Opción 2: Solo limpiar tokens localmente
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
   }
 
   async register(user: Omit<User, "id" | "token"> & { contrasena: string }): Promise<User> {
