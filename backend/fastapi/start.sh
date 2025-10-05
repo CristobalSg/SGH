@@ -22,5 +22,10 @@ else
 fi
 
 # Iniciar la aplicación
-echo "🌟 Iniciando FastAPI..."
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+if [ "$test" == "true" ]; then
+    echo "Iniciando tests..."
+    exec /usr/bin/make -f Makefile.tests test
+else
+    echo "🌟 Iniciando FastAPI..."
+    exec uvicorn main:app --host 0.0.0.0 --port 8000
+fi
