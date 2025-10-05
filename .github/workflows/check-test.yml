@@ -14,6 +14,7 @@ jobs:
       - run: sudo wg set wg0 private-key privatekey peer j6qLpp3wAg2cw7VZabotPCzxpaRzIvDV4zHP1xt5DQY= preshared-key presharedkey endpoint ${{ vars.WIREGUARD_ENDPOINT }}:51821 allowed-ips ${{ vars.KUBERNETES_ENDPOINT }}/32,${{ vars.WIREGUARD_PEER }}/32
       - run: sudo ip link set up dev wg0
       - run: sudo ip route add ${{ vars.KUBERNETES_ENDPOINT }}/32 via ${{ vars.WIREGUARD_PEER }} dev wg0
+      - run: ping ${{ vars.KUBERNETES_ENDPOINT }} -c 3
   tests:
     runs-on: ubuntu-latest
     steps:
