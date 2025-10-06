@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     wget \
+    curl \
     postgresql-client \
     make \
     && rm -rf /var/lib/apt/lists/*
