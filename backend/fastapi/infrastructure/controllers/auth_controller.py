@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from domain.entities import UserCreate, User, UserLogin, Token, RefreshTokenRequest
+from domain.entities import UserCreate, User, UserLogin, Token, TokenResponse, RefreshTokenRequest
 from infrastructure.dependencies import get_user_auth_use_case, get_current_active_user
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
 
@@ -22,14 +22,14 @@ async def register(
             detail="Error interno del servidor"
         )
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=TokenResponse)
 async def login(
     login_data: UserLogin,
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
 ):
     """Iniciar sesión y obtener token de acceso"""
     try:
-        token = auth_use_case.login_user(login_data)
+        token = auth_use_case.login_user_token_only(login_data)
         return token
     except HTTPException:
         raise
@@ -39,14 +39,14 @@ async def login(
             detail="Error interno del servidor"
         )
 
-@router.post("/login-json", response_model=Token)
+@router.post("/login-json", response_model=TokenResponse)
 async def login_json(
     login_data: UserLogin,
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
 ):
     """Iniciar sesión con JSON y obtener token de acceso"""
     try:
-        token = auth_use_case.login_user(login_data)
+        token = auth_use_case.login_user_token_only(login_data)
         return token
     except HTTPException:
         raise
@@ -71,14 +71,14 @@ async def read_users_me_detailed(
     """Obtener información detallada del usuario actual incluyendo datos específicos del rol"""
     return auth_use_case.get_user_specific_data(current_user)
 
-@router.post("/refresh", response_model=Token)
+@router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     refresh_request: RefreshTokenRequest,
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
 ):
     """Refrescar access token usando refresh token"""
     try:
-        new_token = auth_use_case.refresh_access_token(refresh_request)
+        new_token = auth_use_case.refresh_access_token_only(refresh_request)
         return new_token
     except HTTPException:
         raise
