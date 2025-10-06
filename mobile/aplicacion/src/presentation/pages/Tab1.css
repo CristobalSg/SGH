@@ -1,40 +1,80 @@
-.calendar-container {
+/* Fondo general del horario */
+ion-content {
+  background-color: #000000; /* Negro */
+  color: #ffffff; /* Texto blanco por defecto */
+}
+
+/* Encabezados de días y horas */
+ion-col strong {
+  color: #ffffff;
+}
+
+/* Celdas del horario */
+ion-col {
+  border: 1px solid #444; /* Borde más claro para fondo negro */
+  min-height: 50px;
   display: flex;
-  justify-content: center;  /* centra horizontal */
-  align-items: center;      /* centra vertical */
-  height: 100%;             /* ocupa toda la altura disponible */
-  
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  font-size: 13px;
+  transition: background 0.3s, transform 0.2s;
+  color: #ffffff; /* Texto blanco */
+}
+/* Celdas del horario */
+ion-col {
+  border: 1px solid #444;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column; /* Para apilar eventos si hay más de uno */
+  align-items: flex-start; /* El color empieza desde la izquierda */
+  justify-content: flex-start;
+  padding: 2px;
+  font-size: 13px;
+  transition: background 0.3s, transform 0.2s;
+  color: #ffffff;
+  overflow: hidden; /* Para que no se expanda fuera de la celda */
 }
 
-ion-datetime {
-  border-radius: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+/* Evento individual */
+.evento {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-bottom: 2px;
+  color: #fff;
+  text-align: left; /* El inicio de la materia */
+  white-space: nowrap; /* No se rompe en varias líneas */
+  overflow: hidden;    /* Oculta el texto que no cabe */
+  text-overflow: ellipsis; /* Muestra ... si el texto es muy largo */
+  width: 100%;         /* Que ocupe toda la celda horizontalmente */
 }
 
+
+/* Colores por materia (brillantes para fondo negro) */
+.evento.Matematica { background-color: #4CAF50; }
+.evento.Fisica { background-color: #2196F3; }
+.evento.Quimica { background-color: #FF9800; }
+.evento.Historia { background-color: #9C27B0; }
+.evento.Lenguaje { background-color: #F44336; }
+.evento.Ingles { background-color: #00BCD4; }
+.evento.Biologia { background-color: #8BC34A; }
+.evento.Artes { background-color: #FF5722; }
+
+/* Popover personalizado sigue igual */
 .custom-popover {
-  --width: 90%;
-  --height: 50%;
-  --border-radius: 12px;
-  margin: auto;
+  --width: 300px;
+  --height: 400px;
 }
 
-.badge {
+/* Badge de notificaciones */
+.badge-side {
+  position: absolute;
+  top: -6px;
+  right: -6px;
   background-color: red;
   color: white;
   border-radius: 50%;
   padding: 2px 6px;
-  font-size: 12px;
-  position: absolute;
-  top: 0px;
-  right: 0px;
-}
-
-.badge-side {
-  background-color: red;
-  color: white;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 12px;
-  margin-left: 4px; /* separa un poco del icono */
-  display: inline-block;
+  font-size: 11px;
 }

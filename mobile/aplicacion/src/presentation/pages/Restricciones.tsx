@@ -9,10 +9,17 @@ import {
   IonSelect,
   IonSelectOption,
   IonDatetime,
-  IonButton
+  IonButton,
+  IonList,
+  IonModal,
+  IonToast,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonIcon
 } from '@ionic/react';
+import { addCircleOutline, trashOutline, createOutline } from 'ionicons/icons';
 import { useState } from 'react';
-import './Restricciones.css';
 
 interface Restriccion {
   dia: string;
@@ -21,15 +28,34 @@ interface Restriccion {
   tipo: string;
 }
 
-const Restricciones: React.FC = () => {
-  const [dia, setDia] = useState<string>('');
-  const [inicio, setInicio] = useState<string>('');
-  const [fin, setFin] = useState<string>('');
-  const [tipo, setTipo] = useState<string>('');
-  const [restricciones, setRestricciones] = useState<Restriccion[]>([]);
+const DIAS = [
+  "todos", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
+];
 
+const TIPOS = [
+  "todos", "obligatoria", "preferencia", "opcional"
+];
+
+const Restricciones: React.FC = () => {
+  const [restricciones, setRestricciones] = useState<Restriccion[]>([]);
   const [filtroDia, setFiltroDia] = useState<string>('todos');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
+
+  // Modal para agregar restricción
+  const [showModal, setShowModal] = useState(false);
+  const [nuevoDia, setNuevoDia] = useState('');
+  const [nuevoInicio, setNuevoInicio] = useState('');
+  const [nuevoFin, setNuevoFin] = useState('');
+  const [nuevoTipo, setNuevoTipo] = useState('');
+  const [showToast, setShowToast] = useState(false);
+
+  // Modal para editar restricción
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editDia, setEditDia] = useState('');
+  const [editInicio, setEditInicio] = useState('');
+  const [editFin, setEditFin] = useState('');
+  const [editTipo, setEditTipo] = useState('');
 
   const extractHora = (value: string | null): string => {
     if (!value) return '';
@@ -39,29 +65,63 @@ const Restricciones: React.FC = () => {
     return `${horas}:${minutos}`;
   };
 
-  const handleAgregar = () => {
-    if (!dia || !inicio || !fin || !tipo) {
-      alert("Completa todos los campos");
+  const handleAgregarRestriccion = () => {
+    if (!nuevoDia || !nuevoInicio || !nuevoFin || !nuevoTipo) {
+      setShowToast(true);
       return;
     }
+    setRestricciones([
+      ...restricciones,
+      { dia: nuevoDia, inicio: nuevoInicio, fin: nuevoFin, tipo: nuevoTipo }
+    ]);
+    setShowModal(false);
+    setNuevoDia('');
+    setNuevoInicio('');
+    setNuevoFin('');
+    setNuevoTipo('');
+  };
 
-    const [hInicio, mInicio] = inicio.split(":").map(Number);
-    const [hFin, mFin] = fin.split(":").map(Number);
-    const minutosInicio = hInicio * 60 + mInicio;
-    const minutosFin = hFin * 60 + mFin;
+  const handleEliminar = (index: number) => {
+    const nuevas = [...restricciones];
+    nuevas.splice(index, 1);
+    setRestricciones(nuevas);
+  };
 
-    if (minutosInicio >= minutosFin) {
-      alert("La hora de inicio debe ser menor a la hora de fin");
+  const handleEditar = (index: number) => {
+    const r = restricciones[index];
+    setEditIndex(index);
+    setEditDia(r.dia);
+    setEditInicio(r.inicio);
+    setEditFin(r.fin);
+    setEditTipo(r.tipo);
+    setShowEditModal(true);
+  };
+
+  const handleGuardarEdicion = () => {
+    if (
+      editIndex === null ||
+      !editDia ||
+      !editInicio ||
+      !editFin ||
+      !editTipo
+    ) {
+      setShowToast(true);
       return;
     }
-
-    const nueva: Restriccion = { dia, inicio, fin, tipo };
-    setRestricciones([...restricciones, nueva]);
-
-    setDia('');
-    setInicio('');
-    setFin('');
-    setTipo('');
+    const nuevas = [...restricciones];
+    nuevas[editIndex] = {
+      dia: editDia,
+      inicio: editInicio,
+      fin: editFin,
+      tipo: editTipo,
+    };
+    setRestricciones(nuevas);
+    setShowEditModal(false);
+    setEditIndex(null);
+    setEditDia('');
+    setEditInicio('');
+    setEditFin('');
+    setEditTipo('');
   };
 
   // Filtrar restricciones
@@ -76,110 +136,205 @@ const Restricciones: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Restricciones</IonTitle>
+          {/* Para el botón agregar */}
+          <IonButton slot="end" onClick={() => setShowModal(true)}>
+            <IonLabel>Agregar</IonLabel>
+            <IonIcon icon={addCircleOutline} style={{ marginLeft: 4 }} />
+          </IonButton>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="restricciones-container">
-        <h2>Agregar restricción</h2>
-
-        <div className="form-section">
-          <IonItem>
+      <IonContent>
+        {/* Filtros */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+          <IonItem style={{ flex: 1 }}>
             <IonLabel>Día</IonLabel>
-            <IonSelect
-              value={dia}
-              placeholder="Selecciona un día"
-              onIonChange={e => setDia(e.detail.value!)}
-            >
-              <IonSelectOption value="lunes">Lunes</IonSelectOption>
-              <IonSelectOption value="martes">Martes</IonSelectOption>
-              <IonSelectOption value="miercoles">Miércoles</IonSelectOption>
-              <IonSelectOption value="jueves">Jueves</IonSelectOption>
-              <IonSelectOption value="viernes">Viernes</IonSelectOption>
-              <IonSelectOption value="sabado">Sábado</IonSelectOption>
-              <IonSelectOption value="domingo">Domingo</IonSelectOption>
+            <IonSelect value={filtroDia} onIonChange={e => setFiltroDia(e.detail.value!)}>
+              {DIAS.map(dia => (
+                <IonSelectOption key={dia} value={dia}>{dia.charAt(0).toUpperCase() + dia.slice(1)}</IonSelectOption>
+              ))}
             </IonSelect>
           </IonItem>
-
-          <IonItem>
-            <IonLabel>Hora inicio</IonLabel>
-            <IonDatetime
-              presentation="time"
-              hourCycle="h23"
-              value={inicio}
-              onIonChange={e => {
-                const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
-                setInicio(extractHora(value ?? null));
-              }}
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonLabel>Hora fin</IonLabel>
-            <IonDatetime
-              presentation="time"
-              hourCycle="h23"
-              value={fin}
-              onIonChange={e => {
-                const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
-                setFin(extractHora(value ?? null));
-              }}
-            />
-          </IonItem>
-
-          <IonItem>
+          <IonItem style={{ flex: 1 }}>
             <IonLabel>Tipo</IonLabel>
-            <IonSelect
-              value={tipo}
-              placeholder="Selecciona el tipo"
-              onIonChange={e => setTipo(e.detail.value!)}
-            >
-              <IonSelectOption value="obligatoria">Obligatoria</IonSelectOption>
-              <IonSelectOption value="preferencia">Preferencia</IonSelectOption>
-              <IonSelectOption value="opcional">Opcional</IonSelectOption>
+            <IonSelect value={filtroTipo} onIonChange={e => setFiltroTipo(e.detail.value!)}>
+              {TIPOS.map(tipo => (
+                <IonSelectOption key={tipo} value={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</IonSelectOption>
+              ))}
             </IonSelect>
           </IonItem>
-
-          <IonButton expand="block" onClick={handleAgregar}>
-            Agregar restricción
-          </IonButton>
         </div>
 
-        <div className="saved-restricciones">
-          <h2>Restricciones guardadas</h2>
-
-          {/* Filtros */}
-<div className="filtros-container" style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-  <IonItem style={{ flex: 1 }}>
-    <IonLabel>Día</IonLabel>
-    <IonSelect value={filtroDia} onIonChange={e => setFiltroDia(e.detail.value!)}>
-      <IonSelectOption value="todos">Todos</IonSelectOption>
-      <IonSelectOption value="lunes">Lunes</IonSelectOption>
-      <IonSelectOption value="martes">Martes</IonSelectOption>
-      <IonSelectOption value="miercoles">Miércoles</IonSelectOption>
-      <IonSelectOption value="jueves">Jueves</IonSelectOption>
-      <IonSelectOption value="viernes">Viernes</IonSelectOption>
-      <IonSelectOption value="sabado">Sábado</IonSelectOption>
-      <IonSelectOption value="domingo">Domingo</IonSelectOption>
-    </IonSelect>
-  </IonItem>
-
-  <IonItem style={{ flex: 1 }}>
-    <IonLabel>Tipo</IonLabel>
-    <IonSelect value={filtroTipo} onIonChange={e => setFiltroTipo(e.detail.value!)}>
-      <IonSelectOption value="todos">Todos</IonSelectOption>
-      <IonSelectOption value="obligatoria">Obligatoria</IonSelectOption>
-      <IonSelectOption value="preferencia">Preferencia</IonSelectOption>
-      <IonSelectOption value="opcional">Opcional</IonSelectOption>
-    </IonSelect>
-  </IonItem>
-</div>
-          {/* Lista filtrada */}
+        {/* Lista de restricciones con botones alineados al lado */}
+        <IonList>
           {restriccionesFiltradas.map((r, index) => (
-            <div key={index} className="saved-item">
-              {r.dia}: {r.inicio} - {r.fin} ({r.tipo})
-            </div>
+            <IonItem key={index} style={{ alignItems: 'flex-start' }}>
+              <IonGrid style={{ width: '100%' }}>
+                <IonRow>
+                  <IonCol size="9" style={{ wordBreak: 'break-word' }}>
+                    <IonLabel>
+                      <strong>{r.dia.charAt(0).toUpperCase() + r.dia.slice(1)}</strong>: {r.inicio} - {r.fin} ({r.tipo})
+                    </IonLabel>
+                  </IonCol>
+                  <IonCol size="3" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                    <IonButton color="primary" fill="clear" onClick={() => handleEditar(index)}>
+                      <IonIcon icon={createOutline} />
+                    </IonButton>
+                    <IonButton color="danger" fill="clear" onClick={() => handleEliminar(index)}>
+                      <IonIcon icon={trashOutline} />
+                    </IonButton>
+                  </IonCol>
+                </IonRow>
+              </IonGrid>
+            </IonItem>
           ))}
-        </div>
+          {restriccionesFiltradas.length === 0 && (
+            <IonItem>
+              <IonLabel>No hay restricciones que coincidan con el filtro.</IonLabel>
+            </IonItem>
+          )}
+        </IonList>
+
+        {/* Modal para agregar restricción */}
+        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Agregar Restricción</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <IonList>
+              <IonItem>
+                <IonLabel position="stacked">Día</IonLabel>
+                <IonSelect
+                  value={nuevoDia}
+                  placeholder="Selecciona día"
+                  onIonChange={e => setNuevoDia(e.detail.value)}
+                >
+                  {DIAS.filter(d => d !== "todos").map(dia => (
+                    <IonSelectOption key={dia} value={dia}>{dia.charAt(0).toUpperCase() + dia.slice(1)}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Hora inicio</IonLabel>
+                <IonDatetime
+                  presentation="time"
+                  hourCycle="h23"
+                  value={nuevoInicio}
+                  onIonChange={e => {
+                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
+                    setNuevoInicio(extractHora(value ?? null));
+                  }}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Hora fin</IonLabel>
+                <IonDatetime
+                  presentation="time"
+                  hourCycle="h23"
+                  value={nuevoFin}
+                  onIonChange={e => {
+                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
+                    setNuevoFin(extractHora(value ?? null));
+                  }}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Tipo</IonLabel>
+                <IonSelect
+                  value={nuevoTipo}
+                  placeholder="Selecciona tipo"
+                  onIonChange={e => setNuevoTipo(e.detail.value)}
+                >
+                  {TIPOS.filter(t => t !== "todos").map(tipo => (
+                    <IonSelectOption key={tipo} value={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            </IonList>
+            <IonButton expand="block" onClick={handleAgregarRestriccion} className="ion-margin-top">
+              Guardar
+            </IonButton>
+            <IonButton expand="block" color="medium" onClick={() => setShowModal(false)} className="ion-margin-top">
+              Cancelar
+            </IonButton>
+          </IonContent>
+        </IonModal>
+
+        {/* Modal para editar restricción */}
+        <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Editar Restricción</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <IonList>
+              <IonItem>
+                <IonLabel position="stacked">Día</IonLabel>
+                <IonSelect
+                  value={editDia}
+                  placeholder="Selecciona día"
+                  onIonChange={e => setEditDia(e.detail.value)}
+                >
+                  {DIAS.filter(d => d !== "todos").map(dia => (
+                    <IonSelectOption key={dia} value={dia}>{dia.charAt(0).toUpperCase() + dia.slice(1)}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Hora inicio</IonLabel>
+                <IonDatetime
+                  presentation="time"
+                  hourCycle="h23"
+                  value={editInicio}
+                  onIonChange={e => {
+                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
+                    setEditInicio(extractHora(value ?? null));
+                  }}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Hora fin</IonLabel>
+                <IonDatetime
+                  presentation="time"
+                  hourCycle="h23"
+                  value={editFin}
+                  onIonChange={e => {
+                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
+                    setEditFin(extractHora(value ?? null));
+                  }}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Tipo</IonLabel>
+                <IonSelect
+                  value={editTipo}
+                  placeholder="Selecciona tipo"
+                  onIonChange={e => setEditTipo(e.detail.value)}
+                >
+                  {TIPOS.filter(t => t !== "todos").map(tipo => (
+                    <IonSelectOption key={tipo} value={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            </IonList>
+            <IonButton expand="block" onClick={handleGuardarEdicion} className="ion-margin-top">
+              Guardar cambios
+            </IonButton>
+            <IonButton expand="block" color="medium" onClick={() => setShowEditModal(false)} className="ion-margin-top">
+              Cancelar
+            </IonButton>
+          </IonContent>
+        </IonModal>
+
+        <IonToast
+          isOpen={showToast}
+          message="Completa todos los campos correctamente"
+          duration={1500}
+          onDidDismiss={() => setShowToast(false)}
+        />
       </IonContent>
     </IonPage>
   );
