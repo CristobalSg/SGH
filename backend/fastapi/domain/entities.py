@@ -65,6 +65,12 @@ class Token(BaseModel):
     user: 'User'  # Información del usuario
     rol: str  # Rol del usuario para acceso rápido
 
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    expires_in: int  # En segundos
+
 class TokenData(BaseModel):
     email: Optional[str] = None
     user_id: Optional[int] = None

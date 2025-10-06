@@ -291,8 +291,8 @@ class TestAuthIntegration:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_login_response_includes_user_and_role(self, client, sample_user_data):
-        """Prueba que la respuesta de login incluya información del usuario y rol"""
+    def test_login_response_includes_only_token(self, client, sample_user_data):
+        """Prueba que la respuesta de login incluya solo información del token"""
         # Registrar usuario
         client.post("/api/auth/register", json=sample_user_data)
         
@@ -308,17 +308,13 @@ class TestAuthIntegration:
         assert "access_token" in data
         assert "token_type" in data
         assert "expires_in" in data
-        assert "user" in data
-        assert "rol" in data
         
-        # Verificar información del usuario
-        user_info = data["user"]
-        assert user_info["email"] == sample_user_data["email"]
-        assert user_info["nombre"] == sample_user_data["nombre"]
-        assert "id" in user_info
+        # Verificar que NO se incluya información del usuario ni rol en la respuesta
+        assert "user" not in data
+        assert "rol" not in data
         
-        # Verificar que el rol esté presente
-        assert data["rol"] in ["docente", "estudiante", "administrador"]
+        # Verificar que el token type sea bearer
+        assert data["token_type"] == "bearer"
 
     def test_register_with_different_roles(self, client):
         """Prueba registro de usuarios con diferentes roles"""
