@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Tema claro */
+:root {
+  --color-primary-light: #6366f1;
+  --color-primary-dark: #7f3ff0; /* puedes cambiar el gradiente */
+  --color-secondary-light: #4b5563;
+  --color-secondary-dark: #111827;
+  --color-background-light: #ffffff;
+  --color-background-dark: #111827;
+  --color-text-light: #111827;
+  --color-text-dark: #f9fafb;
+}
+
+/* Tema oscuro */
+.dark {
+  --color-primary-light: #7e22ce;
+  --color-primary-dark: #5b21b6;
+  --color-secondary-light: #374151;
+  --color-secondary-dark: #000000;
+  --color-background-light: #1f2937;
+  --color-background-dark: #111827;
+  --color-text-light: #f3f4f6;
+  --color-text-dark: #f9fafb;
+}
