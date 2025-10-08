@@ -65,6 +65,12 @@ class Token(BaseModel):
     user: 'User'  # Información del usuario
     rol: str  # Rol del usuario para acceso rápido
 
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    expires_in: int  # En segundos
+
 class TokenData(BaseModel):
     email: Optional[str] = None
     user_id: Optional[int] = None
@@ -374,3 +380,84 @@ class RestriccionHorarioPatch(BaseModel):
             self.hora_fin <= self.hora_inicio):
             raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
         return self
+
+# ========== Patch DTOs adicionales ==========
+class AsignaturaPatch(BaseModel):
+    """DTO para actualizaciones parciales de asignaturas"""
+    codigo: Optional[str] = Field(None, min_length=1, max_length=20)
+    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
+    creditos: Optional[int] = Field(None, ge=1, le=20)
+    
+    @field_validator('codigo')
+    @classmethod
+    def validate_codigo(cls, v):
+        if v is None:
+            return v
+        if not re.match(r"^[A-Z0-9-]+$", v.strip().upper()):
+            raise ValueError('El código debe contener solo letras mayúsculas, números y guiones')
+        return v.strip().upper()
+
+class SeccionPatch(BaseModel):
+    """DTO para actualizaciones parciales de secciones"""
+    codigo: Optional[str] = Field(None, min_length=1, max_length=20)
+    anio: Optional[int] = Field(None, ge=2020, le=2030)
+    semestre: Optional[int] = Field(None, ge=1, le=2)
+    cupos: Optional[int] = Field(None, ge=1, le=100)
+    asignatura_id: Optional[int] = Field(None, gt=0)
+
+class BloquePatch(BaseModel):
+    """DTO para actualizaciones parciales de bloques"""
+    dia_semana: Optional[int] = Field(None, ge=0, le=6)
+    hora_inicio: Optional[time] = None
+    hora_fin: Optional[time] = None
+    
+    @model_validator(mode='after')
+    def validate_hours(self):
+        if (self.hora_fin is not None and 
+            self.hora_inicio is not None and 
+            self.hora_fin <= self.hora_inicio):
+            raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
+        return self
+
+class ClasePatch(BaseModel):
+    """DTO para actualizaciones parciales de clases"""
+    estado: Optional[str] = Field(None, min_length=1, max_length=20)
+    seccion_id: Optional[int] = Field(None, gt=0)
+    docente_id: Optional[int] = Field(None, gt=0)
+    sala_id: Optional[int] = Field(None, gt=0)
+    bloque_id: Optional[int] = Field(None, gt=0)
+    
+    @field_validator('estado')
+    @classmethod
+    def validate_estado(cls, v):
+        if v is None:
+            return v
+        estados_validos = ['programada', 'en_curso', 'finalizada', 'cancelada', 'suspendida']
+        if v.lower() not in estados_validos:
+            raise ValueError(f'Estado debe ser uno de: {", ".join(estados_validos)}')
+        return v.lower()
+
+class SalaPatch(BaseModel):
+    """DTO para actualizaciones parciales de salas"""
+    codigo: Optional[str] = Field(None, min_length=1, max_length=20)
+    capacidad: Optional[int] = Field(None, ge=1, le=500)
+    tipo: Optional[str] = Field(None, min_length=1, max_length=50)
+    disponible: Optional[bool] = None
+    equipamiento: Optional[str] = None
+    edificio_id: Optional[int] = Field(None, gt=0)
+
+class CampusPatch(BaseModel):
+    """DTO para actualizaciones parciales de campus"""
+    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
+    direccion: Optional[str] = None
+
+class EdificioPatch(BaseModel):
+    """DTO para actualizaciones parciales de edificios"""
+    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
+    pisos: Optional[int] = Field(None, ge=1)
+    campus_id: Optional[int] = Field(None, gt=0)
+
+class DocentePatch(BaseModel):
+    """DTO para actualizaciones parciales de docentes"""
+    user_id: Optional[int] = Field(None, gt=0)
+    departamento: Optional[str] = None
