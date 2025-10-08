@@ -75,5 +75,4 @@ jobs:
           cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.key
           ${{ secrets.KUBERNETES_USER_KEY }}
           EOF
-      - run: export KUBECONFIG=$PWD/.kube/config
-      - run: kubectl get nodes
+      - run: export KUBECONFIG=.kube/config && kubectl get nodes
