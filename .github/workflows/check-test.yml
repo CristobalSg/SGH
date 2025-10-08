@@ -40,9 +40,9 @@ jobs:
       - run: ping rke2.inf.uct.cl -c 3
       - run: sudo snap install kubectl --classic
       - run: echo "Desplegando la aplicación..."
-      - run: mkdir .kube
+      - run: mkdir ../.kube
       - run: |
-          cat <<EOF > .kube/config
+          cat <<EOF > ../.kube/config
           apiVersion: v1
           kind: Config
           clusters:
@@ -64,16 +64,16 @@ jobs:
               client-key: ${{ secrets.KUBERNETES_USER }}.key
           EOF
       - run: |
-          cat <<EOF > .kube/server-ca.crt
+          cat <<EOF > ../.kube/server-ca.crt
           ${{ secrets.KUBERNETES_CA_FILE }}
           EOF
       - run: |
-          cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.crt
+          cat <<EOF > ../.kube/${{ secrets.KUBERNETES_USER }}.crt
           ${{ secrets.KUBERNETES_USER_CRT }}
           EOF
       - run: |
-          cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.key
+          cat <<EOF > ../.kube/${{ secrets.KUBERNETES_USER }}.key
           ${{ secrets.KUBERNETES_USER_KEY }}
           EOF
       - uses: actions/checkout@v4
-      - run: export KUBECONFIG=.kube/config && kubectl apply -f deploy/kubernetes/backend-deployment.yml
+      - run: export KUBECONFIG=../.kube/config && kubectl apply -f deploy/kubernetes/backend-deployment.yml
