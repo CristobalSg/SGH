@@ -94,5 +94,7 @@ def get_current_docente_or_admin_user(
     return current_user
 
 
-def get_user_management_use_case() -> UserManagementUseCase:
-    return UserManagementUseCase(SQLUserRepository())
+def get_user_management_use_case(
+    user_repository: SQLUserRepository = Depends(get_user_repository)
+) -> UserManagementUseCase:
+    return UserManagementUseCase(user_repository)

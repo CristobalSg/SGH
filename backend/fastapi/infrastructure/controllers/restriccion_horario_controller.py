@@ -127,76 +127,10 @@ async def eliminar_restriccion_horario(
             detail=f"Error interno del servidor: {str(e)}"
         )
 
-@router.get("/docente/{docente_id}", response_model=List[RestriccionHorario], tags=["admin-restricciones-horario"])
-async def obtener_restricciones_por_docente(
-    docente_id: int,
-    current_user: User = Depends(get_current_admin_user),
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
-):
-    """Obtener todas las restricciones de horario de un docente específico (solo administradores)"""
-    try:
-        restricciones = use_cases.get_by_docente(docente_id)
-        return restricciones
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno del servidor: {str(e)}"
-        )
-
-@router.get("/dia/{dia_semana}", response_model=List[RestriccionHorario], tags=["admin-restricciones-horario"])
-async def obtener_restricciones_por_dia(
-    dia_semana: int = Path(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)"),
-    current_user: User = Depends(get_current_admin_user),
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
-):
-    """Obtener todas las restricciones de horario para un día específico de la semana (solo administradores)"""
-    try:
-        restricciones = use_cases.get_by_dia_semana(dia_semana)
-        return restricciones
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno del servidor: {str(e)}"
-        )
-
-@router.get("/disponibilidad/{docente_id}", response_model=List[RestriccionHorario], tags=["admin-restricciones-horario"])
-async def obtener_disponibilidad_docente(
-    docente_id: int,
-    dia_semana: Optional[int] = Query(None, ge=0, le=6, description="Día de la semana (opcional)"),
-    current_user: User = Depends(get_current_admin_user),
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
-):
-    """Obtener la disponibilidad de un docente (solo restricciones marcadas como disponibles) - Solo administradores"""
-    try:
-        disponibilidad = use_cases.get_disponibilidad_docente(docente_id, dia_semana)
-        return disponibilidad
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno del servidor: {str(e)}"
-        )
-
-@router.delete("/docente/{docente_id}", status_code=status.HTTP_200_OK, tags=["admin-restricciones-horario"])
-async def eliminar_restricciones_por_docente(
-    docente_id: int,
-    current_user: User = Depends(get_current_admin_user),
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
-):
-    """Eliminar todas las restricciones de horario de un docente (solo administradores)"""
-    try:
-        count = use_cases.delete_by_docente(docente_id)
-        return {
-            "mensaje": f"Se eliminaron {count} restricciones de horario del docente {docente_id}",
-            "eliminadas": count
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno del servidor: {str(e)}"
-        )
-
 # =====================================
 # ENDPOINTS PARA DOCENTES (SUS PROPIAS RESTRICCIONES DE HORARIO)
+# IMPORTANTE: Estas rutas deben ir ANTES de las rutas con parámetros dinámicos
+# para evitar que FastAPI las confunda con /docente/{docente_id}
 # =====================================
 
 @router.get("/docente/mis-restricciones", response_model=List[RestriccionHorario], tags=["docente-restricciones-horario"])
@@ -308,6 +242,79 @@ async def docente_get_mi_disponibilidad(
     try:
         disponibilidad = use_cases.get_disponibilidad_docente_user(current_user, dia_semana)
         return disponibilidad
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
+# =====================================
+# ENDPOINTS ADMIN CON PARÁMETROS DINÁMICOS
+# IMPORTANTE: Estas rutas van DESPUÉS de las rutas específicas
+# =====================================
+
+@router.get("/docente/{docente_id}", response_model=List[RestriccionHorario], tags=["admin-restricciones-horario"])
+async def obtener_restricciones_por_docente(
+    docente_id: int,
+    current_user: User = Depends(get_current_admin_user),
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+):
+    """Obtener todas las restricciones de horario de un docente específico (solo administradores)"""
+    try:
+        restricciones = use_cases.get_by_docente(docente_id)
+        return restricciones
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
+@router.get("/dia/{dia_semana}", response_model=List[RestriccionHorario], tags=["admin-restricciones-horario"])
+async def obtener_restricciones_por_dia(
+    dia_semana: int = Path(..., ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)"),
+    current_user: User = Depends(get_current_admin_user),
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+):
+    """Obtener todas las restricciones de horario para un día específico de la semana (solo administradores)"""
+    try:
+        restricciones = use_cases.get_by_dia_semana(dia_semana)
+        return restricciones
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
+@router.get("/disponibilidad/{docente_id}", response_model=List[RestriccionHorario], tags=["admin-restricciones-horario"])
+async def obtener_disponibilidad_docente(
+    docente_id: int,
+    dia_semana: Optional[int] = Query(None, ge=0, le=6, description="Día de la semana (opcional)"),
+    current_user: User = Depends(get_current_admin_user),
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+):
+    """Obtener la disponibilidad de un docente (solo restricciones marcadas como disponibles) - Solo administradores"""
+    try:
+        disponibilidad = use_cases.get_disponibilidad_docente(docente_id, dia_semana)
+        return disponibilidad
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
+@router.delete("/docente/{docente_id}", status_code=status.HTTP_200_OK, tags=["admin-restricciones-horario"])
+async def eliminar_restricciones_por_docente(
+    docente_id: int,
+    current_user: User = Depends(get_current_admin_user),
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+):
+    """Eliminar todas las restricciones de horario de un docente (solo administradores)"""
+    try:
+        count = use_cases.delete_by_docente(docente_id)
+        return {
+            "mensaje": f"Se eliminaron {count} restricciones de horario del docente {docente_id}",
+            "eliminadas": count
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

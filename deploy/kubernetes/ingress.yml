@@ -16,13 +16,6 @@ spec:
     - host: sgh.inf.uct.cl
       http:
         paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 3000
           - path: /api
             pathType: Prefix
             backend:
@@ -30,3 +23,10 @@ spec:
                 name: backend
                 port:
                   number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000

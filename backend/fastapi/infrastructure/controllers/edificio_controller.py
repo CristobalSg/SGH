@@ -15,7 +15,7 @@ def get_edificio_use_case(db: Session = Depends(get_db)) -> EdificioUseCase:
     campus_repository = SQLCampusRepository(db)
     return EdificioUseCase(edificio_repository, campus_repository)
 
-@router.post("/api/edificios", response_model=Edificio, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Edificio, status_code=status.HTTP_201_CREATED)
 async def create_edificio(
     edificio_data: EdificioCreate,
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
@@ -33,7 +33,7 @@ async def create_edificio(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/edificios", response_model=List[Edificio])
+@router.get("/", response_model=List[Edificio])
 async def get_all_edificios(
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
     current_user = Depends(get_current_active_user)
@@ -50,7 +50,7 @@ async def get_all_edificios(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/edificios/{edificio_id}", response_model=Edificio)
+@router.get("/{edificio_id}", response_model=Edificio)
 async def get_edificio_by_id(
     edificio_id: int,
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
@@ -68,7 +68,7 @@ async def get_edificio_by_id(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/campus/{campus_id}/edificios", response_model=List[Edificio])
+@router.get("/campus/{campus_id}", response_model=List[Edificio])
 async def get_edificios_by_campus(
     campus_id: int,
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
@@ -86,7 +86,26 @@ async def get_edificios_by_campus(
             detail="Error interno del servidor"
         )
 
-@router.delete("/api/edificios/{edificio_id}")
+@router.put("/{edificio_id}", response_model=Edificio, status_code=status.HTTP_200_OK)
+async def update_edificio(
+    edificio_id: int,
+    edificio_data: EdificioCreate,
+    edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
+    current_user = Depends(get_current_active_user)
+):
+    """Actualizar un edificio completo"""
+    try:
+        edificio = edificio_use_case.update_edificio(edificio_id, edificio_data)
+        return edificio
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.delete("/{edificio_id}")
 async def delete_edificio(
     edificio_id: int,
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),

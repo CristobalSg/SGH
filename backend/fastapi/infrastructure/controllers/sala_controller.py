@@ -15,7 +15,7 @@ def get_sala_use_case(db: Session = Depends(get_db)) -> SalaUseCases:
     edificio_repository = SQLEdificioRepository(db)
     return SalaUseCases(sala_repository, edificio_repository)
 
-@router.post("/api/salas", response_model=Sala, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED)
 async def create_sala(
     sala_data: SalaCreate,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
@@ -33,7 +33,7 @@ async def create_sala(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/salas", response_model=List[Sala])
+@router.get("/", response_model=List[Sala])
 async def get_all_salas(
     skip: int = 0,
     limit: int = 100,
@@ -52,7 +52,7 @@ async def get_all_salas(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/salas/{sala_id}", response_model=Sala)
+@router.get("/{sala_id}", response_model=Sala)
 async def get_sala_by_id(
     sala_id: int,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
@@ -70,7 +70,7 @@ async def get_sala_by_id(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/salas/codigo/{codigo}", response_model=Sala)
+@router.get("/codigo/{codigo}", response_model=Sala)
 async def get_sala_by_codigo(
     codigo: str,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
@@ -88,7 +88,8 @@ async def get_sala_by_codigo(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/edificios/{edificio_id}/salas", response_model=List[Sala])
+# Esta ruta debe estar en edificio_controller, pero la dejamos aquí por compatibilidad
+@router.get("/edificio/{edificio_id}", response_model=List[Sala])
 async def get_salas_by_edificio(
     edificio_id: int,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),

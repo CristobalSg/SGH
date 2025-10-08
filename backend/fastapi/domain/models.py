@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text, Boolean, DateTime, func, BigInteger
+from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 from infrastructure.database.config import Base
 
 class User(Base):
     __tablename__ = "user"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(Text, nullable=False)
     email = Column(Text, unique=True, nullable=False)
     pass_hash = Column(Text, nullable=False)
@@ -22,8 +22,8 @@ class User(Base):
 class Docente(Base):
     __tablename__ = "docente"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey('user.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
     departamento = Column(Text)
     
     user = relationship("User", back_populates="docente")
@@ -34,8 +34,8 @@ class Docente(Base):
 class Estudiante(Base):
     __tablename__ = "estudiante"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey('user.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
     matricula = Column(Text)
     
     user = relationship("User", back_populates="estudiante")
@@ -43,8 +43,8 @@ class Estudiante(Base):
 class Administrador(Base):
     __tablename__ = "administrador"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey('user.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
     permisos = Column(Text)
     
     user = relationship("User", back_populates="administrador")
@@ -52,7 +52,7 @@ class Administrador(Base):
 class Campus(Base):
     __tablename__ = "campus"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(Text, nullable=False)
     direccion = Column(Text)
     
@@ -61,8 +61,8 @@ class Campus(Base):
 class Edificio(Base):
     __tablename__ = "edificio"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    campus_id = Column(BigInteger, ForeignKey('campus.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    campus_id = Column(Integer, ForeignKey('campus.id'))
     nombre = Column(Text, nullable=False)
     pisos = Column(Integer)
     
@@ -72,8 +72,8 @@ class Edificio(Base):
 class RestriccionHorario(Base):
     __tablename__ = "restriccion_horario"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    docente_id = Column(BigInteger, ForeignKey('docente.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    docente_id = Column(Integer, ForeignKey('docente.id'))
     dia_semana = Column(Integer)
     hora_inicio = Column(Time)
     hora_fin = Column(Time)
@@ -86,7 +86,7 @@ class RestriccionHorario(Base):
 class Asignatura(Base):
     __tablename__ = "asignatura"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     codigo = Column(Text, nullable=False)
     nombre = Column(Text, nullable=False)
     creditos = Column(Integer)
@@ -96,11 +96,11 @@ class Asignatura(Base):
 class Seccion(Base):
     __tablename__ = "seccion"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     codigo = Column(Text, nullable=False)
     anio = Column(Integer)
     semestre = Column(Integer)
-    asignatura_id = Column(BigInteger, ForeignKey('asignatura.id'))
+    asignatura_id = Column(Integer, ForeignKey('asignatura.id'))
     cupos = Column(Integer)
     
     asignatura = relationship("Asignatura", back_populates="secciones")
@@ -109,8 +109,8 @@ class Seccion(Base):
 class Sala(Base):
     __tablename__ = "sala"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    edificio_id = Column(BigInteger, ForeignKey('edificio.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    edificio_id = Column(Integer, ForeignKey('edificio.id'))
     codigo = Column(Text, nullable=False)
     capacidad = Column(Integer)
     tipo = Column(Text)
@@ -123,7 +123,7 @@ class Sala(Base):
 class Bloque(Base):
     __tablename__ = "bloque"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     dia_semana = Column(Integer)
     hora_inicio = Column(Time)
     hora_fin = Column(Time)
@@ -133,11 +133,11 @@ class Bloque(Base):
 class Clase(Base):
     __tablename__ = "clase"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    seccion_id = Column(BigInteger, ForeignKey('seccion.id'))
-    docente_id = Column(BigInteger, ForeignKey('docente.id'))
-    sala_id = Column(BigInteger, ForeignKey('sala.id'))
-    bloque_id = Column(BigInteger, ForeignKey('bloque.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    seccion_id = Column(Integer, ForeignKey('seccion.id'))
+    docente_id = Column(Integer, ForeignKey('docente.id'))
+    sala_id = Column(Integer, ForeignKey('sala.id'))
+    bloque_id = Column(Integer, ForeignKey('bloque.id'))
     estado = Column(Text)
     
     seccion = relationship("Seccion", back_populates="clases")
@@ -148,8 +148,8 @@ class Clase(Base):
 class Restriccion(Base):
     __tablename__ = "restriccion"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    docente_id = Column(BigInteger, ForeignKey('docente.id'))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    docente_id = Column(Integer, ForeignKey('docente.id'))
     tipo = Column(Text)
     valor = Column(Text)
     prioridad = Column(Integer)
