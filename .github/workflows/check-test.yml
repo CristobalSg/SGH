@@ -40,8 +40,8 @@ jobs:
       - run: ping rke2.inf.uct.cl -c 3
       - run: sudo snap install kubectl --classic
       - run: echo "Desplegando la aplicación..."
+      - run: mkdir .kube
       - run: |
-          mkdir .kube
           cat <<EOF > .kube/config
           apiVersion: v1
           kind: Config
@@ -63,12 +63,15 @@ jobs:
               client-certificate: ${{ secrets.KUBERNETES_USER }}.crt
               client-key: ${{ secrets.KUBERNETES_USER }}.key
           EOF
+      - run: |
           cat <<EOF > .kube/server-ca.crt
           ${{ secrets.KUBERNETES_CA_FILE }}
           EOF
+      - run: |
           cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.crt
           ${{ secrets.KUBERNETES_USER_CRT }}
           EOF
+      - run: |
           cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.key
           ${{ secrets.KUBERNETES_USER_KEY }}
           EOF
