@@ -83,6 +83,4 @@ jobs:
           cat <<EOF > ../.kube/${{ secrets.KUBERNETES_USER }}.key
           ${{ secrets.KUBERNETES_USER_KEY }}
           EOF
-      - uses: actions/checkout@v4
-      #- run: export KUBECONFIG=../.kube/config && kubectl delete -f deploy/kubernetes/backend-deployment.yml && kubectl apply -f deploy/kubernetes/backend-deployment.yml
       - run: export KUBECONFIG=../.kube/config && kubectl -n sgh rollout restart deployment backend
