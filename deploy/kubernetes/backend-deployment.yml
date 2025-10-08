@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: sgh-backend
-          image: 0mellado/sgh-backend:latest
+          image: integra4sgh/backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
