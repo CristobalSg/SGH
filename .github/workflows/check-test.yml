@@ -1,6 +1,14 @@
 name: Integración Continua
 run-name: Se estan corriendo los tests de la aplicación
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
  # tests:
