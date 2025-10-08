@@ -39,3 +39,14 @@ class SQLEdificioRepository:
             self.session.commit()
             return True
         return False
+
+    def update(self, edificio_id: int, edificio_data: EdificioCreate) -> Edificio:
+        """Actualizar un edificio existente"""
+        db_edificio = self.get_by_id(edificio_id)
+        if db_edificio:
+            db_edificio.nombre = edificio_data.nombre
+            db_edificio.pisos = edificio_data.pisos
+            db_edificio.campus_id = edificio_data.campus_id
+            self.session.commit()
+            self.session.refresh(db_edificio)
+        return db_edificio

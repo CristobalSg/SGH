@@ -15,7 +15,7 @@ def get_docente_use_case(db: Session = Depends(get_db)) -> DocenteUseCases:
     user_repository = SQLUserRepository(db)
     return DocenteUseCases(docente_repository, user_repository)
 
-@router.post("/api/docentes", response_model=Docente, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Docente, status_code=status.HTTP_201_CREATED)
 async def create_docente(
     docente_data: DocenteCreate,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
@@ -33,7 +33,7 @@ async def create_docente(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/docentes", response_model=List[Docente])
+@router.get("/", response_model=List[Docente])
 async def get_all_docentes(
     skip: int = 0,
     limit: int = 100,
@@ -52,7 +52,7 @@ async def get_all_docentes(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/docentes/{docente_id}", response_model=Docente)
+@router.get("/{docente_id}", response_model=Docente)
 async def get_docente_by_id(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
@@ -70,7 +70,7 @@ async def get_docente_by_id(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/docentes/departamento/{departamento}", response_model=List[Docente])
+@router.get("/departamento/{departamento}", response_model=List[Docente])
 async def get_docentes_by_departamento(
     departamento: str,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
@@ -88,7 +88,7 @@ async def get_docentes_by_departamento(
             detail="Error interno del servidor"
         )
 
-@router.delete("/api/docentes/{docente_id}")
+@router.delete("/{docente_id}")
 async def delete_docente(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),

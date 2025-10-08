@@ -13,7 +13,7 @@ def get_campus_use_case(db: Session = Depends(get_db)) -> CampusUseCase:
     campus_repository = SQLCampusRepository(db)
     return CampusUseCase(campus_repository)
 
-@router.post("/api/campus", response_model=Campus, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Campus, status_code=status.HTTP_201_CREATED)
 async def create_campus(
     campus_data: CampusCreate,
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
@@ -31,7 +31,7 @@ async def create_campus(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/campus", response_model=List[Campus])
+@router.get("/", response_model=List[Campus])
 async def get_all_campus(
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
     current_user = Depends(get_current_active_user)
@@ -48,7 +48,7 @@ async def get_all_campus(
             detail="Error interno del servidor"
         )
 
-@router.get("/api/campus/{campus_id}", response_model=Campus)
+@router.get("/{campus_id}", response_model=Campus)
 async def get_campus_by_id(
     campus_id: int,
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
@@ -66,7 +66,7 @@ async def get_campus_by_id(
             detail="Error interno del servidor"
         )
 
-@router.delete("/api/campus/{campus_id}")
+@router.delete("/{campus_id}")
 async def delete_campus(
     campus_id: int,
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),

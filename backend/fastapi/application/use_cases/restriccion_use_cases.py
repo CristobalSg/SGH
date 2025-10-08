@@ -117,8 +117,7 @@ class RestriccionUseCases:
         return self.restriccion_repository.get_by_docente(docente_id)
 
     def get_by_id_and_docente_user(self, restriccion_id: int, user: User) -> Restriccion:
-        """Obtener restricción por ID verificando que pertenezca al docente autenticado"""
-        docente_id = self._get_docente_id_from_user(user)
+        """Obtener restricción por ID verificando que pertenezca al docente autenticado o permitir si es admin"""
         restriccion = self.restriccion_repository.get_by_id(restriccion_id)
         
         if not restriccion:
@@ -127,6 +126,12 @@ class RestriccionUseCases:
                 detail="Restricción no encontrada"
             )
         
+        # Si es admin, puede acceder a cualquier restricción
+        if user.rol == "administrador":
+            return restriccion
+        
+        # Si es docente, solo puede acceder a sus propias restricciones
+        docente_id = self._get_docente_id_from_user(user)
         if restriccion.docente_id != docente_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -136,18 +141,38 @@ class RestriccionUseCases:
         return restriccion
 
     def create_for_docente_user(self, restriccion_data: RestriccionCreate, user: User) -> Restriccion:
-        """Crear una nueva restricción para el docente autenticado"""
-        docente_id = self._get_docente_id_from_user(user)
+        """Crear una nueva restricción para el docente autenticado o para otro docente si es admin"""
         
-        # Validar que no se intente asignar la restricción a otro docente
-        if hasattr(restriccion_data, 'docente_id') and restriccion_data.docente_id and restriccion_data.docente_id != docente_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No puede crear restricciones para otros docentes"
-            )
-        
-        # Asegurar que la restricción se asocie al docente autenticado
-        restriccion_data.docente_id = docente_id
+        # Si el usuario es administrador, puede crear para cualquier docente
+        if user.rol == "administrador":
+            # Validar que se especificó un docente_id
+            if not hasattr(restriccion_data, 'docente_id') or not restriccion_data.docente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Debe especificar el ID del docente para crear la restricción"
+                )
+            docente_id = restriccion_data.docente_id
+            
+            # Validar que el docente existe
+            docente = self.docente_repository.get_by_id(docente_id)
+            if not docente:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Docente con id {docente_id} no encontrado"
+                )
+        else:
+            # Si es docente, obtener su propio docente_id
+            docente_id = self._get_docente_id_from_user(user)
+            
+            # Validar que no se intente asignar la restricción a otro docente
+            if hasattr(restriccion_data, 'docente_id') and restriccion_data.docente_id and restriccion_data.docente_id != docente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No puede crear restricciones para otros docentes"
+                )
+            
+            # Asegurar que la restricción se asocie al docente autenticado
+            restriccion_data.docente_id = docente_id
         
         # Validar datos de la restricción
         if not restriccion_data.tipo or not restriccion_data.tipo.strip():
@@ -176,10 +201,9 @@ class RestriccionUseCases:
         return self.restriccion_repository.create(restriccion_data)
 
     def update_for_docente_user(self, restriccion_id: int, user: User, **update_data) -> Restriccion:
-        """Actualizar una restricción verificando que pertenezca al docente autenticado"""
-        docente_id = self._get_docente_id_from_user(user)
+        """Actualizar una restricción verificando que pertenezca al docente autenticado o permitir si es admin"""
         
-        # Verificar que la restricción existe y pertenece al docente
+        # Verificar que la restricción existe
         existing_restriccion = self.restriccion_repository.get_by_id(restriccion_id)
         if not existing_restriccion:
             raise HTTPException(
@@ -187,18 +211,23 @@ class RestriccionUseCases:
                 detail="Restricción no encontrada"
             )
         
-        if existing_restriccion.docente_id != docente_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No puede modificar restricciones de otros docentes"
-            )
-        
-        # Validar que no se intente cambiar el docente_id
-        if 'docente_id' in update_data and update_data['docente_id'] != docente_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No puede transferir restricciones a otros docentes"
-            )
+        # Si es admin, puede modificar cualquier restricción
+        if user.rol != "administrador":
+            # Si es docente, solo puede modificar sus propias restricciones
+            docente_id = self._get_docente_id_from_user(user)
+            
+            if existing_restriccion.docente_id != docente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No puede modificar restricciones de otros docentes"
+                )
+            
+            # Validar que no se intente cambiar el docente_id
+            if 'docente_id' in update_data and update_data['docente_id'] != docente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No puede transferir restricciones a otros docentes"
+                )
         
         # Validar datos si se están actualizando
         if 'tipo' in update_data and (not update_data['tipo'] or not update_data['tipo'].strip()):
@@ -218,7 +247,7 @@ class RestriccionUseCases:
             nuevo_tipo = update_data.get('tipo', existing_restriccion.tipo)
             nuevo_valor = update_data.get('valor', existing_restriccion.valor)
             
-            restricciones_existentes = self.restriccion_repository.get_by_docente(docente_id)
+            restricciones_existentes = self.restriccion_repository.get_by_docente(existing_restriccion.docente_id)
             for restriccion_existente in restricciones_existentes:
                 if (restriccion_existente.id != restriccion_id and  # No comparar consigo misma
                     restriccion_existente.tipo == nuevo_tipo.lower() if isinstance(nuevo_tipo, str) else nuevo_tipo and 
@@ -238,10 +267,9 @@ class RestriccionUseCases:
         return updated_restriccion
 
     def delete_for_docente_user(self, restriccion_id: int, user: User) -> bool:
-        """Eliminar una restricción verificando que pertenezca al docente autenticado"""
-        docente_id = self._get_docente_id_from_user(user)
+        """Eliminar una restricción verificando que pertenezca al docente autenticado o permitir si es admin"""
         
-        # Verificar que la restricción existe y pertenece al docente
+        # Verificar que la restricción existe
         existing_restriccion = self.restriccion_repository.get_by_id(restriccion_id)
         if not existing_restriccion:
             raise HTTPException(
@@ -249,11 +277,16 @@ class RestriccionUseCases:
                 detail="Restricción no encontrada"
             )
         
-        if existing_restriccion.docente_id != docente_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No puede eliminar restricciones de otros docentes"
-            )
+        # Si es admin, puede eliminar cualquier restricción
+        if user.rol != "administrador":
+            # Si es docente, solo puede eliminar sus propias restricciones
+            docente_id = self._get_docente_id_from_user(user)
+            
+            if existing_restriccion.docente_id != docente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No puede eliminar restricciones de otros docentes"
+                )
         
         # Verificar si la restricción está siendo utilizada (aquí podrías agregar lógica adicional)
         # Por ejemplo, verificar si hay clases programadas que dependen de esta restricción

@@ -26,6 +26,8 @@ services:
       dockerfile: Dockerfile.test
     container_name: sgh-backend
     restart: unless-stopped
+    env_file:
+      - .env.development
     ports:
       - "${BACKEND_PORT}:8000"
     environment:

@@ -69,3 +69,23 @@ class EdificioUseCase:
             )
         
         return self.edificio_repository.delete(edificio_id)
+
+    def update_edificio(self, edificio_id: int, edificio_data: EdificioCreate) -> Edificio:
+        """Actualizar un edificio existente"""
+        # Verificar que el edificio existe
+        edificio = self.edificio_repository.get_by_id(edificio_id)
+        if not edificio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Edificio con id {edificio_id} no encontrado"
+            )
+        
+        # Verificar que el campus existe
+        campus = self.campus_repository.get_by_id(edificio_data.campus_id)
+        if not campus:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Campus con id {edificio_data.campus_id} no encontrado"
+            )
+        
+        return self.edificio_repository.update(edificio_id, edificio_data)
