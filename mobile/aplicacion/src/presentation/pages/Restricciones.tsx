@@ -53,7 +53,7 @@ const Restricciones: React.FC = () => {
   useEffect(() => {
     const cargarRestricciones = async () => {
       try {
-        const data = await useCase.getAllRestricciones();
+        const data = await useCase.listar();
         setRestricciones(data);
       } catch (error) {
         console.error("Error al cargar restricciones:", error);
@@ -78,7 +78,7 @@ const Restricciones: React.FC = () => {
     }
 
     try {
-      const nueva = await useCase.createRestriccion({
+      const nueva = await useCase.agregar({
         dia: nuevoDia,
         inicio: nuevoInicio,
         fin: nuevoFin,
@@ -104,7 +104,7 @@ const Restricciones: React.FC = () => {
     }
 
     try {
-      await useCase.deleteRestriccion((restriccion as any).id);
+      await useCase.eliminar((restriccion as any).id);
       const nuevas = restricciones.filter((_, i) => i !== index);
       setRestricciones(nuevas);
     } catch (error) {
@@ -136,7 +136,7 @@ const Restricciones: React.FC = () => {
     }
 
     try {
-      const actualizada = await useCase.updateRestriccion((restriccion as any).id, {
+      const actualizada = await useCase.editar((restriccion as any).id, {
         dia: editDia,
         inicio: editInicio,
         fin: editFin,
