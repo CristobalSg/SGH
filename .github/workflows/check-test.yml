@@ -1,6 +1,6 @@
 name: Integración Continua
 run-name: Se estan corriendo los tests de la aplicación
-on: [push, pull_request, workflow_dispatch]
+on: [push, pull_request]
 
 jobs:
  # tests:
@@ -75,4 +75,5 @@ jobs:
           cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.key
           ${{ secrets.KUBERNETES_USER_KEY }}
           EOF
-      - run: export KUBECONFIG=.kube/config && kubectl get nodes
+      - uses: actions/checkout@v4
+      - run: export KUBECONFIG=.kube/config && kubectl apply -f deploy/kubernetes/backend-deployment.yml
