@@ -40,4 +40,37 @@ jobs:
       - run: ping rke2.inf.uct.cl -c 3
       - run: sudo snap install kubectl --classic
       - run: echo "Desplegando la aplicación..."
-      - run: kubectl version
+      - run: |
+          mkdir .kube
+          cat <<EOF > .kube/config
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              certificate-authority: server-ca.crt
+              server: https://rke2.inf.uct.cl:6443
+            name: cluster-kubernetes
+          contexts:
+          - context:
+              cluster: cluster-kubernetes
+              user: ${{ secrets.KUBERNETES_USER }}
+              namespace: default
+            name: ${{ secrets.KUBERNETES_USER }}-context
+          current-context: ${{ secrets.KUBERNETES_USER }}-context
+          users:
+          - name: ${{ secrets.KUBERNETES_USER }}
+            user:
+              client-certificate: ${{ secrets.KUBERNETES_USER }}.crt
+              client-key: ${{ secrets.KUBERNETES_USER }}.key
+          EOF
+          cat <<EOF > .kube/server-ca.crt
+          ${{ secrets.KUBERNETES_CA_FILE }}
+          EOF
+          cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.crt
+          ${{ secrets.KUBERNETES_USER_CRT }}
+          EOF
+          cat <<EOF > .kube/${{ secrets.KUBERNETES_USER }}.key
+          ${{ secrets.KUBERNETES_USER_KEY }}
+          EOF
+      - run: export KUBECONFIG=$PWD/.kube/config
+      - run: kubectl get nodes
