@@ -19,43 +19,48 @@ import {
   IonIcon
 } from '@ionic/react';
 import { addCircleOutline, trashOutline, createOutline } from 'ionicons/icons';
-import { useState } from 'react';
+import { useEffect, useState } from "react";
 
-interface Restriccion {
-  dia: string;
-  inicio: string;
-  fin: string;
-  tipo: string;
-}
+// Casos de uso y repositorio
+import { RestriccionesUseCase } from "../../application/usecases/RestriccionesUseCase";
+import { RestriccionesApiRepository } from "../../infrastructure/repositories/RestriccionesApiRepository";
+import { Restriccion } from "../../domain/entities/Restriccion";
 
-const DIAS = [
-  "todos", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
-];
+const repo = new RestriccionesApiRepository();
+const useCase = new RestriccionesUseCase(repo);
 
-const TIPOS = [
-  "todos", "obligatoria", "preferencia", "opcional"
-];
+const DIAS = ["todos", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+const TIPOS = ["todos", "obligatoria", "preferencia", "opcional"];
 
 const Restricciones: React.FC = () => {
   const [restricciones, setRestricciones] = useState<Restriccion[]>([]);
   const [filtroDia, setFiltroDia] = useState<string>('todos');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
-
-  // Modal para agregar restricción
   const [showModal, setShowModal] = useState(false);
   const [nuevoDia, setNuevoDia] = useState('');
   const [nuevoInicio, setNuevoInicio] = useState('');
   const [nuevoFin, setNuevoFin] = useState('');
   const [nuevoTipo, setNuevoTipo] = useState('');
   const [showToast, setShowToast] = useState(false);
-
-  // Modal para editar restricción
   const [showEditModal, setShowEditModal] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editDia, setEditDia] = useState('');
   const [editInicio, setEditInicio] = useState('');
   const [editFin, setEditFin] = useState('');
   const [editTipo, setEditTipo] = useState('');
+
+  // 🟢 Cargar restricciones desde el backend
+  useEffect(() => {
+    const cargarRestricciones = async () => {
+      try {
+        const data = await useCase.getAllRestricciones();
+        setRestricciones(data);
+      } catch (error) {
+        console.error("Error al cargar restricciones:", error);
+      }
+    };
+    cargarRestricciones();
+  }, []);
 
   const extractHora = (value: string | null): string => {
     if (!value) return '';
@@ -65,26 +70,46 @@ const Restricciones: React.FC = () => {
     return `${horas}:${minutos}`;
   };
 
-  const handleAgregarRestriccion = () => {
+  // 🟢 Crear restricción en backend
+  const handleAgregarRestriccion = async () => {
     if (!nuevoDia || !nuevoInicio || !nuevoFin || !nuevoTipo) {
       setShowToast(true);
       return;
     }
-    setRestricciones([
-      ...restricciones,
-      { dia: nuevoDia, inicio: nuevoInicio, fin: nuevoFin, tipo: nuevoTipo }
-    ]);
-    setShowModal(false);
-    setNuevoDia('');
-    setNuevoInicio('');
-    setNuevoFin('');
-    setNuevoTipo('');
+
+    try {
+      const nueva = await useCase.createRestriccion({
+        dia: nuevoDia,
+        inicio: nuevoInicio,
+        fin: nuevoFin,
+        tipo: nuevoTipo,
+      });
+      setRestricciones([...restricciones, nueva]);
+      setShowModal(false);
+      setNuevoDia('');
+      setNuevoInicio('');
+      setNuevoFin('');
+      setNuevoTipo('');
+    } catch (error) {
+      console.error("Error al crear restricción:", error);
+    }
   };
 
-  const handleEliminar = (index: number) => {
-    const nuevas = [...restricciones];
-    nuevas.splice(index, 1);
-    setRestricciones(nuevas);
+  // 🟢 Eliminar restricción del backend
+  const handleEliminar = async (index: number) => {
+    const restriccion = restricciones[index];
+    if (!restriccion || !(restriccion as any).id) {
+      console.error("La restricción no tiene un ID válido para eliminar.");
+      return;
+    }
+
+    try {
+      await useCase.deleteRestriccion((restriccion as any).id);
+      const nuevas = restricciones.filter((_, i) => i !== index);
+      setRestricciones(nuevas);
+    } catch (error) {
+      console.error("Error al eliminar restricción:", error);
+    }
   };
 
   const handleEditar = (index: number) => {
@@ -97,34 +122,37 @@ const Restricciones: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleGuardarEdicion = () => {
-    if (
-      editIndex === null ||
-      !editDia ||
-      !editInicio ||
-      !editFin ||
-      !editTipo
-    ) {
+  // 🟢 Actualizar restricción en backend
+  const handleGuardarEdicion = async () => {
+    if (editIndex === null || !editDia || !editInicio || !editFin || !editTipo) {
       setShowToast(true);
       return;
     }
-    const nuevas = [...restricciones];
-    nuevas[editIndex] = {
-      dia: editDia,
-      inicio: editInicio,
-      fin: editFin,
-      tipo: editTipo,
-    };
-    setRestricciones(nuevas);
-    setShowEditModal(false);
-    setEditIndex(null);
-    setEditDia('');
-    setEditInicio('');
-    setEditFin('');
-    setEditTipo('');
+
+    const restriccion = restricciones[editIndex];
+    if (!(restriccion as any).id) {
+      console.error("No se puede actualizar una restricción sin ID");
+      return;
+    }
+
+    try {
+      const actualizada = await useCase.updateRestriccion((restriccion as any).id, {
+        dia: editDia,
+        inicio: editInicio,
+        fin: editFin,
+        tipo: editTipo,
+      });
+      const nuevas = [...restricciones];
+      nuevas[editIndex] = actualizada;
+      setRestricciones(nuevas);
+      setShowEditModal(false);
+      setEditIndex(null);
+    } catch (error) {
+      console.error("Error al actualizar restricción:", error);
+    }
   };
 
-  // Filtrar restricciones
+  // 🟢 Filtrar restricciones
   const restriccionesFiltradas = restricciones.filter(r => {
     const diaMatch = filtroDia === 'todos' || r.dia === filtroDia;
     const tipoMatch = filtroTipo === 'todos' || r.tipo === filtroTipo;
@@ -136,7 +164,6 @@ const Restricciones: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Restricciones</IonTitle>
-          {/* Para el botón agregar */}
           <IonButton slot="end" onClick={() => setShowModal(true)}>
             <IonLabel>Agregar</IonLabel>
             <IonIcon icon={addCircleOutline} style={{ marginLeft: 4 }} />
@@ -165,13 +192,13 @@ const Restricciones: React.FC = () => {
           </IonItem>
         </div>
 
-        {/* Lista de restricciones con botones alineados al lado */}
+        {/* Lista de restricciones */}
         <IonList>
           {restriccionesFiltradas.map((r, index) => (
             <IonItem key={index} style={{ alignItems: 'flex-start' }}>
               <IonGrid style={{ width: '100%' }}>
                 <IonRow>
-                  <IonCol size="9" style={{ wordBreak: 'break-word' }}>
+                  <IonCol size="9">
                     <IonLabel>
                       <strong>{r.dia.charAt(0).toUpperCase() + r.dia.slice(1)}</strong>: {r.inicio} - {r.fin} ({r.tipo})
                     </IonLabel>
@@ -195,7 +222,7 @@ const Restricciones: React.FC = () => {
           )}
         </IonList>
 
-        {/* Modal para agregar restricción */}
+        {/* Modal agregar */}
         <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <IonHeader>
             <IonToolbar>
@@ -206,11 +233,7 @@ const Restricciones: React.FC = () => {
             <IonList>
               <IonItem>
                 <IonLabel position="stacked">Día</IonLabel>
-                <IonSelect
-                  value={nuevoDia}
-                  placeholder="Selecciona día"
-                  onIonChange={e => setNuevoDia(e.detail.value)}
-                >
+                <IonSelect value={nuevoDia} placeholder="Selecciona día" onIonChange={e => setNuevoDia(e.detail.value)}>
                   {DIAS.filter(d => d !== "todos").map(dia => (
                     <IonSelectOption key={dia} value={dia}>{dia.charAt(0).toUpperCase() + dia.slice(1)}</IonSelectOption>
                   ))}
@@ -218,51 +241,29 @@ const Restricciones: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Hora inicio</IonLabel>
-                <IonDatetime
-                  presentation="time"
-                  hourCycle="h23"
-                  value={nuevoInicio}
-                  onIonChange={e => {
-                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
-                    setNuevoInicio(extractHora(value ?? null));
-                  }}
-                />
+                <IonDatetime presentation="time" hourCycle="h23" value={nuevoInicio}
+                  onIonChange={e => setNuevoInicio(extractHora(e.detail.value as string))} />
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Hora fin</IonLabel>
-                <IonDatetime
-                  presentation="time"
-                  hourCycle="h23"
-                  value={nuevoFin}
-                  onIonChange={e => {
-                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
-                    setNuevoFin(extractHora(value ?? null));
-                  }}
-                />
+                <IonDatetime presentation="time" hourCycle="h23" value={nuevoFin}
+                  onIonChange={e => setNuevoFin(extractHora(e.detail.value as string))} />
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Tipo</IonLabel>
-                <IonSelect
-                  value={nuevoTipo}
-                  placeholder="Selecciona tipo"
-                  onIonChange={e => setNuevoTipo(e.detail.value)}
-                >
+                <IonSelect value={nuevoTipo} placeholder="Selecciona tipo" onIonChange={e => setNuevoTipo(e.detail.value)}>
                   {TIPOS.filter(t => t !== "todos").map(tipo => (
                     <IonSelectOption key={tipo} value={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</IonSelectOption>
                   ))}
                 </IonSelect>
               </IonItem>
             </IonList>
-            <IonButton expand="block" onClick={handleAgregarRestriccion} className="ion-margin-top">
-              Guardar
-            </IonButton>
-            <IonButton expand="block" color="medium" onClick={() => setShowModal(false)} className="ion-margin-top">
-              Cancelar
-            </IonButton>
+            <IonButton expand="block" onClick={handleAgregarRestriccion} className="ion-margin-top">Guardar</IonButton>
+            <IonButton expand="block" color="medium" onClick={() => setShowModal(false)} className="ion-margin-top">Cancelar</IonButton>
           </IonContent>
         </IonModal>
 
-        {/* Modal para editar restricción */}
+        {/* Modal editar */}
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
             <IonToolbar>
@@ -273,11 +274,7 @@ const Restricciones: React.FC = () => {
             <IonList>
               <IonItem>
                 <IonLabel position="stacked">Día</IonLabel>
-                <IonSelect
-                  value={editDia}
-                  placeholder="Selecciona día"
-                  onIonChange={e => setEditDia(e.detail.value)}
-                >
+                <IonSelect value={editDia} placeholder="Selecciona día" onIonChange={e => setEditDia(e.detail.value)}>
                   {DIAS.filter(d => d !== "todos").map(dia => (
                     <IonSelectOption key={dia} value={dia}>{dia.charAt(0).toUpperCase() + dia.slice(1)}</IonSelectOption>
                   ))}
@@ -285,47 +282,25 @@ const Restricciones: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Hora inicio</IonLabel>
-                <IonDatetime
-                  presentation="time"
-                  hourCycle="h23"
-                  value={editInicio}
-                  onIonChange={e => {
-                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
-                    setEditInicio(extractHora(value ?? null));
-                  }}
-                />
+                <IonDatetime presentation="time" hourCycle="h23" value={editInicio}
+                  onIonChange={e => setEditInicio(extractHora(e.detail.value as string))} />
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Hora fin</IonLabel>
-                <IonDatetime
-                  presentation="time"
-                  hourCycle="h23"
-                  value={editFin}
-                  onIonChange={e => {
-                    const value = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value;
-                    setEditFin(extractHora(value ?? null));
-                  }}
-                />
+                <IonDatetime presentation="time" hourCycle="h23" value={editFin}
+                  onIonChange={e => setEditFin(extractHora(e.detail.value as string))} />
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Tipo</IonLabel>
-                <IonSelect
-                  value={editTipo}
-                  placeholder="Selecciona tipo"
-                  onIonChange={e => setEditTipo(e.detail.value)}
-                >
+                <IonSelect value={editTipo} placeholder="Selecciona tipo" onIonChange={e => setEditTipo(e.detail.value)}>
                   {TIPOS.filter(t => t !== "todos").map(tipo => (
                     <IonSelectOption key={tipo} value={tipo}>{tipo.charAt(0).toUpperCase() + tipo.slice(1)}</IonSelectOption>
                   ))}
                 </IonSelect>
               </IonItem>
             </IonList>
-            <IonButton expand="block" onClick={handleGuardarEdicion} className="ion-margin-top">
-              Guardar cambios
-            </IonButton>
-            <IonButton expand="block" color="medium" onClick={() => setShowEditModal(false)} className="ion-margin-top">
-              Cancelar
-            </IonButton>
+            <IonButton expand="block" onClick={handleGuardarEdicion} className="ion-margin-top">Guardar cambios</IonButton>
+            <IonButton expand="block" color="medium" onClick={() => setShowEditModal(false)} className="ion-margin-top">Cancelar</IonButton>
           </IonContent>
         </IonModal>
 
