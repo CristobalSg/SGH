@@ -23,8 +23,8 @@ fi
 
 # Iniciar la aplicación
 if [ "$test" == "true" ]; then
-    echo "Iniciando tests..."
-    exec /usr/bin/make -f Makefile.tests test
+    echo "🧪 Ejecutando pruebas con pytest..."
+    exec pytest -v
 else
     echo "🌟 Iniciando FastAPI..."
     exec uvicorn main:app --host 0.0.0.0 --port 8000
