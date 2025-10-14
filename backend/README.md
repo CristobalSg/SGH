@@ -18,6 +18,17 @@ API REST desarrollada con **FastAPI** y **arquitectura hexagonal** para la gesti
 
 ```
 backend/fastapi/
+├── api/
+│   └── v1/
+│       ├── api.py                    # Router principal que agrupa todos los endpoints
+│       └── endpoints/
+│           ├── academic.py           # Asignaturas, secciones, clases
+│           ├── auth.py               # Autenticación y usuarios
+│           ├── infrastructure.py     # Campus, edificios, salas
+│           ├── personnel.py          # Docentes
+│           ├── restrictions.py       # Restricciones y restricciones de horario
+│           ├── schedule.py           # Bloques horarios
+│           └── system.py             # Health checks, database
 ├── domain/                    # Capa de Dominio
 │   ├── entities.py           # Entidades de negocio
 │   ├── models.py             # Modelos de datos
@@ -77,7 +88,7 @@ backend/fastapi/
 │   ├── test_salas_api.py
 │   └── test_users_api.py
 │
-├── main.py                    # Punto de entrada de la aplicación
+├── main.py                    # Punto de entrada de la aplicación (simplificado)
 ├── config.py                  # Configuración de variables de entorno
 ├── requirements.txt           # Dependencias Python
 ├── Dockerfile                 # Imagen Docker para producción
