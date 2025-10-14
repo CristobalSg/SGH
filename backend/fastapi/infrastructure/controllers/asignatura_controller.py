@@ -174,3 +174,59 @@ async def delete_asignatura(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar la asignatura: {str(e)}"
         )
+
+@router.get("/codigo/{codigo}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Obtener asignatura por código", tags=["asignaturas"])
+async def get_asignatura_by_codigo(
+    codigo: str = Path(..., description="Código de la asignatura"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+):
+    """Obtener una asignatura específica por su código"""
+    try:
+        asignatura = use_cases.get_by_codigo(codigo)
+        if not asignatura:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Asignatura con código '{codigo}' no encontrada"
+            )
+        return asignatura
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener la asignatura: {str(e)}"
+        )
+
+@router.get("/buscar/nombre", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Buscar asignaturas por nombre", tags=["asignaturas"])
+async def search_asignaturas_by_nombre(
+    nombre: str,
+    current_user: User = Depends(get_current_active_user),
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+):
+    """Buscar asignaturas por nombre (búsqueda parcial)"""
+    try:
+        asignaturas = use_cases.search_by_nombre(nombre)
+        return asignaturas
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al buscar asignaturas: {str(e)}"
+        )
+
+@router.get("/buscar/creditos", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Buscar asignaturas por créditos", tags=["asignaturas"])
+async def get_asignaturas_by_creditos(
+    creditos_min: Optional[int] = None,
+    creditos_max: Optional[int] = None,
+    current_user: User = Depends(get_current_active_user),
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+):
+    """Buscar asignaturas por rango de créditos"""
+    try:
+        asignaturas = use_cases.get_by_creditos(creditos_min, creditos_max)
+        return asignaturas
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al buscar asignaturas: {str(e)}"
+        )

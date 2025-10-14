@@ -106,3 +106,101 @@ async def get_salas_by_edificio(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor"
         )
+
+@router.put("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK)
+async def update_sala(
+    sala_id: int,
+    sala_data: SalaCreate,
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(get_current_active_user)
+):
+    """Actualizar una sala"""
+    try:
+        update_data = {
+            'codigo': sala_data.codigo,
+            'nombre': sala_data.nombre,
+            'capacidad': sala_data.capacidad,
+            'tipo': sala_data.tipo,
+            'edificio_id': sala_data.edificio_id
+        }
+        sala = sala_use_case.update(sala_id, **update_data)
+        return sala
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.delete("/{sala_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_sala(
+    sala_id: int,
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(get_current_active_user)
+):
+    """Eliminar una sala"""
+    try:
+        sala_use_case.delete(sala_id)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.get("/buscar/tipo/{tipo}", response_model=List[Sala])
+async def get_salas_by_tipo(
+    tipo: str,
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(get_current_active_user)
+):
+    """Obtener salas por tipo"""
+    try:
+        salas = sala_use_case.get_by_tipo(tipo)
+        return salas
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.get("/buscar/capacidad", response_model=List[Sala])
+async def get_salas_by_capacidad(
+    capacidad_min: int = None,
+    capacidad_max: int = None,
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(get_current_active_user)
+):
+    """Obtener salas por rango de capacidad"""
+    try:
+        salas = sala_use_case.get_by_capacidad(capacidad_min, capacidad_max)
+        return salas
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.get("/disponibles", response_model=List[Sala])
+async def get_salas_disponibles(
+    bloque_id: int = None,
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(get_current_active_user)
+):
+    """Obtener salas disponibles, opcionalmente filtradas por bloque"""
+    try:
+        salas = sala_use_case.get_salas_disponibles(bloque_id)
+        return salas
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
