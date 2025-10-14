@@ -110,3 +110,83 @@ async def validate_user_role(
             "required_role": required_role,
             "message": e.detail
         }
+
+@router.get("/validate-admin")
+async def validate_admin(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+):
+    """Validar si el usuario actual es administrador"""
+    try:
+        is_admin = auth_use_case.require_admin(current_user)
+        return {
+            "valid": is_admin,
+            "user_rol": current_user.rol,
+            "message": "Usuario es administrador"
+        }
+    except HTTPException as e:
+        return {
+            "valid": False,
+            "user_rol": current_user.rol,
+            "message": e.detail
+        }
+
+@router.get("/validate-docente")
+async def validate_docente(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+):
+    """Validar si el usuario actual es docente"""
+    try:
+        is_docente = auth_use_case.require_docente(current_user)
+        return {
+            "valid": is_docente,
+            "user_rol": current_user.rol,
+            "message": "Usuario es docente"
+        }
+    except HTTPException as e:
+        return {
+            "valid": False,
+            "user_rol": current_user.rol,
+            "message": e.detail
+        }
+
+@router.get("/validate-estudiante")
+async def validate_estudiante(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+):
+    """Validar si el usuario actual es estudiante"""
+    try:
+        is_estudiante = auth_use_case.require_estudiante(current_user)
+        return {
+            "valid": is_estudiante,
+            "user_rol": current_user.rol,
+            "message": "Usuario es estudiante"
+        }
+    except HTTPException as e:
+        return {
+            "valid": False,
+            "user_rol": current_user.rol,
+            "message": e.detail
+        }
+
+@router.get("/validate-docente-or-admin")
+async def validate_docente_or_admin(
+    current_user: User = Depends(get_current_active_user),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+):
+    """Validar si el usuario actual es docente o administrador"""
+    try:
+        is_docente_or_admin = auth_use_case.require_docente_or_admin(current_user)
+        return {
+            "valid": is_docente_or_admin,
+            "user_rol": current_user.rol,
+            "message": f"Usuario es {current_user.rol}"
+        }
+    except HTTPException as e:
+        return {
+            "valid": False,
+            "user_rol": current_user.rol,
+            "message": e.detail
+        }

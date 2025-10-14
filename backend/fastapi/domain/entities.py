@@ -80,6 +80,16 @@ class TokenData(BaseModel):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
+# Modelo simplificado de User para mostrar en relaciones (sin datos sensibles)
+class UserSimple(BaseModel):
+    id: int
+    nombre: str
+    email: EmailStr
+    rol: str
+    activo: bool
+    
+    model_config = ConfigDict(from_attributes=True)
+
 class DocenteBase(BaseModel):
     departamento: Optional[str] = Field(None, description="Departamento del docente")
 
@@ -89,6 +99,7 @@ class DocenteCreate(DocenteBase):
 class Docente(DocenteBase):
     id: int
     user_id: int
+    user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,6 +112,7 @@ class EstudianteCreate(EstudianteBase):
 class Estudiante(EstudianteBase):
     id: int
     user_id: int
+    user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -113,6 +125,7 @@ class AdministradorCreate(AdministradorBase):
 class Administrador(AdministradorBase):
     id: int
     user_id: int
+    user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
     
     model_config = ConfigDict(from_attributes=True)
 

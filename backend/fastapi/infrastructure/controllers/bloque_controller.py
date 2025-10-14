@@ -174,3 +174,52 @@ async def delete_bloque(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar el bloque: {str(e)}"
         )
+
+@router.get("/dia/{dia_semana}", response_model=List[Bloque], status_code=status.HTTP_200_OK, summary="Obtener bloques por día de la semana", tags=["bloques"])
+async def get_bloques_by_dia_semana(
+    dia_semana: int = Path(..., ge=1, le=7, description="Día de la semana (1=Lunes, 7=Domingo)"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
+):
+    """Obtener bloques por día de la semana"""
+    try:
+        bloques = use_cases.get_by_dia_semana(dia_semana)
+        return bloques
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener bloques: {str(e)}"
+        )
+
+@router.get("/buscar/horario", response_model=List[Bloque], status_code=status.HTTP_200_OK, summary="Buscar bloques por horario", tags=["bloques"])
+async def get_bloques_by_horario(
+    hora_inicio: Optional[str] = None,
+    hora_fin: Optional[str] = None,
+    current_user: User = Depends(get_current_active_user),
+    use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
+):
+    """Buscar bloques por rango de horario"""
+    try:
+        bloques = use_cases.get_by_horario(hora_inicio, hora_fin)
+        return bloques
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al buscar bloques: {str(e)}"
+        )
+
+@router.get("/libres", response_model=List[Bloque], status_code=status.HTTP_200_OK, summary="Obtener bloques libres", tags=["bloques"])
+async def get_bloques_libres(
+    dia_semana: Optional[int] = None,
+    current_user: User = Depends(get_current_active_user),
+    use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
+):
+    """Obtener bloques libres, opcionalmente filtrados por día de la semana"""
+    try:
+        bloques = use_cases.get_bloques_libres(dia_semana)
+        return bloques
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener bloques libres: {str(e)}"
+        )

@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from domain.models import Estudiante
 from domain.entities import EstudianteCreate
 
@@ -20,19 +20,19 @@ class SQLEstudianteRepository:
 
     def get_by_id(self, estudiante_id: int) -> Optional[Estudiante]:
         """Obtener estudiante por ID"""
-        return self.session.query(Estudiante).filter(Estudiante.id == estudiante_id).first()
+        return self.session.query(Estudiante).options(joinedload(Estudiante.user)).filter(Estudiante.id == estudiante_id).first()
 
     def get_by_user_id(self, user_id: int) -> Optional[Estudiante]:
         """Obtener estudiante por user_id"""
-        return self.session.query(Estudiante).filter(Estudiante.user_id == user_id).first()
+        return self.session.query(Estudiante).options(joinedload(Estudiante.user)).filter(Estudiante.user_id == user_id).first()
 
     def get_by_matricula(self, matricula: str) -> Optional[Estudiante]:
         """Obtener estudiante por matrícula"""
-        return self.session.query(Estudiante).filter(Estudiante.matricula == matricula).first()
+        return self.session.query(Estudiante).options(joinedload(Estudiante.user)).filter(Estudiante.matricula == matricula).first()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Estudiante]:
         """Obtener todos los estudiantes con paginación"""
-        return self.session.query(Estudiante).offset(skip).limit(limit).all()
+        return self.session.query(Estudiante).options(joinedload(Estudiante.user)).offset(skip).limit(limit).all()
 
     def delete(self, estudiante_id: int) -> bool:
         """Eliminar un estudiante"""

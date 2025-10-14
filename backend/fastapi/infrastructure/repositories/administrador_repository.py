@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from domain.models import Administrador
 from domain.entities import AdministradorCreate
 
@@ -20,15 +20,15 @@ class SQLAdministradorRepository:
 
     def get_by_id(self, administrador_id: int) -> Optional[Administrador]:
         """Obtener administrador por ID"""
-        return self.session.query(Administrador).filter(Administrador.id == administrador_id).first()
+        return self.session.query(Administrador).options(joinedload(Administrador.user)).filter(Administrador.id == administrador_id).first()
 
     def get_by_user_id(self, user_id: int) -> Optional[Administrador]:
         """Obtener administrador por user_id"""
-        return self.session.query(Administrador).filter(Administrador.user_id == user_id).first()
+        return self.session.query(Administrador).options(joinedload(Administrador.user)).filter(Administrador.user_id == user_id).first()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Administrador]:
         """Obtener todos los administradores con paginación"""
-        return self.session.query(Administrador).offset(skip).limit(limit).all()
+        return self.session.query(Administrador).options(joinedload(Administrador.user)).offset(skip).limit(limit).all()
 
     def delete(self, administrador_id: int) -> bool:
         """Eliminar un administrador"""

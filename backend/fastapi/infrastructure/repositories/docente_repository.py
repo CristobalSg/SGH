@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from domain.models import Docente
 from domain.entities import DocenteCreate
 
@@ -20,19 +20,19 @@ class DocenteRepository:
 
     def get_by_id(self, docente_id: int) -> Optional[Docente]:
         """Obtener docente por ID"""
-        return self.session.query(Docente).filter(Docente.id == docente_id).first()
+        return self.session.query(Docente).options(joinedload(Docente.user)).filter(Docente.id == docente_id).first()
 
     def get_by_user_id(self, user_id: int) -> Optional[Docente]:
         """Obtener docente por user_id"""
-        return self.session.query(Docente).filter(Docente.user_id == user_id).first()
+        return self.session.query(Docente).options(joinedload(Docente.user)).filter(Docente.user_id == user_id).first()
 
     def get_by_departamento(self, departamento: str) -> List[Docente]:
         """Obtener docentes por departamento"""
-        return self.session.query(Docente).filter(Docente.departamento == departamento).all()
+        return self.session.query(Docente).options(joinedload(Docente.user)).filter(Docente.departamento == departamento).all()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Docente]:
         """Obtener todos los docentes con paginación"""
-        return self.session.query(Docente).offset(skip).limit(limit).all()
+        return self.session.query(Docente).options(joinedload(Docente.user)).offset(skip).limit(limit).all()
 
     def update(self, docente_id: int, docente_data: dict) -> Optional[Docente]:
         """Actualizar un docente"""

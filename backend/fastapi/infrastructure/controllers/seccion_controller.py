@@ -176,3 +176,51 @@ async def delete_seccion(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar la sección: {str(e)}"
         )
+
+@router.get("/asignatura/{asignatura_id}", response_model=List[Seccion], status_code=status.HTTP_200_OK, summary="Obtener secciones por asignatura", tags=["secciones"])
+async def get_secciones_by_asignatura(
+    asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
+):
+    """Obtener todas las secciones de una asignatura"""
+    try:
+        secciones = use_cases.get_by_asignatura(asignatura_id)
+        return secciones
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener secciones: {str(e)}"
+        )
+
+@router.get("/periodo/{anio}/{semestre}", response_model=List[Seccion], status_code=status.HTTP_200_OK, summary="Obtener secciones por periodo", tags=["secciones"])
+async def get_secciones_by_periodo(
+    anio: int = Path(..., gt=2000, description="Año del periodo"),
+    semestre: int = Path(..., ge=1, le=2, description="Semestre (1 o 2)"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
+):
+    """Obtener secciones por año y semestre"""
+    try:
+        secciones = use_cases.get_by_periodo(anio, semestre)
+        return secciones
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener secciones: {str(e)}"
+        )
+
+@router.get("/activas", response_model=List[Seccion], status_code=status.HTTP_200_OK, summary="Obtener secciones activas", tags=["secciones"])
+async def get_secciones_activas(
+    current_user: User = Depends(get_current_active_user),
+    use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
+):
+    """Obtener todas las secciones activas"""
+    try:
+        secciones = use_cases.get_secciones_activas()
+        return secciones
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener secciones activas: {str(e)}"
+        )

@@ -176,3 +176,67 @@ async def delete_clase(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar la clase: {str(e)}"
         )
+
+@router.get("/seccion/{seccion_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por sección", tags=["clases"])
+async def get_clases_by_seccion(
+    seccion_id: int = Path(..., gt=0, description="ID de la sección"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: ClaseUseCases = Depends(get_clase_use_cases)
+):
+    """Obtener todas las clases de una sección"""
+    try:
+        clases = use_cases.get_by_seccion(seccion_id)
+        return clases
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener clases: {str(e)}"
+        )
+
+@router.get("/docente/{docente_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por docente", tags=["clases"])
+async def get_clases_by_docente(
+    docente_id: int = Path(..., gt=0, description="ID del docente"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: ClaseUseCases = Depends(get_clase_use_cases)
+):
+    """Obtener todas las clases de un docente"""
+    try:
+        clases = use_cases.get_by_docente(docente_id)
+        return clases
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener clases: {str(e)}"
+        )
+
+@router.get("/sala/{sala_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por sala", tags=["clases"])
+async def get_clases_by_sala(
+    sala_id: int = Path(..., gt=0, description="ID de la sala"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: ClaseUseCases = Depends(get_clase_use_cases)
+):
+    """Obtener todas las clases programadas en una sala"""
+    try:
+        clases = use_cases.get_by_sala(sala_id)
+        return clases
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener clases: {str(e)}"
+        )
+
+@router.get("/bloque/{bloque_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por bloque", tags=["clases"])
+async def get_clases_by_bloque(
+    bloque_id: int = Path(..., gt=0, description="ID del bloque"),
+    current_user: User = Depends(get_current_active_user),
+    use_cases: ClaseUseCases = Depends(get_clase_use_cases)
+):
+    """Obtener todas las clases programadas en un bloque horario"""
+    try:
+        clases = use_cases.get_by_bloque(bloque_id)
+        return clases
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener clases: {str(e)}"
+        )
