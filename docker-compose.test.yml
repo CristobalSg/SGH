@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres
     container_name: sgh-postgres
-    restart: unless-stopped
+    restart: "unless-stopped"
     # env_file:
     #   - .env.development
     environment:
@@ -25,7 +25,7 @@ services:
       context: ./backend/fastapi
       dockerfile: Dockerfile.test
     container_name: sgh-backend
-    restart: no
+    restart: "no"
     # env_file:
     #   - .env.development
     ports:
@@ -45,6 +45,7 @@ services:
       PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
       NODE_ENV: ${NODE_ENV}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      test: "true"
     depends_on:
       postgres:
         condition: service_healthy

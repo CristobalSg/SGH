@@ -3,221 +3,339 @@
 API REST desarrollada con **FastAPI** y **arquitectura hexagonal** para la gestión de horarios académicos.
 
 ## 🛠️ Stack Tecnológico
-- **FastAPI** + *## 📝 Notas
 
-**Días de la semana**: 1=Lunes, 2=Martes, ..., 7=Domingo  
-**Formato hora**: `HH:MM` (ej: `"08:00"`, `"14:30"`)  
-**Códigos HTTP**: 200/201/204 (éxito), 400/401/404/409 (error cliente), 500 (error servidor)
+- **FastAPI** - Framework web moderno y de alto rendimiento
+- **SQLAlchemy** - ORM para interacción con base de datos
+- **PostgreSQL** - Base de datos relacional
+- **Alembic** - Gestor de migraciones de base de datos
+- **Pydantic** - Validación de datos y configuración
+- **JWT** - Autenticación basada en tokens
+- **pytest** - Framework de testing
+- **Docker & Docker Compose** - Contenedorización y orquestación
+- **Kubernetes** - Despliegue en producción
 
-### Endpoints Disponibles
-- ✅ **Autenticación** (`/auth`) - Registro, login, información de usuario
-- ✅ **Restricciones** (`/restricciones`) - CRUD completo de restricciones generales
-- ✅ **Restricciones de Horario** (`/restricciones-horario`) - CRUD + consultas específicas
-- ✅ **Base de Datos** (`/db`) - Testing de conexión
-- ✅ **Sistema** (`/`, `/health`) - Información y estado
+## 📂 Arquitectura Hexagonal
 
-### Próximos Endpoints
-- 🔄 **Docentes** (`/docentes`) - Gestión de docentes
-- 🔄 **Asignaturas** (`/asignaturas`) - Gestión de asignaturas  
-- 🔄 **Bloques** (`/bloques`) - Gestión de bloques horarios
-- 🔄 **Secciones** (`/secciones`) - Gestión de secciones
-- 🔄 **Clases** (`/clases`) - Gestión de clases programadaslchemy** + **PostgreSQL**
-- **Alembic** (migraciones) + **pytest** (testing)
-- **Docker** + **Docker Compose**
-
-## 📂 Estructura (Arquitectura Hexagonal)
 ```
-fastapi/
-├── domain/              # Entidades y reglas de negocio
-├── application/         # Casos de uso
-├── infrastructure/      # Adaptadores (DB, HTTP, Auth)
-├── tests/              # Pruebas unitarias e integración  
-├── migrations/         # Migraciones de DB
-└── main.py            # Configuración de la aplicación
+backend/fastapi/
+├── domain/                    # Capa de Dominio
+│   ├── entities.py           # Entidades de negocio
+│   ├── models.py             # Modelos de datos
+│   └── ports.py              # Interfaces (puertos)
+│
+├── application/               # Capa de Aplicación
+│   └── use_cases/            # Casos de uso del negocio
+│       ├── administrador_use_cases.py
+│       ├── asignatura_use_cases.py
+│       ├── bloque_use_cases.py
+│       ├── campus_use_cases.py
+│       ├── clase_uses_cases.py
+│       ├── docente_use_cases.py
+│       ├── edificio_use_cases.py
+│       ├── estudiante_use_cases.py
+│       ├── restriccion_horario_use_cases.py
+│       ├── restriccion_use_cases.py
+│       ├── sala_use_cases.py
+│       ├── seccion_use_cases.py
+│       ├── user_auth_use_cases.py
+│       └── user_management_use_cases.py
+│
+├── infrastructure/            # Capa de Infraestructura
+│   ├── controllers/          # Controladores HTTP (adaptadores)
+│   │   ├── asignatura_controller.py
+│   │   ├── auth_controller.py
+│   │   ├── bloque_controller.py
+│   │   ├── campus_controller.py
+│   │   ├── clase_controller.py
+│   │   ├── docente_controller.py
+│   │   ├── edificio_controller.py
+│   │   ├── restriccion_controller.py
+│   │   ├── restriccion_horario_controller.py
+│   │   ├── sala_controller.py
+│   │   ├── seccion_controller.py
+│   │   └── user_controller.py
+│   │
+│   ├── database/             # Configuración de base de datos
+│   │   └── config.py
+│   │
+│   ├── repositories/         # Implementación de repositorios
+│   │
+│   ├── auth.py               # Utilidades de autenticación
+│   └── dependencies.py       # Dependencias de FastAPI
+│
+├── migrations/                # Migraciones de Alembic
+│   └── versions/
+│
+├── tests/                     # Pruebas automatizadas
+│   ├── conftest.py
+│   ├── test_asignaturas_api.py
+│   ├── test_auth_api.py
+│   ├── test_docentes_api.py
+│   ├── test_edificios_campus_secciones_bloques_clases_api.py
+│   ├── test_restricciones_api.py
+│   ├── test_restricciones_horario_api.py
+│   ├── test_salas_api.py
+│   └── test_users_api.py
+│
+├── main.py                    # Punto de entrada de la aplicación
+├── config.py                  # Configuración de variables de entorno
+├── requirements.txt           # Dependencias Python
+├── Dockerfile                 # Imagen Docker para producción
+└── Dockerfile.test            # Imagen Docker para testing
 ```
 
 ## 🚀 Inicio Rápido
 
-### Levantar servicios
+### Variables de Entorno
+
+El proyecto utiliza el archivo `.env.development` ubicado en la raíz del proyecto.
+
+### Levantar Servicios con Docker Compose
+
 ```bash
 # Desde la raíz del proyecto SGH
 docker compose --env-file .env.development up -d
 
-# Verificar estado
-curl http://localhost:8000/db/test-db
-```
+# Verificar estado de los servicios
+docker compose --env-file .env.development ps
 
-### Comandos útiles
-```bash
-# Rebuild tras cambios
-docker compose --env-file .env.development build backend 
+# Ver logs del backend
+docker compose --env-file .env.development logs -f backend
 
-# Levantar contenedores
-docker compose --env-file .env.development up -d
-
-# Logs y debug
-docker compose --env-file .env.development logs backend
+# Acceder al contenedor del backend
 docker compose --env-file .env.development exec backend bash
 
-# Estado de los contenedores
-docker compose --env-file .env.development ps 
+# Reconstruir imagen tras cambios
+docker compose --env-file .env.development build backend
 
-# Detener
+# Detener servicios
 docker compose --env-file .env.development down
 ```
 
 ## 🧪 Testing
 
+El proyecto incluye pruebas automatizadas que se ejecutan en un ambiente dockerizado.
+
+### Ejecutar Tests con Docker Compose
+
 ```bash
-# Todas las pruebas
-docker compose --env-file .env.development exec backend pytest -v
+# Desde la raíz del proyecto SGH
 
-# Comandos específicos con make (ahora completamente actualizados)
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-unit
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-integration
+# Levantar ambiente de testing
+docker compose -f docker-compose.test.yml --env-file .env.development up -d
 
-# Pruebas específicas por módulo
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-docente
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-asignatura
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-clase
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-seccion
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-bloque
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-restriccion
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-restriccion-horario
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-auth
+# Ejecutar todas las pruebas
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest -v
 
-# Pruebas de API específicas
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-auth-api
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-db-api
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-restricciones-api
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-restriccion-horario-api
+# Ejecutar pruebas con cobertura
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest --cov=. --cov-report=term-missing
 
-# Con cobertura específica
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-cov
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-docente-cov
-docker compose --env-file .env.development exec backend make -f Makefile.tests test-auth-cov
+# Ejecutar pruebas específicas por módulo
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_auth_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_users_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_docentes_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_asignaturas_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_salas_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_edificios_campus_secciones_bloques_clases_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_restricciones_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_restricciones_horario_api.py -v
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_system_api.py -v
 
-# Ver ayuda completa con todos los comandos disponibles
-docker compose --env-file .env.development exec backend make -f Makefile.tests help
+# Ver logs de las pruebas
+docker compose -f docker-compose.test.yml --env-file .env.development logs backend
+
+# Detener ambiente de testing
+docker compose -f docker-compose.test.yml --env-file .env.development down
 ```
 
 ## 📖 Documentación API
 
-**Documentación interactiva**: http://localhost:8000/docs  
-**ReDoc**: http://localhost:8000/redoc
+La API está desplegada en producción con Kubernetes y cuenta con documentación interactiva:
 
-## 🎯 Endpoints Principales
+- **Swagger UI (Documentación Interactiva)**: https://sgh.inf.uct/api/docs
 
-### Autenticación (`/auth`)
-```bash
-# Registro de usuario
-POST /auth/register
-{
-  "email": "docente@universidad.edu",
-  "contrasena": "Docente123",
-  "nombre": "Juan Carlos",
-  "apellido": "Pérez"
-}
+### Endpoints Disponibles
 
-# Login con formulario
-POST /auth/login
-Content-Type: application/x-www-form-urlencoded
-username=admin@universidad.edu&password=admin123
+#### Autenticación y Usuarios
+- ✅ **`/auth`** - Registro, login, información de usuario autenticado
+- ✅ **`/users`** - Gestión de usuarios
 
-# Login con JSON
-POST /auth/login-json
-{
-  "email": "admin@universidad.edu",
-  "password": "admin123"
-}
+#### Gestión Académica
+- ✅ **`/docentes`** - CRUD de docentes
+- ✅ **`/asignaturas`** - CRUD de asignaturas
+- ✅ **`/secciones`** - CRUD de secciones
 
-# Obtener información del usuario actual
-GET /auth/me
-Authorization: Bearer YOUR_TOKEN
-```
+#### Infraestructura
+- ✅ **`/campus`** - CRUD de campus
+- ✅ **`/edificios`** - CRUD de edificios
+- ✅ **`/salas`** - CRUD de salas
 
-### Restricciones (`/restricciones`)
-```bash
-GET    /restricciones                    # Listar todas las restricciones
-GET    /restricciones/{id}               # Obtener restricción por ID
-POST   /restricciones                    # Crear nueva restricción
-PUT    /restricciones/{id}               # Actualizar restricción completa
-PATCH  /restricciones/{id}               # Actualizar restricción parcial
-DELETE /restricciones/{id}               # Eliminar restricción
-```
+#### Planificación Horaria
+- ✅ **`/bloques`** - CRUD de bloques horarios
+- ✅ **`/clases`** - CRUD de clases programadas
+- ✅ **`/restricciones`** - CRUD de restricciones generales
+- ✅ **`/restricciones-horario`** - CRUD de restricciones de horario por docente
 
-### Restricciones de Horario (`/restricciones-horario`)
-```bash
-# Operaciones CRUD básicas
-GET    /restricciones-horario            # Listar todas
-GET    /restricciones-horario/{id}       # Obtener por ID
-POST   /restricciones-horario            # Crear nueva
-PATCH  /restricciones-horario/{id}       # Actualizar parcial
-DELETE /restricciones-horario/{id}       # Eliminar
-
-# Consultas específicas
-GET    /restricciones-horario/docente/{docente_id}     # Por docente
-GET    /restricciones-horario/dia/{dia_semana}         # Por día (1-7)
-GET    /restricciones-horario/disponibilidad/{docente_id}  # Disponibilidad de docente
-DELETE /restricciones-horario/docente/{docente_id}     # Eliminar todas las restricciones de un docente
-```
-
-### Base de Datos (`/db`)
-```bash
-GET /db/test-db                          # Verificar conexión a la base de datos
-```
-
-### Sistema
-```bash
-GET /                                    # Información de la API
-GET /health                              # Estado de salud del sistema
-```
-
-## 📋 Ejemplos de Uso
-
-### Crear Restricción de Horario
-```bash
-curl -X POST "http://localhost:8000/restricciones-horario" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "docente_id": 1,
-    "dia_semana": 1,
-    "hora_inicio": "08:00",
-    "hora_fin": "12:00",
-    "disponible": true,
-    "descripcion": "Disponible para clases matutinas - Lunes"
-  }'
-```
-
-### Obtener Disponibilidad de Docente
-```bash
-curl -X GET "http://localhost:8000/restricciones-horario/disponibilidad/1" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### Crear Restricción General
-```bash
-curl -X POST "http://localhost:8000/restricciones" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "titulo": "No disponible en feriados",
-    "descripcion": "Restricción para días feriados",
-    "tipo": "FERIADO",
-    "activa": true
-  }'
-```
+#### Sistema
+- ✅ **`/`** - Información de la API
+- ✅ **`/health`** - Estado de salud del sistema
+- ✅ **`/db/test-db`** - Verificación de conexión a base de datos
 
 ## 🔐 Autenticación
 
-Incluir en headers (excepto login/register):
+La API utiliza JWT (JSON Web Tokens) para autenticación. Para acceder a endpoints protegidos, incluir el token en los headers:
+
 ```bash
 Authorization: Bearer YOUR_TOKEN
 ```
 
-## � Notas
+## � Ejemplos de Uso
 
-**Días de la semana**: 1=Lunes, 2=Martes, ..., 7=Domingo  
-**Formato hora**: `HH:MM` (ej: `"08:00"`, `"14:30"`)  
-**Códigos HTTP**: 200/201/204 (éxito), 400/401/404/409 (error cliente), 500 (error servidor)
+A continuación se muestran ejemplos de cómo interactuar con la API usando `curl`. Asegúrate de tener los servicios levantados con Docker Compose.
+
+### Autenticación
+
+#### 1. Registrar un nuevo usuario
+
+```bash
+curl -X POST "http://localhost:8000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "docente@universidad.edu",
+    "contrasena": "Docente123!",
+    "nombre": "Juan Carlos",
+    "apellido": "Pérez"
+  }'
+```
+
+**Respuesta exitosa (201):**
+```json
+{
+  "id": 1,
+  "email": "docente@universidad.edu",
+  "nombre": "Juan Carlos",
+  "apellido": "Pérez",
+  "rol": "docente",
+  "activo": true
+}
+```
+
+#### 2. Iniciar sesión (Login con JSON)
+
+```bash
+curl -X POST "http://localhost:8000/api/auth/login-json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "docente@universidad.edu",
+    "password": "Docente123!"
+  }'
+```
+
+**Respuesta exitosa (200):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+#### 3. Iniciar sesión (Login con Form Data)
+
+```bash
+curl -X POST "http://localhost:8000/api/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=docente@universidad.edu&password=Docente123!"
+```
+
+**Respuesta exitosa (200):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+#### 4. Obtener información del usuario autenticado
+
+```bash
+# Primero obtén el token del login
+TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+curl -X GET "http://localhost:8000/api/auth/me" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Respuesta exitosa (200):**
+```json
+{
+  "id": 1,
+  "email": "docente@universidad.edu",
+  "nombre": "Juan Carlos",
+  "apellido": "Pérez",
+  "rol": "docente",
+  "activo": true
+}
+```
+
+#### 5. Verificar conexión a la base de datos
+
+```bash
+curl -X GET "http://localhost:8000/api/db/test-db"
+```
+
+**Respuesta exitosa (200):**
+```json
+{
+  "status": "success",
+  "message": "Database connection successful"
+}
+```
+
+#### 6. Verificar estado de salud del sistema
+
+```bash
+curl -X GET "http://localhost:8000/api/health"
+```
+
+**Respuesta exitosa (200):**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-10-14T12:00:00"
+}
+```
+
+### Flujo completo de autenticación
+
+```bash
+# 1. Registrar usuario
+curl -X POST "http://localhost:8000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@universidad.edu",
+    "contrasena": "Admin123!",
+    "nombre": "Administrador",
+    "apellido": "Sistema"
+  }'
+
+# 2. Hacer login y guardar el token
+TOKEN=$(curl -s -X POST "http://localhost:8000/api/auth/login-json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@universidad.edu",
+    "password": "Admin123!"
+  }' | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+# 3. Usar el token para acceder a endpoints protegidos
+curl -X GET "http://localhost:8000/api/auth/me" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## �📝 Notas Técnicas
+
+- **Días de la semana**: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado, 7=Domingo
+- **Formato de hora**: `HH:MM` (ejemplo: `"08:00"`, `"14:30"`)
+- **Códigos HTTP**:
+  - `200/201/204` - Operación exitosa
+  - `400/401/404/409` - Error del cliente
+  - `500` - Error del servidor

@@ -45,6 +45,7 @@ services:
       PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
       NODE_ENV: ${NODE_ENV}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      test: "false"
     volumes:
       - ./backend/fastapi:/app
     depends_on:
