@@ -1,29 +1,37 @@
-import { 
-  IonContent, 
-  IonHeader, 
-  IonPage, 
-  IonTitle, 
-  IonToolbar, 
-  IonDatetime, 
-  IonButtons, 
-  IonButton, 
-  IonIcon, 
-  IonPopover, 
-  IonList, 
-  IonItem, 
-  IonLabel 
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonButtons,
+  IonButton,
+  IonIcon,
+  IonPopover,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonGrid,
+  IonRow,
+  IonCol
 } from '@ionic/react';
 import { useState, useEffect } from 'react';
 import { notificationsOutline } from 'ionicons/icons';
 import './Tab1.css';
 
 interface Events {
-  [date: string]: string[];
+  [day: string]: { [hour: string]: string[] }; // Ej: { lunes: { "08:00": ["Clase"] } }
 }
+
+const DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes"];
+const HORAS = [
+  "08:00", "09:00", "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00", "16:00", "17:00"
+];
 
 const Tab1: React.FC = () => {
   const [showPopover, setShowPopover] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedCell, setSelectedCell] = useState<{ day: string; hour: string } | null>(null);
   const [events, setEvents] = useState<Events>({});
   const [tipoUsuario, setTipoUsuario] = useState<string>("");
 
@@ -32,110 +40,142 @@ const Tab1: React.FC = () => {
     setTipoUsuario(tipo);
 
     // Eventos falsos de ejemplo
-    const fakeEvents: Events = {
-      "2025-09-16": ["Reunión de equipo", "Entrega informe"],
-      "2025-09-18": ["Clase de Matemática", "Examen parcial"],
-      "2025-09-20": ["Conferencia online"],
-    };
+const fakeEvents: Events = {
+  lunes: { 
+    "08:00": ["Matematica"], 
+    "10:00": ["Fisica"] 
+  },
+  martes: { 
+    "09:00": ["Quimica"], 
+    "11:00": ["Lenguaje"] 
+  },
+  miércoles: { 
+    "08:00": ["Historia"], 
+    "14:00": ["Ingles"] 
+  },
+  jueves: { 
+    "10:00": ["Biologia"], 
+    "13:00": ["Artes"] 
+  },
+  viernes: { 
+    "09:00": ["Matematica"], 
+    "15:00": ["Fisica"] 
+  }
+};
 
-    // Cargar eventos guardados o usar eventos falsos
-    const storedEvents = localStorage.getItem("events");
+
+    const storedEvents = localStorage.getItem("eventsHorario");
     if (storedEvents) {
       setEvents(JSON.parse(storedEvents));
     } else {
       setEvents(fakeEvents);
-      localStorage.setItem("events", JSON.stringify(fakeEvents));
+      localStorage.setItem("eventsHorario", JSON.stringify(fakeEvents));
     }
   }, []);
 
   const saveEvents = (updatedEvents: Events) => {
     setEvents(updatedEvents);
-    localStorage.setItem("events", JSON.stringify(updatedEvents));
+    localStorage.setItem("eventsHorario", JSON.stringify(updatedEvents));
   };
 
-  const handleDateChange = (e: CustomEvent) => {
-    const isoDate = e.detail.value; 
-    if (!isoDate) return;
-    const date = isoDate.split('T')[0]; 
-    setSelectedDate(date);
+  const handleCellClick = (day: string, hour: string) => {
+    setSelectedCell({ day, hour });
     setShowPopover(true);
   };
 
   const handleAddEvent = () => {
     const text = prompt("Ingrese el nombre del evento:");
+    if (!text || !selectedCell) return;
+    const updatedEvents = { ...events };
+    if (!updatedEvents[selectedCell.day]) updatedEvents[selectedCell.day] = {};
+    if (!updatedEvents[selectedCell.day][selectedCell.hour]) updatedEvents[selectedCell.day][selectedCell.hour] = [];
+    updatedEvents[selectedCell.day][selectedCell.hour].push(text);
+    saveEvents(updatedEvents);
+  };
+
+  const handleEditEvent = (idx: number) => {
+    if (!selectedCell) return;
+    const eventos = events[selectedCell.day]?.[selectedCell.hour] || [];
+    const text = prompt("Editar evento:", eventos[idx]);
     if (!text) return;
     const updatedEvents = { ...events };
-    if (!updatedEvents[selectedDate]) updatedEvents[selectedDate] = [];
-    updatedEvents[selectedDate].push(text);
+    updatedEvents[selectedCell.day][selectedCell.hour][idx] = text;
     saveEvents(updatedEvents);
   };
 
-  const handleEditEvent = (index: number) => {
-    const text = prompt("Editar evento:", events[selectedDate][index]);
-    if (!text) return;
+  const handleDeleteEvent = (idx: number) => {
+    if (!selectedCell) return;
     const updatedEvents = { ...events };
-    updatedEvents[selectedDate][index] = text;
+    updatedEvents[selectedCell.day][selectedCell.hour].splice(idx, 1);
+    if (updatedEvents[selectedCell.day][selectedCell.hour].length === 0) {
+      delete updatedEvents[selectedCell.day][selectedCell.hour];
+    }
     saveEvents(updatedEvents);
   };
 
-  const handleDeleteEvent = (index: number) => {
-    const updatedEvents = { ...events };
-    updatedEvents[selectedDate].splice(index, 1);
-    if (updatedEvents[selectedDate].length === 0) delete updatedEvents[selectedDate];
-    saveEvents(updatedEvents);
-  };
-
-  // Obtener todos los eventos para la campana y ordenarlos por fecha ascendente
-  const allEvents: { date: string; name: string }[] = [];
-  for (const date in events) {
-    events[date].forEach(evt => allEvents.push({ date, name: evt }));
-  }
-  allEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  // Funciones para editar/eliminar por nombre desde la lista global
-  const handleEditEventByName = (date: string, name: string) => {
-    const idx = events[date].indexOf(name);
-    if (idx === -1) return;
-    setSelectedDate(date);
-    handleEditEvent(idx);
-  };
-
-  const handleDeleteEventByName = (date: string, name: string) => {
-    const idx = events[date].indexOf(name);
-    if (idx === -1) return;
-    setSelectedDate(date);
-    handleDeleteEvent(idx);
-  };
+  // Para la campana: contar todos los eventos
+  const allEventsCount = DIAS.reduce((acc, day) => {
+    if (!events[day]) return acc;
+    return acc + Object.values(events[day]).reduce((sum, arr) => sum + arr.length, 0);
+  }, 0);
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Inicio</IonTitle>
+          <IonTitle>Horario Semanal</IonTitle>
           <IonButtons slot="end">
-  <IonButton onClick={() => setShowPopover(true)} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-    <IonIcon icon={notificationsOutline} />
-    <span className="badge-side">{allEvents.length}</span>
-  </IonButton>
-</IonButtons>
-
+            <IonButton onClick={() => setShowPopover(true)} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <IonIcon icon={notificationsOutline} />
+              <span className="badge-side">{allEventsCount}</span>
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen className="ion-padding">
         <IonHeader collapse="condense">
-          <IonTitle size="large">Calendario</IonTitle>
+          <IonTitle size="large">Horario Semanal</IonTitle>
         </IonHeader>
-        
-        <div className="calendar-container">
-          <IonDatetime
-            presentation="date"
-            showDefaultButtons={false}
-            highlightedDates={Object.keys(events).map(date => ({ date, backgroundColor: '#ffcccc' }))}
-            onIonChange={handleDateChange}
-          />
+
+        <div style={{ overflowX: 'auto' }}>
+          <IonGrid>
+            <IonRow>
+              <IonCol size="2"><strong>Hora</strong></IonCol>
+              {DIAS.map(day => (
+                <IonCol key={day} size="2" style={{ textAlign: 'center' }}>
+                  <strong>{day.charAt(0).toUpperCase() + day.slice(1)}</strong>
+                </IonCol>
+              ))}
+            </IonRow>
+            {HORAS.map(hour => (
+              <IonRow key={hour}>
+                <IonCol size="2" style={{ fontWeight: 'bold', textAlign: 'center' }}>{hour}</IonCol>
+                {DIAS.map(day => (
+                  <IonCol
+                    key={day + hour}
+                    style={{
+                      border: '1px solid #eee',
+                      minHeight: '48px',
+                      cursor: 'pointer',
+                      background: events[day]?.[hour]?.length ? '#ffe4e1' : 'white'
+                    }}
+                    onClick={() => handleCellClick(day, hour)}
+                  >
+                    {events[day]?.[hour]?.map((evt, idx) => (
+                    <div key={idx} className={`evento ${evt.replace(/\s/g, '')}`}>
+                      {evt}
+                    </div>
+                  ))}
+
+                  </IonCol>
+                ))}
+              </IonRow>
+            ))}
+          </IonGrid>
         </div>
 
+        {/* Popover para ver/agregar/editar/eliminar eventos en la celda seleccionada */}
         <IonPopover
           isOpen={showPopover}
           onDidDismiss={() => setShowPopover(false)}
@@ -144,41 +184,41 @@ const Tab1: React.FC = () => {
         >
           <IonHeader>
             <IonToolbar>
-              <IonTitle>{selectedDate ? new Date(selectedDate).toLocaleDateString() : "Eventos"}</IonTitle>
+              <IonTitle>
+                {selectedCell
+                  ? `${selectedCell.day.charAt(0).toUpperCase() + selectedCell.day.slice(1)} ${selectedCell.hour}`
+                  : "Eventos"}
+              </IonTitle>
             </IonToolbar>
           </IonHeader>
           <IonContent>
             <IonList>
-              {/* Mostrar todos los eventos ordenados si no hay fecha seleccionada */}
-              {(!selectedDate ? allEvents : events[selectedDate]?.map((evt, idx) => ({ name: evt, date: selectedDate })))
-                .map((evt, index) => (
-                  <IonItem key={index}>
-                    <IonLabel>
-                      {new Date(evt.date).toLocaleDateString()} - {evt.name}
-                    </IonLabel>
+              {selectedCell && events[selectedCell.day]?.[selectedCell.hour]?.length
+                ? events[selectedCell.day][selectedCell.hour].map((evt, idx) => (
+                  <IonItem key={idx}>
+                    <IonLabel>{evt}</IonLabel>
                     {tipoUsuario === "profesor" && (
                       <>
-                        <IonButton fill="clear" slot="end" onClick={() => handleEditEventByName(evt.date, evt.name)}>✏️</IonButton>
-                        <IonButton fill="clear" slot="end" onClick={() => handleDeleteEventByName(evt.date, evt.name)}>🗑️</IonButton>
+                        <IonButton fill="clear" slot="end" onClick={() => handleEditEvent(idx)}>
+                          ✏️
+                        </IonButton>
+                        <IonButton fill="clear" slot="end" onClick={() => handleDeleteEvent(idx)}>
+                          🗑️
+                        </IonButton>
                       </>
                     )}
                   </IonItem>
-              ))}
-              {(!selectedDate && allEvents.length === 0) && (
-                <IonItem>
-                  <IonLabel>No hay eventos.</IonLabel>
-                </IonItem>
-              )}
-              {/* Mostrar agregar evento solo si es profesor y fecha seleccionada */}
-              {tipoUsuario === "profesor" && selectedDate && (
+                ))
+                : (
+                  <IonItem>
+                    <IonLabel>No hay eventos en este horario.</IonLabel>
+                  </IonItem>
+                )
+              }
+              {/* Mostrar agregar evento solo si es profesor y hay celda seleccionada */}
+              {tipoUsuario === "profesor" && selectedCell && (
                 <IonItem button onClick={handleAddEvent}>
                   <IonLabel>➕ Agregar evento</IonLabel>
-                </IonItem>
-              )}
-              {/* Si estudiante y no hay eventos del día seleccionado */}
-              {tipoUsuario !== "profesor" && selectedDate && (!events[selectedDate] || events[selectedDate].length === 0) && (
-                <IonItem>
-                  <IonLabel>No hay eventos este día.</IonLabel>
                 </IonItem>
               )}
             </IonList>

@@ -1,88 +1,66 @@
-import { 
-  IonContent, 
-  IonHeader, 
-  IonPage, 
-  IonTitle, 
-  IonToolbar, 
-  IonAccordion, 
-  IonAccordionGroup, 
-  IonItem, 
-  IonLabel, 
-  IonList, 
-  IonButtons, 
-  IonButton, 
-  IonIcon 
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonDatetime,
+  IonAlert,
 } from '@ionic/react';
-
-import { searchOutline, createOutline, trashOutline } from 'ionicons/icons';
+import { useState } from 'react';
 import './Tab3.css';
 
 const Tab3: React.FC = () => {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [eventoActual, setEventoActual] = useState<string>('');
+
+  // Ejemplo de eventos
   const eventos = [
-    {
-      fecha: "2025-09-01",
-      items: ["Prueba de Cálculo", "Entrega de trabajo de Robótica"]
-    },
-    {
-      fecha: "2025-09-05",
-      items: ["Exposición de Redes", "Avance de Proyecto de Software"]
-    },
-    {
-      fecha: "2025-09-10",
-      items: ["Prueba de Física Eléctrica"]
-    },
-    {
-      fecha: "2025-09-15",
-      items: ["Entrega de Informe de Laboratorio", "Control de Inglés"]
-    }
+    { fecha: '2025-10-10', nombre: 'Prueba de Matemáticas' },
+    { fecha: '2025-10-15', nombre: 'Entrega de Proyecto' },
+    { fecha: '2025-10-20', nombre: 'Exposición de Física' },
+    { fecha: '2025-10-25', nombre: 'Control de Programación' },
   ];
+
+  const handleDateChange = (value: string) => {
+    // Extraemos solo la parte de la fecha YYYY-MM-DD
+    const fechaSeleccionada = value.split('T')[0];
+    setSelectedDate(fechaSeleccionada);
+
+    const evento = eventos.find((e) => e.fecha === fechaSeleccionada);
+    if (evento) {
+      setEventoActual(evento.nombre);
+      setAlertOpen(true);
+    }
+  };
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Eventos</IonTitle>
-          <IonButtons slot="end">
-            <IonButton>
-              <IonIcon icon={searchOutline} />
-            </IonButton>
-          </IonButtons>
+          <IonTitle>Calendario de Eventos</IonTitle>
         </IonToolbar>
       </IonHeader>
-      
-      <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Eventos</IonTitle>
-          </IonToolbar>
-        </IonHeader>
 
-        <IonAccordionGroup>
-          {eventos.map((evento, index) => (
-            <IonAccordion key={index} value={evento.fecha}>
-              <IonItem slot="header">
-                <IonLabel style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>
-                  {evento.fecha}
-                </IonLabel>
-              </IonItem>
-              <IonList slot="content">
-                {evento.items.map((item, i) => (
-                  <IonItem key={i}>
-                    <IonLabel>{item}</IonLabel>
-                    <IonButtons slot="end">
-                      <IonButton fill="clear" color="primary">
-                        <IonIcon icon={createOutline} />
-                      </IonButton>
-                      <IonButton fill="clear" color="danger">
-                        <IonIcon icon={trashOutline} />
-                      </IonButton>
-                    </IonButtons>
-                  </IonItem>
-                ))}
-              </IonList>
-            </IonAccordion>
-          ))}
-        </IonAccordionGroup>
+      <IonContent fullscreen className="calendario-centro">
+        <IonDatetime
+          onIonChange={(e) => handleDateChange(e.detail.value!)}
+          presentation="date"
+          locale="es-ES"
+          highlightedDates={eventos.map((e) => ({
+            date: e.fecha,
+            textColor: 'red',
+          }))}
+        />
+
+        <IonAlert
+          isOpen={alertOpen}
+          onDidDismiss={() => setAlertOpen(false)}
+          header="Evento"
+          message={eventoActual}
+          buttons={['OK']}
+        />
       </IonContent>
     </IonPage>
   );

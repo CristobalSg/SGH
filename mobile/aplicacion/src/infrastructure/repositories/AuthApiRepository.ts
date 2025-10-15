@@ -5,11 +5,11 @@ import { AuthResponse } from "../../domain/models/AuthResponse";
 
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export const API_URL = "https://sgh.inf.uct.cl/api";
 
 export class AuthApiRepository implements AuthRepository {
   async login(email: string, contrasena: string): Promise<AuthResponse> {
-    const res = await fetch("http://localhost:8000/api/auth/login", {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, contrasena })
@@ -21,10 +21,6 @@ export class AuthApiRepository implements AuthRepository {
   }
 
   async logout(): Promise<void> {
-    // Opción 1: Llamar al backend para invalidar token si tu API lo soporta
-    // await fetch("http://localhost:8000/api/auth/logout", { method: "POST" });
-
-    // Opción 2: Solo limpiar tokens localmente
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
   }
