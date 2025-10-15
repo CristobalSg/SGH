@@ -48,7 +48,14 @@ export default defineConfig({
     port: 8100,
     hmr: {
       port: 8100
-    }
+    },
+    proxy: {
+      '/api': {
+        target: 'https://sgh.inf.uct.cl', // 👉 tu backend real
+        changeOrigin: true,
+        secure: false, // desactiva verificación SSL en desarrollo
+      },
+    },
   },
   define: {
     'import.meta.env.VITE_API_URL': JSON.stringify(process.env.API_URL),
@@ -59,14 +66,14 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
   },
   build: {
-  rollupOptions: {
-    output: {
-      manualChunks: {
-        react: ['react', 'react-dom'],
-        ionic: ['@ionic/react'],
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          ionic: ['@ionic/react'],
+        },
       },
     },
-  },
-  chunkSizeWarningLimit: 1500,
-}
+    chunkSizeWarningLimit: 1500,
+  }
 })
