@@ -5,7 +5,8 @@ import { AuthResponse } from "../../domain/models/AuthResponse";
 
 import axios from "axios";
 
-export const API_URL = "https://sgh.inf.uct.cl/api";
+//export const API_URL = "https://sgh.inf.uct.cl/api";
+export const API_URL = "http://localhost:8000/api";
 
 export class AuthApiRepository implements AuthRepository {
   async login(email: string, contrasena: string): Promise<AuthResponse> {
