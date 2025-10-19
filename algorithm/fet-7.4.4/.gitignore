@@ -1,0 +1,13 @@
+Makefile
+src/Makefile
+src/Makefile.src-cl
+tmp/commandline/*.h
+tmp/commandline/*.o
+tmp/commandline/*.cpp
+tmp/gui/*.h
+tmp/gui/*.o
+tmp/gui/*.cpp
+.qmake.stash
+fet
+fet-cl
+examples/*
