@@ -4,8 +4,8 @@ import Card from "../ui/Card";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import DarkModeToggle from "../ui/DarkModeToggle";
-import { useAuth } from "../../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -14,12 +14,21 @@ const LoginForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation() as { state?: { from?: Location } };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     const success = await login(email, password);
+      if (success) {
+        const returnTo = location.state?.from?.pathname ?? "/home";
+        navigate(returnTo, { replace: true });
+      } else {
+        setError("Credenciales incorrectas");
+      }
+    
     setLoading(false);
 
     if (success) {
