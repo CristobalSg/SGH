@@ -1,51 +1,28 @@
-// src/pages/HomePage.tsx
-import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-} from '@ionic/react';
-import BottomNav from '../components/BottomNav';
+import BottomNav from "../components/BottomNav";
+import ScheduleTable from "../components/Schedule/ScheduleTable";
 
 const HomePage: React.FC = () => {
   return (
-    <IonPage>
-      {/* Header */}
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Home</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
+        <div className="max-w-md mx-auto px-4 py-3">
+          <h1 className="text-lg font-semibold text-gray-800">Inicio</h1>
+        </div>
+      </header>
 
-      {/* Main Content */}
-      <IonContent fullscreen className="ion-padding">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h2>Bienvenido a tu App</h2>
-          <p>
-            Este es un layout básico usando Ionic React. Aquí puedes agregar tus
-            tarjetas, listas, o cualquier otro componente.
+      <main className="flex-1 mt-14 mb-16 px-4 max-w-md mx-auto overflow-y-auto">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-bold text-gray-900">Bienvenido a tu App</h2>
+          <p className="text-gray-700 text-sm">
+            Este es un layout móvil con Tailwind y Ant Design.
           </p>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '1rem',
-              marginTop: '2rem',
-            }}
-          >
-            <div className="card">Elemento 1</div>
-            <div className="card">Elemento 2</div>
-            <div className="card">Elemento 3</div>
-            <div className="card">Elemento 4</div>
-          </div>
+          <ScheduleTable />
         </div>
-      </IonContent>
+      </main>
 
-      {/* Bottom Navigation */}
       <BottomNav />
-    </IonPage>
+    </div>
   );
 };
 

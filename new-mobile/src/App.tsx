@@ -1,3 +1,4 @@
+// src/App.tsx
 import {
   BrowserRouter as Router,
   Routes,
@@ -5,23 +6,73 @@ import {
   Navigate,
 } from "react-router-dom";
 import LoginPage from "./presentation/pages/LoginPage";
-import HomePage from './presentation/pages/HomePage';
+import HomePage from "./presentation/pages/HomePage";
+import StatsPage from "./presentation/pages/StatsPage";
+import ProfilePage from "./presentation/pages/ProfilePage";
+import SettingsPage from "./presentation/pages/SettingsPage";
+import { AuthProvider } from "./context/AuthContext";
+import PrivateRoute from "./presentation/routes/PrivateRoute";
+import EventsPage from "./presentation/pages/EventsPage";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Redirección inicial */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Redirección inicial */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Páginas */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/home" element={<HomePage />} />
+          {/* Login */}
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* Ruta no encontrada */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+          {/* Home protegido */}
+          <Route
+            path="/home"
+            element={
+              <PrivateRoute>
+                <HomePage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route 
+            path="/stats" 
+            element={
+            <PrivateRoute>
+              <StatsPage />
+            </PrivateRoute>
+          } />
+          
+          <Route 
+            path="/profile" 
+            element={
+            <PrivateRoute>
+              <ProfilePage />
+            </PrivateRoute>
+          } />
+          
+          <Route 
+            path="/settings" 
+            element={
+            <PrivateRoute>
+              <SettingsPage />
+            </PrivateRoute>
+          } />
+
+          <Route 
+            path="/events" 
+            element={
+            <PrivateRoute>
+              <EventsPage/>
+            </PrivateRoute>
+          } />
+          
+
+          {/* Ruta no encontrada */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
