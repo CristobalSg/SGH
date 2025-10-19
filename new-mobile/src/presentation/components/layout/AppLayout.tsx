@@ -1,3 +1,4 @@
+// src/presentation/components/layout/AppLayout.tsx
 import type { ReactNode } from "react";
 import PageHeader from "./PageHeader";
 import BottomNav from "../BottomNav";

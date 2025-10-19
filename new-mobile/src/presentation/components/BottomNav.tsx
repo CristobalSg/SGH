@@ -1,47 +1,75 @@
 import {
   HomeIcon,
-  ChartBarIcon,
-  UserIcon,
+  CalendarDaysIcon,
+  AdjustmentsHorizontalIcon,
+  CalendarIcon,
   Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeSolid,
-  ChartBarIcon as ChartBarSolid,
-  UserIcon as UserSolid,
+  CalendarDaysIcon as CalendarDaysSolid,
+  AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolid,
+  CalendarIcon as CalendarSolid,
   Cog6ToothIcon as CogSolid,
 } from "@heroicons/react/24/solid";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { ComponentType, SVGProps } from "react";
+import { useAuth } from "../../app/providers/AuthProvider";
+import type { Role } from "../../domain/auth/user";
 
 type Item = {
-  id: "home" | "stats" | "profile" | "settings";
+  id: string;
   label: string;
   path: string;
   outline: ComponentType<SVGProps<SVGSVGElement>>;
   solid: ComponentType<SVGProps<SVGSVGElement>>;
 };
 
-const items: Item[] = [
-  { id: "home", label: "Home",   outline: HomeIcon,      solid: HomeSolid,      path: "/home" },
-  { id: "stats", label: "Likes", outline: ChartBarIcon,  solid: ChartBarSolid,  path: "/stats" },
-  { id: "profile", label: "Profile", outline: UserIcon,  solid: UserSolid,      path: "/profile" },
-  { id: "settings", label: "Search", outline: Cog6ToothIcon, solid: CogSolid,    path: "/settings" },
+const docenteItems: Item[] = [
+  { id: "home",          label: "Home",          outline: HomeIcon,                solid: HomeSolid,                path: "/home" },
+  { id: "schedule",      label: "Horario",       outline: CalendarDaysIcon,        solid: CalendarDaysSolid,        path: "/schedule" },
+  { id: "restrictions",  label: "Restricciones", outline: AdjustmentsHorizontalIcon, solid: AdjustmentsHorizontalSolid, path: "/restrictions" },
+  { id: "events",        label: "Eventos",       outline: CalendarIcon,            solid: CalendarSolid,            path: "/events" },
+  { id: "settings",      label: "Ajustes",       outline: Cog6ToothIcon,           solid: CogSolid,                 path: "/settings" },
 ];
 
-// Colores del chip activo por pestaña (ajústalos a tu paleta)
-const activeClasses: Record<Item["id"], string> = {
+// Si quieres, define otros menús:
+const estudianteItems: Item[] = [
+  { id: "home", label: "Home", outline: HomeIcon, solid: HomeSolid, path: "/home" },
+  { id: "schedule", label: "Horario", outline: CalendarDaysIcon, solid: CalendarDaysSolid, path: "/schedule" },
+  { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
+];
+
+const adminItems: Item[] = [
+  { id: "home", label: "Dashboard", outline: HomeIcon, solid: HomeSolid, path: "/home" },
+  { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
+];
+
+const menuByRole: Record<Role, Item[]> = {
+  docente: docenteItems,
+  estudiante: estudianteItems,
+  admin: adminItems,
+};
+
+const activeClasses: Record<string, string> = {
   home: "bg-violet-500 text-white",
-  stats: "bg-pink-500 text-white",
-  profile: "bg-sky-500 text-white",
+  schedule: "bg-sky-500 text-white",
+  restrictions: "bg-pink-500 text-white",
+  events: "bg-emerald-500 text-white",
   settings: "bg-amber-500 text-white",
 };
 
 export default function BottomNav() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { role } = useAuth();
 
-  const activeId: Item["id"] | undefined =
-    items.find((i) => pathname.startsWith(i.path))?.id ?? "home";
+  const items = role ? menuByRole[role] ?? [] : [];
+
+  // Si no hay rol (p.ej. en login) no mostramos barra
+  if (items.length === 0) return null;
+
+  const active = items.find((i) => pathname.startsWith(i.path))?.id ?? items[0].id;
 
   const handleClick = (it: Item) => {
     if (!pathname.startsWith(it.path)) navigate(it.path);
@@ -54,11 +82,10 @@ export default function BottomNav() {
       aria-label="Barra de navegación"
     >
       <div className="mx-auto max-w-md px-4">
-        {/* Contenedor flotante estilo “pill” */}
         <div className="w-full rounded-3xl border border-black/5 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl shadow-lg">
           <div className="flex items-center justify-between gap-1 px-2 py-2">
             {items.map((it) => {
-              const isActive = activeId === it.id;
+              const isActive = active === it.id;
               const Icon = isActive ? it.solid : it.outline;
               return (
                 <button
@@ -70,20 +97,12 @@ export default function BottomNav() {
                     "group relative flex items-center justify-center transition-all duration-200",
                     "rounded-2xl px-2 py-2",
                     isActive
-                      ? `shadow-sm ${activeClasses[it.id]}`
+                      ? `shadow-sm ${activeClasses[it.id] ?? "bg-gray-800 text-white"}`
                       : "text-gray-600 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/5",
                   ].join(" ")}
-                  style={{
-                    // Chip más ancho cuando está activo (para mostrar texto)
-                    minWidth: isActive ? 92 : 48,
-                  }}
+                  style={{ minWidth: isActive ? 96 : 48 }}
                 >
-                  <Icon
-                    className={`h-5 w-5 transition-transform duration-200 ${
-                      isActive ? "scale-100" : "scale-95"
-                    }`}
-                  />
-                  {/* Etiqueta: visible solo en el activo */}
+                  <Icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? "scale-100" : "scale-95"}`} />
                   <span
                     className={[
                       "ml-2 text-xs font-medium transition-opacity duration-200",
@@ -97,8 +116,6 @@ export default function BottomNav() {
             })}
           </div>
         </div>
-
-        {/* Línea “home indicator” opcional (solo visual) */}
         <div className="mx-auto mt-2 h-1 w-24 rounded-full bg-gray-300/70 dark:bg-gray-600/70" />
       </div>
     </nav>
