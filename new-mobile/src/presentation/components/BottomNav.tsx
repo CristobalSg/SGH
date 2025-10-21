@@ -1,13 +1,11 @@
 import {
   HomeIcon,
-  CalendarDaysIcon,
   AdjustmentsHorizontalIcon,
   CalendarIcon,
   Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeSolid,
-  CalendarDaysIcon as CalendarDaysSolid,
   AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolid,
   CalendarIcon as CalendarSolid,
   Cog6ToothIcon as CogSolid,
@@ -25,18 +23,17 @@ type Item = {
   solid: ComponentType<SVGProps<SVGSVGElement>>;
 };
 
+// 🔹 Eliminado el item con id: "schedule"
 const docenteItems: Item[] = [
   { id: "home",          label: "Home",          outline: HomeIcon,                solid: HomeSolid,                path: "/home" },
-  { id: "schedule",      label: "Horario",       outline: CalendarDaysIcon,        solid: CalendarDaysSolid,        path: "/schedule" },
   { id: "restrictions",  label: "Restricciones", outline: AdjustmentsHorizontalIcon, solid: AdjustmentsHorizontalSolid, path: "/restrictions" },
   { id: "events",        label: "Eventos",       outline: CalendarIcon,            solid: CalendarSolid,            path: "/events" },
   { id: "settings",      label: "Ajustes",       outline: Cog6ToothIcon,           solid: CogSolid,                 path: "/settings" },
 ];
 
-// Si quieres, define otros menús:
 const estudianteItems: Item[] = [
   { id: "home", label: "Home", outline: HomeIcon, solid: HomeSolid, path: "/home" },
-  { id: "schedule", label: "Horario", outline: CalendarDaysIcon, solid: CalendarDaysSolid, path: "/schedule" },
+  { id: "schedule", label: "Horario", outline: CalendarIcon, solid: CalendarSolid, path: "/schedule" },
   { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
 ];
 
@@ -53,7 +50,6 @@ const menuByRole: Record<Role, Item[]> = {
 
 const activeClasses: Record<string, string> = {
   home: "bg-violet-500 text-white",
-  schedule: "bg-sky-500 text-white",
   restrictions: "bg-pink-500 text-white",
   events: "bg-emerald-500 text-white",
   settings: "bg-amber-500 text-white",
@@ -66,7 +62,6 @@ export default function BottomNav() {
 
   const items = role ? menuByRole[role] ?? [] : [];
 
-  // Si no hay rol (p.ej. en login) no mostramos barra
   if (items.length === 0) return null;
 
   const active = items.find((i) => pathname.startsWith(i.path))?.id ?? items[0].id;

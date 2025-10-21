@@ -212,7 +212,7 @@ A continuación se muestran ejemplos de cómo interactuar con la API usando `cur
 curl -X POST "http://localhost:8000/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "docente@universidad.edu",
+    "email": "Docente123!"",
     "contrasena": "Docente123!",
     "nombre": "Juan Carlos",
     "apellido": "Pérez"

@@ -28,5 +28,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") }
+  },
+  server: {
+    port: 8100,
+    host: true // esto permite acceder desde otras máquinas o dispositivos en la red
   }
 })

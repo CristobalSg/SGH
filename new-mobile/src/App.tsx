@@ -11,7 +11,6 @@ import PrivateRoute from "./presentation/routes/PrivateRoute";
 import PublicRoute from "./presentation/routes/PublicRoute";
 import RoleRoute from "./presentation/routes/RoleRoute";
 
-import DocenteSchedulePage from "./presentation/pages/docente/DocenteSchedulePage";
 import DocenteRestrictionsPage from "./presentation/pages/docente/DocenteRestrictionsPage";
 import UnauthorizedPage from "./presentation/pages/UnauthorizedPage";
 
@@ -43,16 +42,6 @@ export default function App() {
               <PrivateRoute>
                 <RoleRoute allowed={["docente"]}>
                   <HomePage />
-                </RoleRoute>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/schedule"
-            element={
-              <PrivateRoute>
-                <RoleRoute allowed={["docente"]}>
-                  <DocenteSchedulePage />
                 </RoleRoute>
               </PrivateRoute>
             }
