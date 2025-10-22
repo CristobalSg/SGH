@@ -30,7 +30,7 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "./src") }
   },
   server: {
-    port: 8100,
+    port: 5173,
     host: true // esto permite acceder desde otras máquinas o dispositivos en la red
   }
 })

@@ -32,14 +32,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   // Hidratación: si hay token, valida /me; si falla, limpia
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      try {
-        if (token) {
-          const me = await getMeUC();
-          if (mounted) setUser(me);
-        } else {
-          if (mounted) setUser(null);
+    const hydrate = async () => {
+      if (!mounted) return;
+
+      if (!token) {
+        if (mounted) {
+          setUser(null);
+          setLoading(false);
         }
+        return;
+      }
+
+      if (mounted) setLoading(true);
+      try {
+        const me = await getMeUC();
+        if (mounted) setUser(me);
       } catch {
         // Token inválido/expirado: limpia estado
         localStorage.removeItem("token");
@@ -51,17 +58,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       } finally {
         if (mounted) setLoading(false);
       }
-    })();
+    };
+
+    hydrate();
     return () => { mounted = false; };
   }, [token, getMeUC]);
 
   const login = async (email: string, password: string) => {
+    setLoading(true);
     try {
       const res = await loginUC(email, password);
       localStorage.setItem("token", res.access_token);
       setToken(res.access_token); // el efecto de arriba hará /me
       return true;
     } catch {
+      setLoading(false);
       return false;
     }
   };
