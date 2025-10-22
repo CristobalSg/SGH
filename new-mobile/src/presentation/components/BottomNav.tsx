@@ -3,12 +3,14 @@ import {
   AdjustmentsHorizontalIcon,
   CalendarIcon,
   Cog6ToothIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeSolid,
   AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolid,
   CalendarIcon as CalendarSolid,
   Cog6ToothIcon as CogSolid,
+  UserGroupIcon as UserGroupSolid,
 } from "@heroicons/react/24/solid";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { ComponentType, SVGProps } from "react";
@@ -38,7 +40,8 @@ const estudianteItems: Item[] = [
 ];
 
 const adminItems: Item[] = [
-  { id: "home", label: "Dashboard", outline: HomeIcon, solid: HomeSolid, path: "/home" },
+  { id: "home", label: "Inicio", outline: HomeIcon, solid: HomeSolid, path: "/admin" },
+  { id: "users", label: "Usuarios", outline: UserGroupIcon, solid: UserGroupSolid, path: "/admin/users" },
   { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
 ];
 
@@ -53,6 +56,12 @@ const activeClasses: Record<string, string> = {
   restrictions: "bg-pink-500 text-white",
   events: "bg-emerald-500 text-white",
   settings: "bg-amber-500 text-white",
+  users: "bg-blue-500 text-white",
+};
+
+const isPathActive = (basePath: string, currentPath: string) => {
+  if (currentPath === basePath) return true;
+  return currentPath.startsWith(`${basePath}/`);
 };
 
 export default function BottomNav() {
@@ -64,10 +73,15 @@ export default function BottomNav() {
 
   if (items.length === 0) return null;
 
-  const active = items.find((i) => pathname.startsWith(i.path))?.id ?? items[0].id;
+  const activeItem = items.reduce<Item | null>((activeAcc, item) => {
+    if (!isPathActive(item.path, pathname)) return activeAcc;
+    if (!activeAcc) return item;
+    return item.path.length > activeAcc.path.length ? item : activeAcc;
+  }, null);
+  const active = activeItem?.id ?? items[0].id;
 
   const handleClick = (it: Item) => {
-    if (!pathname.startsWith(it.path)) navigate(it.path);
+    if (pathname !== it.path) navigate(it.path);
   };
 
   return (

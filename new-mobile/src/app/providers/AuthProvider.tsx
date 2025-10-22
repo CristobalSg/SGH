@@ -11,7 +11,7 @@ type AuthContextType = {
   role: Role | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<Role | null>;
   logout: () => Promise<void>;
 };
 
@@ -78,13 +78,13 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       setToken(res.access_token);
       const me = await getMeUC();
       setUser(me);
-      return true;
+      return me.role;
     } catch {
       localStorage.removeItem("token");
       setAuthToken(null);
       setToken(null);
       setUser(null);
-      return false;
+      return null;
     } finally {
       setLoading(false);
     }
@@ -116,6 +116,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");

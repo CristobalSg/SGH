@@ -5,7 +5,8 @@ import { useAuth } from "../../app/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import type { CollapseProps } from "antd";
-import { Collapse, Input, Button, Switch } from "antd";
+import { Collapse, Button, Switch } from "antd";
+import { message } from "antd";
 
 const SettingsPage = () => {
   const { logout, user } = useAuth();
@@ -36,33 +37,19 @@ const SettingsPage = () => {
     );
 
     const passwordChildren = (
-      <form
-        className="space-y-3 pt-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          // TODO: wirear con tu endpoint para cambiar contraseña
-        }}
-      >
-        <div className="grid gap-3">
-          <Input.Password
-            placeholder="Contraseña actual"
-            autoComplete="current-password"
-          />
-          <Input.Password
-            placeholder="Nueva contraseña"
-            autoComplete="new-password"
-          />
-          <Input.Password
-            placeholder="Repite la nueva contraseña"
-            autoComplete="new-password"
-          />
-        </div>
-        <div className="pt-1">
-          <Button htmlType="submit" type="primary" size="middle">
-            Guardar
-          </Button>
-        </div>
-      </form>
+      <div className="space-y-3 pt-2 text-sm text-gray-600">
+        <p>
+          Para actualizar tu contraseña te enviaremos un correo con un enlace de recuperación.
+          Presiona el botón para recibir las instrucciones en tu bandeja de entrada.
+        </p>
+        <Button
+          type="primary"
+          size="middle"
+          onClick={() => message.info("Pronto recibirás un correo con el enlace para actualizar tu contraseña.")}
+        >
+          Enviar enlace de recuperación
+        </Button>
+      </div>
     );
 
     const seguridadChildren = (

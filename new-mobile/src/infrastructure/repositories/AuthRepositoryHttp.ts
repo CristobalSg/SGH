@@ -1,7 +1,8 @@
 // src/infrastructure/repositories/AuthRepositoryHttp.ts
 import type { AuthRepository, LoginResponse } from "../../domain/repositories/AuthRepository";
 import { http } from "../http/httpClient";
-import type { User} from "../../domain/auth/user";
+import type { User } from "../../domain/auth/user";
+import { normalizeRole } from "../../domain/auth/roleUtils";
 
 export class AuthRepositoryHttp implements AuthRepository {
   async login(email: string, contrasena: string): Promise<LoginResponse> {
@@ -19,9 +20,9 @@ export class AuthRepositoryHttp implements AuthRepository {
     // Normaliza el payload al shape User
     return {
       id: String(data.id),
-      name: data.name ?? data.fullName ?? data.username ?? "",
+      name: data.name ?? data.fullName ?? data.username ?? data.nombre ?? "",
       email: data.email,
-      role: (data.role ?? data.rol) as User["role"], // mapea "rol" -> "role" si tu API usa "rol"
+      role: normalizeRole(data.role ?? data.rol),
     };
   }
 }

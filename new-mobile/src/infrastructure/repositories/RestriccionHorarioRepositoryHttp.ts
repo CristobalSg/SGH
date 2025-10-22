@@ -46,6 +46,11 @@ export class RestriccionHorarioRepositoryHttp {
     return data.map(normalize);
   }
 
+  async listByDocente(docenteId: number): Promise<RestriccionHorario[]> {
+    const { data } = await http.get<ApiRestriction[]>(`/restricciones-horario/docente/${docenteId}`);
+    return data.map(normalize);
+  }
+
   async createMine(payload: RestriccionHorarioCreate): Promise<RestriccionHorario> {
     const { data } = await http.post<ApiRestriction>("/restricciones-horario/docente/mis-restricciones", payload);
     return normalize(data);

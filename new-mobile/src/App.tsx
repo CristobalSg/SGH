@@ -5,6 +5,8 @@ import StatsPage from "./presentation/pages/StatsPage"; // si lo usas aún
 import ProfilePage from "./presentation/pages/ProfilePage";
 import SettingsPage from "./presentation/pages/SettingsPage";
 import EventsPage from "./presentation/pages/EventsPage";
+import AdminUsersPage from "./presentation/pages/AdminUsersPage";
+import AdminHomePage from "./presentation/pages/AdminHomePage";
 
 import { AuthProvider } from "./app/providers/AuthProvider";
 import PrivateRoute from "./presentation/routes/PrivateRoute";
@@ -70,7 +72,7 @@ export default function App() {
             path="/settings"
             element={
               <PrivateRoute>
-                <RoleRoute allowed={["docente"]}>
+                <RoleRoute allowed={["docente", "admin"]}>
                   <SettingsPage />
                 </RoleRoute>
               </PrivateRoute>
@@ -94,6 +96,28 @@ export default function App() {
               <PrivateRoute>
                 <RoleRoute allowed={["docente"]}>
                   <ProfilePage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["admin"]}>
+                  <AdminHomePage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          {/* Administrador */}
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["admin"]}>
+                  <AdminUsersPage />
                 </RoleRoute>
               </PrivateRoute>
             }
