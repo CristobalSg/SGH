@@ -1,43 +1,77 @@
-import { Card } from "antd";
+import { Fragment } from "react";
 import { DIAS, HORAS } from "../../types/schedule";
 import type { Events } from "../../types/schedule";
 
-interface Props {
-  events: Events;
-  onSlotTap: (day: string, hour: string) => void;
-}
+const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
-export default function ScheduleListMobile({ events, onSlotTap }: Props) {
+export default function ScheduleListMobile({ events }: { events: Events }) {
   return (
-    <div className="md:hidden space-y-3">
-      {HORAS.map((hora) => (
-        <Card key={hora} size="small" className="rounded-xl shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold">{hora}</h3>
+    <div className="overflow-x-auto">
+      <div
+        className="grid min-w-[560px] gap-px rounded-3xl bg-[#004F9F]"
+        style={{ gridTemplateColumns: `80px repeat(${DIAS.length}, minmax(110px, 1fr))` }}
+      >
+        <div className="bg-[#004F9F] p-3 text-sm font-semibold uppercase tracking-wide text-white">
+          Hora
+        </div>
+        {DIAS.map((day) => (
+          <div
+            key={`head-${day}`}
+            className="bg-[#004F9F] p-3 text-center text-sm font-semibold uppercase tracking-wide text-white"
+          >
+            {capitalize(day)}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+        ))}
+
+        {HORAS.map((hora) => (
+          <Fragment key={`row-${hora}`}>
+            <div
+              className="bg-white p-3 text-sm font-semibold text-[#004F9F]"
+            >
+              {hora}
+            </div>
             {DIAS.map((day) => {
+              const key = `${day}-${hora}`;
               const evts = events[day]?.[hora] ?? [];
               const has = evts.length > 0;
               return (
-                <button
-                  key={`${day}-${hora}`}
-                  className={`text-left p-3 rounded-lg border transition
-                    ${has ? "bg-pink-50 border-pink-200" : "bg-white hover:bg-gray-50 border-gray-200"}`}
-                  onClick={() => onSlotTap(day, hora)}
+                <div
+                  key={key}
+                  className={`min-h-[80px] w-full bg-white p-3 text-left ${
+                    has ? "shadow-[0_0_0_1px_#FDB81366] bg-[#FDB8131A]" : ""
+                  }`}
                 >
-                  <div className="text-xs text-gray-500 mb-1">
-                    {day.charAt(0).toUpperCase() + day.slice(1)}
-                  </div>
-                  <div className="text-sm">
-                    {has ? evts.join(", ") : <span className="text-gray-400">—</span>}
-                  </div>
-                </button>
+                  {has ? (
+                    <div className="space-y-2">
+                      {evts.slice(0, 2).map((evt, idx) => (
+                        <span
+                          key={`${key}-${idx}`}
+                          className="inline-flex w-full flex-col rounded-xl bg-[#FDB813] px-3 py-2 text-xs font-semibold text-[#004F9F] shadow-sm"
+                        >
+                          {evt.split("\n").map((line, index) => (
+                            <span key={`${key}-${idx}-line-${index}`} className={index === 0 ? "text-[13px]" : "text-[11px] font-medium text-[#004F9FCC]"}>
+                              {line}
+                            </span>
+                          ))}
+                        </span>
+                      ))}
+                      {evts.length > 2 && (
+                        <span className="text-xs font-semibold text-[#004F9F]">
+                          +{evts.length - 2} más
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs font-medium uppercase tracking-wide text-[#004F9F66]">
+                      Disponible
+                    </span>
+                  )}
+                </div>
               );
             })}
-          </div>
-        </Card>
-      ))}
+          </Fragment>
+        ))}
+      </div>
     </div>
   );
 }

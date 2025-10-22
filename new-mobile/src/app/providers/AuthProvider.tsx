@@ -43,6 +43,11 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         return;
       }
 
+      if (user) {
+        if (mounted) setLoading(false);
+        return;
+      }
+
       if (mounted) setLoading(true);
       try {
         const me = await getMeUC();
@@ -62,18 +67,26 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
     hydrate();
     return () => { mounted = false; };
-  }, [token, getMeUC]);
+  }, [token, user, getMeUC]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
       const res = await loginUC(email, password);
       localStorage.setItem("token", res.access_token);
-      setToken(res.access_token); // el efecto de arriba hará /me
+      setAuthToken(res.access_token);
+      setToken(res.access_token);
+      const me = await getMeUC();
+      setUser(me);
       return true;
     } catch {
-      setLoading(false);
+      localStorage.removeItem("token");
+      setAuthToken(null);
+      setToken(null);
+      setUser(null);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 

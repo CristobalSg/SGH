@@ -11,7 +11,7 @@ import PrivateRoute from "./presentation/routes/PrivateRoute";
 import PublicRoute from "./presentation/routes/PublicRoute";
 import RoleRoute from "./presentation/routes/RoleRoute";
 
-import DocenteRestrictionsPage from "./presentation/pages/docente/DocenteRestrictionsPage";
+import DocenteRestrictionsPage from "./presentation/pages/DocenteRestrictionsPage";
 import UnauthorizedPage from "./presentation/pages/UnauthorizedPage";
 
 export default function App() {

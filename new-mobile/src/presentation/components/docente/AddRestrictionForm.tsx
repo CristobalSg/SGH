@@ -1,55 +1,86 @@
-import React from "react";
-import { Modal, Form, Select, TimePicker, Input } from "antd";
+import React, { useEffect } from "react";
+import dayjs from "dayjs";
+import { Modal, Form, Select, TimePicker, Input, Switch } from "antd";
+import type { RestriccionHorarioCreateInput, RestriccionHorarioView } from "../../hooks/useDocenteHorarioRestrictions";
 
 const { RangePicker } = TimePicker;
 const { TextArea } = Input;
-const { Option } = Select;
 
 interface AddRestrictionFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: RestriccionHorarioCreateInput, id?: number) => Promise<void> | void;
+  saving?: boolean;
+  mode?: "create" | "edit";
+  initialValues?: RestriccionHorarioView | null;
 }
 
 const daysOfWeek = [
-  "Lunes",
-  "Martes",
-  "Miércoles",
-  "Jueves",
-  "Viernes",
-  "Sábado",
-  "Domingo",
+  { label: "Lunes", value: 1 },
+  { label: "Martes", value: 2 },
+  { label: "Miércoles", value: 3 },
+  { label: "Jueves", value: 4 },
+  { label: "Viernes", value: 5 },
+  { label: "Sábado", value: 6 },
+  { label: "Domingo", value: 0 },
 ];
 
 const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
   open,
   onClose,
   onSubmit,
+  saving = false,
+  mode = "create",
+  initialValues = null,
 }) => {
   const [form] = Form.useForm();
 
-  const handleOk = () => {
-    form.validateFields().then((values) => {
-      const [startTime, endTime] = values.horas;
-      const newRestriction = {
-        dayOfWeek: values.dia,
-        startTime: startTime.format("HH:mm"),
-        endTime: endTime.format("HH:mm"),
-        descripcion: values.descripcion,
-      };
-      onSubmit(newRestriction);
+  useEffect(() => {
+    if (!open) return;
+
+    if (mode === "edit" && initialValues) {
+      form.setFieldsValue({
+        dia: initialValues.day,
+        horas: [
+          dayjs(initialValues.start, "HH:mm"),
+          dayjs(initialValues.end, "HH:mm"),
+        ],
+        descripcion: initialValues.descripcion ?? "",
+        disponible: initialValues.disponible,
+      });
+    } else {
       form.resetFields();
-      onClose();
-    });
+      form.setFieldsValue({ disponible: false });
+    }
+  }, [open, mode, initialValues, form]);
+
+  const handleOk = async () => {
+    const values = await form.validateFields();
+    const [startTime, endTime] = values.horas;
+    const payload: RestriccionHorarioCreateInput = {
+      dia_semana: values.dia,
+      hora_inicio: startTime.format("HH:mm:ss"),
+      hora_fin: endTime.format("HH:mm:ss"),
+      descripcion: values.descripcion?.trim() || undefined,
+      disponible: values.disponible ?? false,
+    };
+    await onSubmit(payload, initialValues?.id);
+    form.resetFields();
+  };
+
+  const handleCancel = () => {
+    form.resetFields();
+    onClose();
   };
 
   return (
     <Modal
-      title="Agregar Restricción"
+      title={mode === "edit" ? "Editar Restricción" : "Agregar Restricción"}
       open={open}
-      onCancel={onClose}
+      onCancel={handleCancel}
       onOk={handleOk}
-      okText="Guardar"
+      okText={mode === "edit" ? "Guardar cambios" : "Guardar"}
+      confirmLoading={saving}
       centered
       bodyStyle={{ paddingBottom: 0 }}
     >
@@ -58,19 +89,18 @@ const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
         layout="vertical"
         className="space-y-3"
         style={{ marginTop: 10 }}
+        initialValues={{ disponible: false }}
       >
         <Form.Item
           label="Día de la semana"
           name="dia"
           rules={[{ required: true, message: "Selecciona un día" }]}
         >
-          <Select placeholder="Selecciona un día">
-            {daysOfWeek.map((d) => (
-              <Option key={d} value={d}>
-                {d}
-              </Option>
-            ))}
-          </Select>
+          <Select
+            placeholder="Selecciona un día"
+            options={daysOfWeek}
+            optionFilterProp="label"
+          />
         </Form.Item>
 
         <Form.Item
@@ -84,9 +114,16 @@ const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
         <Form.Item
           label="Descripción"
           name="descripcion"
-          rules={[{ required: true, message: "Agrega una descripción" }]}
         >
           <TextArea rows={2} placeholder="Motivo o detalle de la restricción" />
+        </Form.Item>
+
+        <Form.Item
+          label="Disponibilidad"
+          name="disponible"
+          valuePropName="checked"
+        >
+          <Switch checkedChildren="Disponible" unCheckedChildren="No disponible" />
         </Form.Item>
       </Form>
     </Modal>

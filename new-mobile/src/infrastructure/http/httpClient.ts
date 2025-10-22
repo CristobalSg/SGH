@@ -1,7 +1,7 @@
 // src/infrastructure/http/httpClient.ts
 import axios from "axios";
 
-const API_URL = "https://sgh.inf.uct.cl/api";
+const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
 export const http = axios.create({
   baseURL: API_URL,

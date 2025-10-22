@@ -3,22 +3,25 @@ import ScheduleTable from "../components/Schedule/ScheduleTable";
 
 const HomePage: React.FC = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-3">
-          <h1 className="text-lg font-semibold text-gray-800">Inicio</h1>
+    <div className="flex min-h-screen flex-col bg-[#F4F7FB]">
+      <header className="fixed top-0 left-0 right-0 z-10 bg-[#004F9F] shadow-md">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-4 text-white">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-[#FDB813]">Panel docente</p>
+            <h1 className="text-lg font-semibold">Inicio</h1>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 mt-14 mb-16 px-4 max-w-md mx-auto overflow-y-auto">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-xl font-bold text-gray-900">Bienvenido a tu App</h2>
-          <p className="text-gray-700 text-sm">
-            Este es un layout móvil con Tailwind y Ant Design.
+      <main className="mx-auto mt-20 mb-20 flex w-full max-w-md flex-1 flex-col gap-5 px-4 pb-6">
+        <section className="rounded-3xl bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-[#004F9F]">Bienvenido de nuevo</h2>
+          <p className="mt-2 text-sm text-[#004F9FB3]">
+            Consulta y gestiona tu disponibilidad semanal desde cualquier dispositivo.
           </p>
+        </section>
 
-          <ScheduleTable />
-        </div>
+        <ScheduleTable />
       </main>
 
       <BottomNav />
