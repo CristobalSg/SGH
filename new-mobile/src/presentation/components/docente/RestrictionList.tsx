@@ -36,6 +36,13 @@ const RestrictionList: React.FC<RestrictionListProps> = ({
             key={index}
             className="flex justify-between items-center"
             actions={[
+               <button
+                key="edit"
+                className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <PencilSquareIcon className="w-5 h-5" />
+                Editar
+              </button>,
               <button
                 key="delete"
                 onClick={() => handleDelete(item.id)}
