@@ -82,7 +82,7 @@ const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
       okText={mode === "edit" ? "Guardar cambios" : "Guardar"}
       confirmLoading={saving}
       centered
-      bodyStyle={{ paddingBottom: 0 }}
+      style={{ paddingBottom: 0 }}
     >
       <Form
         form={form}
