@@ -61,33 +61,34 @@ services:
       retries: 3
       start_period: 30s
 
-# Frontend Ionic
-  mobile:
+# Frontend React + Vite + Tailwind
+  new-mobile:
     build:
-      context: ./mobile
+      context: ./new-mobile
       dockerfile: Dockerfile
-    container_name: sgh-mobile
+    container_name: sgh-new-mobile
     restart: unless-stopped
     ports:
       - "${MOBILE_PORT}:8100"
     environment:
       NODE_ENV: ${NODE_ENV}
-      IONIC_ENV: ${IONIC_ENV}
-      API_URL: ${API_URL}
+      VITE_API_URL: ${API_URL}
     volumes:
-      - ./mobile/aplicacion/src:/app/src
-      - ./mobile/aplicacion/public:/app/public
-      - ./mobile/aplicacion/capacitor.config.ts:/app/capacitor.config.ts
-      - ./mobile/aplicacion/ionic.config.json:/app/ionic.config.json
-      - ./mobile/aplicacion/vite.config.ts:/app/vite.config.ts
-      - ./mobile/aplicacion/tsconfig.json:/app/tsconfig.json
-      - ./mobile/aplicacion/tsconfig.node.json:/app/tsconfig.node.json
+      - ./new-mobile/src:/app/src
+      - ./new-mobile/public:/app/public
+      - ./new-mobile/vite.config.ts:/app/vite.config.ts
+      - ./new-mobile/tsconfig.json:/app/tsconfig.json
+      - ./new-mobile/tsconfig.node.json:/app/tsconfig.node.json
+      - ./new-mobile/tsconfig.app.json:/app/tsconfig.app.json
+      - ./new-mobile/tailwind.config.js:/app/tailwind.config.js
+      - ./new-mobile/eslint.config.js:/app/eslint.config.js
+      - ./new-mobile/index.html:/app/index.html
     depends_on:
       - backend
     networks:
       - sgh-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 -O /dev/null http://localhost:8100 || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 --spider http://127.0.0.1:8100 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
