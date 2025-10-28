@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from domain.entities import Campus, CampusCreate
-from infrastructure.dependencies import get_current_active_user
+from domain.authorization import Permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 from application.use_cases.campus_use_cases import CampusUseCase
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -17,9 +18,9 @@ def get_campus_use_case(db: Session = Depends(get_db)) -> CampusUseCase:
 async def create_campus(
     campus_data: CampusCreate,
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.CAMPUS_WRITE))  # ✅ MIGRADO
 ):
-    """Crear un nuevo campus"""
+    """Crear un nuevo campus (requiere permiso CAMPUS:WRITE)"""
     try:
         campus = campus_use_case.create_campus(campus_data)
         return campus
@@ -34,9 +35,9 @@ async def create_campus(
 @router.get("/", response_model=List[Campus])
 async def get_all_campus(
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.CAMPUS_READ))  # ✅ MIGRADO
 ):
-    """Obtener todos los campus"""
+    """Obtener todos los campus (requiere permiso CAMPUS:READ)"""
     try:
         campus = campus_use_case.get_all_campus()
         return campus
@@ -52,9 +53,9 @@ async def get_all_campus(
 async def get_campus_by_id(
     campus_id: int,
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.CAMPUS_READ))  # ✅ MIGRADO
 ):
-    """Obtener campus por ID"""
+    """Obtener campus por ID (requiere permiso CAMPUS:READ)"""
     try:
         campus = campus_use_case.get_campus_by_id(campus_id)
         return campus
@@ -70,9 +71,9 @@ async def get_campus_by_id(
 async def delete_campus(
     campus_id: int,
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.CAMPUS_DELETE))  # ✅ MIGRADO
 ):
-    """Eliminar un campus"""
+    """Eliminar un campus (requiere permiso CAMPUS:DELETE)"""
     try:
         success = campus_use_case.delete_campus(campus_id)
         return {"message": "Campus eliminado exitosamente"}

@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
 from domain.entities import Clase, ClaseCreate, ClaseBase, ClasePatch, User
+from domain.authorization import Permission  # ✅ MIGRADO
 from application.use_cases.clase_uses_cases import ClaseUseCases
 from infrastructure.repositories.clase_repository import ClaseRepository
-from infrastructure.dependencies import get_current_active_user, get_current_admin_user, get_current_docente_or_admin_user
+from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 
 router = APIRouter()
 
@@ -15,10 +16,10 @@ def get_clase_use_cases(db: Session = Depends(get_db)) -> ClaseUseCases:
 
 @router.get("/", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases", tags=["clases"])
 async def get_clases(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_READ)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Obtener todas las clases"""
+    """Obtener todas las clases (requiere permiso CLASE:READ)"""
     try:
         clases = use_cases.get_all()
         return clases
@@ -31,10 +32,10 @@ async def get_clases(
 @router.get("/{clase_id}", response_model=Clase, status_code=status.HTTP_200_OK, summary="Obtener clase por ID", tags=["clases"])
 async def obtener_clase(
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_READ)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Obtener una clase específica por ID"""
+    """Obtener una clase específica por ID (requiere permiso CLASE:READ)"""
     try:
         clase = use_cases.get_by_id(clase_id)
         if not clase:
@@ -55,9 +56,9 @@ async def obtener_clase(
 async def create_clase(
     clase_data: ClaseCreate,
     use_cases: ClaseUseCases = Depends(get_clase_use_cases),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.CLASE_WRITE))  # ✅ MIGRADO
 ):
-    """Crear una nueva clase (solo administradores)"""
+    """Crear una nueva clase (requiere permiso CLASE:WRITE - solo administradores)"""
     try:
         nueva_clase = use_cases.create(clase_data)
         return nueva_clase
@@ -78,10 +79,10 @@ async def create_clase(
 async def update_clase(
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
     clase_data: ClaseCreate = None,
-    current_user: User = Depends(get_current_docente_or_admin_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),  # ✅ MIGRADO (docentes + admin)
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Actualizar completamente una clase (docentes y administradores)"""
+    """Actualizar completamente una clase (requiere permiso CLASE:WRITE - docentes y administradores)"""
     try:
         update_data = {
             'estado': clase_data.estado,
@@ -117,10 +118,10 @@ async def update_clase(
 async def patch_clase(
     clase_data: ClasePatch,
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
-    current_user: User = Depends(get_current_docente_or_admin_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),  # ✅ MIGRADO (docentes + admin)
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Actualizar parcialmente una clase (docentes y administradores)"""
+    """Actualizar parcialmente una clase (requiere permiso CLASE:WRITE - docentes y administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in clase_data.model_dump().items() if v is not None}
@@ -156,10 +157,10 @@ async def patch_clase(
 @router.delete("/{clase_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar clase", tags=["clases"])
 async def delete_clase(
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_DELETE)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Eliminar una clase (solo administradores)"""
+    """Eliminar una clase (requiere permiso CLASE:DELETE - solo administradores)"""
     try:
         eliminado = use_cases.delete(clase_id)
         
@@ -180,10 +181,10 @@ async def delete_clase(
 @router.get("/seccion/{seccion_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por sección", tags=["clases"])
 async def get_clases_by_seccion(
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_READ)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Obtener todas las clases de una sección"""
+    """Obtener todas las clases de una sección (requiere permiso CLASE:READ)"""
     try:
         clases = use_cases.get_by_seccion(seccion_id)
         return clases
@@ -196,10 +197,10 @@ async def get_clases_by_seccion(
 @router.get("/docente/{docente_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por docente", tags=["clases"])
 async def get_clases_by_docente(
     docente_id: int = Path(..., gt=0, description="ID del docente"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_READ)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Obtener todas las clases de un docente"""
+    """Obtener todas las clases de un docente (requiere permiso CLASE:READ)"""
     try:
         clases = use_cases.get_by_docente(docente_id)
         return clases
@@ -212,10 +213,10 @@ async def get_clases_by_docente(
 @router.get("/sala/{sala_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por sala", tags=["clases"])
 async def get_clases_by_sala(
     sala_id: int = Path(..., gt=0, description="ID de la sala"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_READ)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Obtener todas las clases programadas en una sala"""
+    """Obtener todas las clases programadas en una sala (requiere permiso CLASE:READ)"""
     try:
         clases = use_cases.get_by_sala(sala_id)
         return clases
@@ -228,10 +229,10 @@ async def get_clases_by_sala(
 @router.get("/bloque/{bloque_id}", response_model=List[Clase], status_code=status.HTTP_200_OK, summary="Obtener clases por bloque", tags=["clases"])
 async def get_clases_by_bloque(
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.CLASE_READ)),  # ✅ MIGRADO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Obtener todas las clases programadas en un bloque horario"""
+    """Obtener todas las clases programadas en un bloque horario (requiere permiso CLASE:READ)"""
     try:
         clases = use_cases.get_by_bloque(bloque_id)
         return clases

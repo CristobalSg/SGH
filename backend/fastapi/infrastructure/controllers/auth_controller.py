@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from domain.entities import UserCreate, User, UserLogin, Token, TokenResponse, RefreshTokenRequest
-from infrastructure.dependencies import get_user_auth_use_case, get_current_active_user
+from domain.authorization import Permission  # ✅ MIGRADO
+from infrastructure.dependencies import get_user_auth_use_case, require_permission  # ✅ MIGRADO
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
 
 router = APIRouter()
@@ -58,17 +59,17 @@ async def login_json(
 
 @router.get("/me", response_model=User)
 async def read_users_me(
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_permission(Permission.USER_READ))  # ✅ MIGRADO
 ):
-    """Obtener información del usuario actual"""
+    """Obtener información del usuario actual (requiere permiso USER:READ)"""
     return current_user
 
 @router.get("/me/detailed")
 async def read_users_me_detailed(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.USER_READ)),  # ✅ MIGRADO
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
 ):
-    """Obtener información detallada del usuario actual incluyendo datos específicos del rol"""
+    """Obtener información detallada del usuario actual incluyendo datos específicos del rol (requiere permiso USER:READ)"""
     return auth_use_case.get_user_specific_data(current_user)
 
 @router.post("/refresh", response_model=TokenResponse)

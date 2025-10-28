@@ -1,12 +1,14 @@
 from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, Callable
 
 from domain.entities import User
+from domain.authorization import Permission, UserRole
 from infrastructure.database.config import get_db
 from infrastructure.repositories.user_repository import SQLUserRepository
 from application.use_cases.user_management_use_cases import UserManagementUseCase
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
+from application.services.authorization_service import AuthorizationService
 
 def get_user_repository(db: Session = Depends(get_db)) -> SQLUserRepository:
     """Dependency para obtener el repositorio de usuarios"""
@@ -98,3 +100,118 @@ def get_user_management_use_case(
     user_repository: SQLUserRepository = Depends(get_user_repository)
 ) -> UserManagementUseCase:
     return UserManagementUseCase(user_repository)
+
+
+# ============================================================================
+# NUEVAS DEPENDENCIES BASADAS EN PERMISOS
+# ============================================================================
+
+def require_permission(permission: Permission) -> Callable:
+    """
+    Factory de dependency para requerir un permiso específico.
+    
+    Uso:
+        @router.delete("/users/{user_id}")
+        async def delete_user(
+            user_id: int,
+            current_user: User = Depends(require_permission(Permission.USER_DELETE))
+        ):
+            ...
+    
+    Args:
+        permission: Permiso requerido
+        
+    Returns:
+        Dependency function que verifica el permiso
+    """
+    def permission_dependency(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        AuthorizationService.verify_permission(current_user, permission)
+        return current_user
+    
+    return permission_dependency
+
+
+def require_any_permission(*permissions: Permission) -> Callable:
+    """
+    Factory de dependency para requerir al menos uno de varios permisos.
+    
+    Uso:
+        @router.get("/restricciones")
+        async def get_restricciones(
+            user: User = Depends(require_any_permission(
+                Permission.RESTRICCION_READ,
+                Permission.RESTRICCION_READ_OWN
+            ))
+        ):
+            ...
+    
+    Args:
+        *permissions: Permisos (requiere al menos uno)
+        
+    Returns:
+        Dependency function que verifica los permisos
+    """
+    def permission_dependency(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        AuthorizationService.verify_any_permission(current_user, list(permissions))
+        return current_user
+    
+    return permission_dependency
+
+
+def require_role(role: UserRole) -> Callable:
+    """
+    Factory de dependency para requerir un rol específico.
+    
+    Uso:
+        @router.get("/admin/settings")
+        async def admin_settings(
+            current_user: User = Depends(require_role(UserRole.ADMINISTRADOR))
+        ):
+            ...
+    
+    Args:
+        role: Rol requerido
+        
+    Returns:
+        Dependency function que verifica el rol
+    """
+    def role_dependency(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        AuthorizationService.verify_role(current_user, role)
+        return current_user
+    
+    return role_dependency
+
+
+def require_any_role(*roles: UserRole) -> Callable:
+    """
+    Factory de dependency para requerir uno de varios roles.
+    
+    Uso:
+        @router.get("/restricciones")
+        async def get_restricciones(
+            user: User = Depends(require_any_role(
+                UserRole.ADMINISTRADOR,
+                UserRole.DOCENTE
+            ))
+        ):
+            ...
+    
+    Args:
+        *roles: Roles válidos (requiere al menos uno)
+        
+    Returns:
+        Dependency function que verifica los roles
+    """
+    def role_dependency(
+        current_user: User = Depends(get_current_active_user)
+    ) -> User:
+        AuthorizationService.verify_any_role(current_user, list(roles))
+        return current_user
+    
+    return role_dependency

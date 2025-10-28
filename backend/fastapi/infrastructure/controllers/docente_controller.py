@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from domain.entities import Docente, DocenteCreate
-from infrastructure.dependencies import get_current_active_user
+from domain.authorization import Permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 from application.use_cases.docente_use_cases import DocenteUseCases
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -19,9 +20,9 @@ def get_docente_use_case(db: Session = Depends(get_db)) -> DocenteUseCases:
 async def create_docente(
     docente_data: DocenteCreate,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))  # ✅ MIGRADO
 ):
-    """Crear un nuevo docente"""
+    """Crear un nuevo docente (requiere permiso DOCENTE:WRITE)"""
     try:
         docente = docente_use_case.create(docente_data)
         return docente
@@ -38,9 +39,9 @@ async def get_all_docentes(
     skip: int = 0,
     limit: int = 100,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
 ):
-    """Obtener todos los docentes"""
+    """Obtener todos los docentes (requiere permiso DOCENTE:READ)"""
     try:
         docentes = docente_use_case.get_all(skip=skip, limit=limit)
         return docentes
@@ -56,9 +57,9 @@ async def get_all_docentes(
 async def get_docente_by_id(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
 ):
-    """Obtener docente por ID"""
+    """Obtener docente por ID (requiere permiso DOCENTE:READ)"""
     try:
         docente = docente_use_case.get_by_id(docente_id)
         return docente
@@ -74,9 +75,9 @@ async def get_docente_by_id(
 async def get_docentes_by_departamento(
     departamento: str,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
 ):
-    """Obtener docentes por departamento"""
+    """Obtener docentes por departamento (requiere permiso DOCENTE:READ)"""
     try:
         docentes = docente_use_case.get_by_departamento(departamento)
         return docentes
@@ -92,9 +93,9 @@ async def get_docentes_by_departamento(
 async def delete_docente(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_DELETE))  # ✅ MIGRADO
 ):
-    """Eliminar un docente"""
+    """Eliminar un docente (requiere permiso DOCENTE:DELETE)"""
     try:
         success = docente_use_case.delete(docente_id)
         return {"message": "Docente eliminado exitosamente"}

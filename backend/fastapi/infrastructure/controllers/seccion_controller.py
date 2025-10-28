@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
 from domain.entities import Seccion, SeccionCreate, SeccionBase, SeccionPatch, User
+from domain.authorization import Permission  # ✅ MIGRADO
 from application.use_cases.seccion_use_cases import SeccionUseCases
 from infrastructure.repositories.seccion_repository import SeccionRepository
-from infrastructure.dependencies import get_current_active_user, get_current_admin_user
+from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 
 router = APIRouter()
 
@@ -15,10 +16,10 @@ def get_seccion_use_cases(db: Session = Depends(get_db)) -> SeccionUseCases:
 
 @router.get("/", response_model=List[Seccion], status_code=status.HTTP_200_OK, summary="Obtener secciones", tags=["secciones"])
 async def get_secciones(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_READ)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Obtener todas las secciones"""
+    """Obtener todas las secciones (requiere permiso SECCION:READ)"""
     try:
         secciones = use_cases.get_all()
         return secciones
@@ -31,10 +32,10 @@ async def get_secciones(
 @router.get("/{seccion_id}", response_model=Seccion, status_code=status.HTTP_200_OK, summary="Obtener sección por ID", tags=["secciones"])
 async def obtener_seccion(
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_READ)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Obtener una sección específica por ID"""
+    """Obtener una sección específica por ID (requiere permiso SECCION:READ)"""
     try:
         seccion = use_cases.get_by_id(seccion_id)
         if not seccion:
@@ -55,9 +56,9 @@ async def obtener_seccion(
 async def create_seccion(
     seccion_data: SeccionCreate,
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.SECCION_WRITE))  # ✅ MIGRADO
 ):
-    """Crear una nueva sección (solo administradores)"""
+    """Crear una nueva sección (requiere permiso SECCION:WRITE - solo administradores)"""
     try:
         nueva_seccion = use_cases.create(seccion_data)
         return nueva_seccion
@@ -78,10 +79,10 @@ async def create_seccion(
 async def update_seccion(
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
     seccion_data: SeccionCreate = None,
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_WRITE)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Actualizar completamente una sección (solo administradores)"""
+    """Actualizar completamente una sección (requiere permiso SECCION:WRITE - solo administradores)"""
     try:
         update_data = {
             'codigo': seccion_data.codigo,
@@ -117,10 +118,10 @@ async def update_seccion(
 async def patch_seccion(
     seccion_data: SeccionPatch,
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_WRITE)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Actualizar parcialmente una sección (solo administradores)"""
+    """Actualizar parcialmente una sección (requiere permiso SECCION:WRITE - solo administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in seccion_data.model_dump().items() if v is not None}
@@ -156,10 +157,10 @@ async def patch_seccion(
 @router.delete("/{seccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar sección", tags=["secciones"])
 async def delete_seccion(
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_DELETE)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Eliminar una sección (solo administradores)"""
+    """Eliminar una sección (requiere permiso SECCION:DELETE - solo administradores)"""
     try:
         eliminado = use_cases.delete(seccion_id)
         
@@ -180,10 +181,10 @@ async def delete_seccion(
 @router.get("/asignatura/{asignatura_id}", response_model=List[Seccion], status_code=status.HTTP_200_OK, summary="Obtener secciones por asignatura", tags=["secciones"])
 async def get_secciones_by_asignatura(
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_READ)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Obtener todas las secciones de una asignatura"""
+    """Obtener todas las secciones de una asignatura (requiere permiso SECCION:READ)"""
     try:
         secciones = use_cases.get_by_asignatura(asignatura_id)
         return secciones
@@ -197,10 +198,10 @@ async def get_secciones_by_asignatura(
 async def get_secciones_by_periodo(
     anio: int = Path(..., gt=2000, description="Año del periodo"),
     semestre: int = Path(..., ge=1, le=2, description="Semestre (1 o 2)"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_READ)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Obtener secciones por año y semestre"""
+    """Obtener secciones por año y semestre (requiere permiso SECCION:READ)"""
     try:
         secciones = use_cases.get_by_periodo(anio, semestre)
         return secciones
@@ -212,10 +213,10 @@ async def get_secciones_by_periodo(
 
 @router.get("/activas", response_model=List[Seccion], status_code=status.HTTP_200_OK, summary="Obtener secciones activas", tags=["secciones"])
 async def get_secciones_activas(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.SECCION_READ)),  # ✅ MIGRADO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Obtener todas las secciones activas"""
+    """Obtener todas las secciones activas (requiere permiso SECCION:READ)"""
     try:
         secciones = use_cases.get_secciones_activas()
         return secciones

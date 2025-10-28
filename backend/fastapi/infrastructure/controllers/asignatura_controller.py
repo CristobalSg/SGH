@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
 from domain.entities import Asignatura, AsignaturaCreate, AsignaturaBase, AsignaturaPatch, User
+from domain.authorization import Permission  # ✅ MIGRADO
 from application.use_cases.asignatura_use_cases import AsignaturaUseCases
 from infrastructure.repositories.asignatura_repository import AsignaturaRepository
-from infrastructure.dependencies import get_current_active_user, get_current_admin_user
+from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 
 router = APIRouter()
 
@@ -15,10 +16,10 @@ def get_asignatura_use_cases(db: Session = Depends(get_db)) -> AsignaturaUseCase
 
 @router.get("/", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Obtener asignaturas", tags=["asignaturas"])
 async def get_asignaturas(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Obtener todas las asignaturas"""
+    """Obtener todas las asignaturas (requiere permiso ASIGNATURA:READ)"""
     try:
         asignaturas = use_cases.get_all()
         return asignaturas
@@ -31,10 +32,10 @@ async def get_asignaturas(
 @router.get("/{asignatura_id}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Obtener asignatura por ID", tags=["asignaturas"])
 async def obtener_asignatura(
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Obtener una asignatura específica por ID"""
+    """Obtener una asignatura específica por ID (requiere permiso ASIGNATURA:READ)"""
     try:
         asignatura = use_cases.get_by_id(asignatura_id)
         if not asignatura:
@@ -55,9 +56,9 @@ async def obtener_asignatura(
 async def create_asignatura(
     asignatura_data: AsignaturaCreate,
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE))  # ✅ MIGRADO
 ):
-    """Crear una nueva asignatura (solo administradores)"""
+    """Crear una nueva asignatura (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         nueva_asignatura = use_cases.create(asignatura_data)
         return nueva_asignatura
@@ -78,10 +79,10 @@ async def create_asignatura(
 async def update_asignatura(
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
     asignatura_data: AsignaturaCreate = None,
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Actualizar completamente una asignatura (solo administradores)"""
+    """Actualizar completamente una asignatura (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         update_data = {
             'codigo': asignatura_data.codigo,
@@ -115,10 +116,10 @@ async def update_asignatura(
 async def patch_asignatura(
     asignatura_data: AsignaturaPatch,
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Actualizar parcialmente una asignatura (solo administradores)"""
+    """Actualizar parcialmente una asignatura (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in asignatura_data.model_dump().items() if v is not None}
@@ -154,10 +155,10 @@ async def patch_asignatura(
 @router.delete("/{asignatura_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar asignatura", tags=["asignaturas"])
 async def delete_asignatura(
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_DELETE)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Eliminar una asignatura (solo administradores)"""
+    """Eliminar una asignatura (requiere permiso ASIGNATURA:DELETE - solo administradores)"""
     try:
         eliminado = use_cases.delete(asignatura_id)
         
@@ -178,10 +179,10 @@ async def delete_asignatura(
 @router.get("/codigo/{codigo}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Obtener asignatura por código", tags=["asignaturas"])
 async def get_asignatura_by_codigo(
     codigo: str = Path(..., description="Código de la asignatura"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Obtener una asignatura específica por su código"""
+    """Obtener una asignatura específica por su código (requiere permiso ASIGNATURA:READ)"""
     try:
         asignatura = use_cases.get_by_codigo(codigo)
         if not asignatura:
@@ -201,10 +202,10 @@ async def get_asignatura_by_codigo(
 @router.get("/buscar/nombre", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Buscar asignaturas por nombre", tags=["asignaturas"])
 async def search_asignaturas_by_nombre(
     nombre: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Buscar asignaturas por nombre (búsqueda parcial)"""
+    """Buscar asignaturas por nombre (búsqueda parcial) - requiere permiso ASIGNATURA:READ"""
     try:
         asignaturas = use_cases.search_by_nombre(nombre)
         return asignaturas
@@ -218,10 +219,10 @@ async def search_asignaturas_by_nombre(
 async def get_asignaturas_by_creditos(
     creditos_min: Optional[int] = None,
     creditos_max: Optional[int] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Buscar asignaturas por rango de créditos"""
+    """Buscar asignaturas por rango de créditos (requiere permiso ASIGNATURA:READ)"""
     try:
         asignaturas = use_cases.get_by_creditos(creditos_min, creditos_max)
         return asignaturas
