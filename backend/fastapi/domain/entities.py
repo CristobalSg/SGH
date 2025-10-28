@@ -25,17 +25,56 @@ class UserBase(BaseModel):
         return v.lower()
 
 class UserCreate(UserBase):
-    contrasena: str = Field(..., min_length=8, max_length=100, description="Contraseña del usuario")
+    contrasena: str = Field(..., min_length=12, max_length=100, description="Contraseña del usuario")
     
     @field_validator('contrasena')
     @classmethod
     def validate_contrasena(cls, v):
+        """
+        Validar fortaleza de contraseña según OWASP:
+        - Mínimo 12 caracteres
+        - Al menos una letra mayúscula
+        - Al menos una letra minúscula
+        - Al menos un número
+        - Al menos un carácter especial
+        - No contraseñas comunes
+        """
+        # Longitud mínima
+        if len(v) < 12:
+            raise ValueError('La contraseña debe tener al menos 12 caracteres')
+        
+        # Mayúscula
         if not re.search(r"[A-Z]", v):
             raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        
+        # Minúscula
         if not re.search(r"[a-z]", v):
             raise ValueError('La contraseña debe contener al menos una letra minúscula')
+        
+        # Número
         if not re.search(r"\d", v):
             raise ValueError('La contraseña debe contener al menos un número')
+        
+        # Carácter especial
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/~`]', v):
+            raise ValueError('La contraseña debe contener al menos un carácter especial (!@#$%^&*...)')
+        
+        # Validar contra contraseñas comunes (lista reducida)
+        common_passwords = [
+            'password', '12345678', '123456789', '1234567890',
+            'qwerty', 'abc123', 'password123', 'admin123', 
+            'letmein', 'welcome123', 'monkey', 'dragon',
+            'master', 'sunshine', 'princess', 'football',
+            'iloveyou', 'admin', 'welcome', '123123'
+        ]
+        
+        if v.lower() in common_passwords:
+            raise ValueError('La contraseña es demasiado común. Elige una más segura.')
+        
+        # Verificar que no sea solo caracteres repetidos
+        if len(set(v)) < 6:
+            raise ValueError('La contraseña no debe tener demasiados caracteres repetidos')
+        
         return v
 
 class UserUpdate(BaseModel):
