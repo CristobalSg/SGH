@@ -8,7 +8,12 @@ from fastapi import HTTPException, status
 from domain.entities import TokenData
 
 # Configuración de hashing de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=13,  
+    bcrypt__ident="2b"  
+)
 
 # Función auxiliar para obtener secretos de forma segura
 def _get_secret_key(env_var: str, development_fallback: Optional[str] = None) -> str:
@@ -53,6 +58,9 @@ def _get_secret_key(env_var: str, development_fallback: Optional[str] = None) ->
     # Si no hay fallback, generar error
     raise ValueError(f"Variable de entorno {env_var} no configurada")
 
+# Lista blanca de algoritmos permitidos (protección contra ataques de algoritmo None)
+ALLOWED_ALGORITHMS = ["HS256", "HS384", "HS512"]
+
 # Configuración JWT desde variables de entorno
 SECRET_KEY = _get_secret_key(
     "JWT_SECRET_KEY",
@@ -64,7 +72,14 @@ REFRESH_SECRET_KEY = _get_secret_key(
     development_fallback="dev_refresh_secret_not_for_production_use"
 )
 
+# Validar que el algoritmo esté en la lista blanca
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+if ALGORITHM not in ALLOWED_ALGORITHMS:
+    raise ValueError(
+        f"CRITICAL: Algoritmo JWT no permitido: {ALGORITHM}. "
+        f"Usa uno de: {', '.join(ALLOWED_ALGORITHMS)}"
+    )
+
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "7"))
 
@@ -114,7 +129,15 @@ class AuthService:
 
     @staticmethod
     def verify_token(token: str, token_type: str = "access") -> TokenData:
-        """Verifica y decodifica un token JWT"""
+        """
+        Verifica y decodifica un token JWT con validación estricta
+        
+        Mejoras de seguridad:
+        - Validación explícita de algoritmos permitidos
+        - Verificación estricta de firma y expiración
+        - Validación de todos los campos requeridos
+        - Protección contra ataques de algoritmo None
+        """
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No se pudieron validar las credenciales",
@@ -122,24 +145,50 @@ class AuthService:
         )
         
         try:
+            # Opciones de validación estricta
+            decode_options = {
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_aud": False,
+                "require_exp": True,
+            }
+            
             if token_type == "access":
-                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+                # Decodificar con lista blanca de algoritmos
+                payload = jwt.decode(
+                    token,
+                    SECRET_KEY,
+                    algorithms=ALLOWED_ALGORITHMS,
+                    options=decode_options
+                )
             elif token_type == "refresh":
-                payload = jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+                payload = jwt.decode(
+                    token,
+                    REFRESH_SECRET_KEY,
+                    algorithms=ALLOWED_ALGORITHMS,
+                    options=decode_options
+                )
             else:
                 raise credentials_exception
             
+            # Extraer y validar campos requeridos
             email: str = payload.get("sub")
             user_id: int = payload.get("user_id")
             rol: str = payload.get("rol")
             exp: int = payload.get("exp")
             token_type_payload: str = payload.get("type")
             
-            if email is None or token_type_payload != token_type:
+            # Verificar que TODOS los campos requeridos existan
+            if not all([email, user_id, rol, exp, token_type_payload]):
+                raise credentials_exception
+            
+            # Verificar que el tipo de token coincida
+            if token_type_payload != token_type:
                 raise credentials_exception
                 
             token_data = TokenData(email=email, user_id=user_id, rol=rol, exp=exp)
             return token_data
+            
         except JWTError:
             raise credentials_exception
 
