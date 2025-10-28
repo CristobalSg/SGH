@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
 from domain.entities import Bloque, BloqueCreate, BloqueBase, BloquePatch, User
+from domain.authorization import Permission  # ✅ MIGRADO
 from application.use_cases.bloque_use_cases import BloqueUseCases
 from infrastructure.repositories.bloque_repository import BloqueRepository
-from infrastructure.dependencies import get_current_active_user, get_current_admin_user
+from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 
 router = APIRouter()
 
@@ -15,10 +16,10 @@ def get_bloque_use_cases(db: Session = Depends(get_db)) -> BloqueUseCases:
 
 @router.get("/", response_model=List[Bloque], status_code=status.HTTP_200_OK, summary="Obtener bloques", tags=["bloques"])
 async def get_bloques(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_READ)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Obtener todos los bloques de horarios"""
+    """Obtener todos los bloques de horarios (requiere permiso BLOQUE:READ)"""
     try:
         bloques = use_cases.get_all()
         return bloques
@@ -31,10 +32,10 @@ async def get_bloques(
 @router.get("/{bloque_id}", response_model=Bloque, status_code=status.HTTP_200_OK, summary="Obtener bloque por ID", tags=["bloques"])
 async def obtener_bloque(
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_READ)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Obtener un bloque específico por ID"""
+    """Obtener un bloque específico por ID (requiere permiso BLOQUE:READ)"""
     try:
         bloque = use_cases.get_by_id(bloque_id)
         if not bloque:
@@ -55,9 +56,9 @@ async def obtener_bloque(
 async def create_bloque(
     bloque_data: BloqueCreate,
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE))  # ✅ MIGRADO
 ):
-    """Crear un nuevo bloque de horario (solo administradores)"""
+    """Crear un nuevo bloque de horario (requiere permiso BLOQUE:WRITE - solo administradores)"""
     try:
         nuevo_bloque = use_cases.create(bloque_data)
         return nuevo_bloque
@@ -78,10 +79,10 @@ async def create_bloque(
 async def update_bloque(
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
     bloque_data: BloqueCreate = None,
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Actualizar completamente un bloque (solo administradores)"""
+    """Actualizar completamente un bloque (requiere permiso BLOQUE:WRITE - solo administradores)"""
     try:
         update_data = {
             'dia_semana': bloque_data.dia_semana,
@@ -115,10 +116,10 @@ async def update_bloque(
 async def patch_bloque(
     bloque_data: BloquePatch,
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Actualizar parcialmente un bloque (solo administradores)"""
+    """Actualizar parcialmente un bloque (requiere permiso BLOQUE:WRITE - solo administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in bloque_data.model_dump().items() if v is not None}
@@ -154,10 +155,10 @@ async def patch_bloque(
 @router.delete("/{bloque_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar bloque", tags=["bloques"])
 async def delete_bloque(
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_DELETE)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Eliminar un bloque (solo administradores)"""
+    """Eliminar un bloque (requiere permiso BLOQUE:DELETE - solo administradores)"""
     try:
         eliminado = use_cases.delete(bloque_id)
         
@@ -178,10 +179,10 @@ async def delete_bloque(
 @router.get("/dia/{dia_semana}", response_model=List[Bloque], status_code=status.HTTP_200_OK, summary="Obtener bloques por día de la semana", tags=["bloques"])
 async def get_bloques_by_dia_semana(
     dia_semana: int = Path(..., ge=1, le=7, description="Día de la semana (1=Lunes, 7=Domingo)"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_READ)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Obtener bloques por día de la semana"""
+    """Obtener bloques por día de la semana (requiere permiso BLOQUE:READ)"""
     try:
         bloques = use_cases.get_by_dia_semana(dia_semana)
         return bloques
@@ -195,10 +196,10 @@ async def get_bloques_by_dia_semana(
 async def get_bloques_by_horario(
     hora_inicio: Optional[str] = None,
     hora_fin: Optional[str] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_READ)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Buscar bloques por rango de horario"""
+    """Buscar bloques por rango de horario (requiere permiso BLOQUE:READ)"""
     try:
         bloques = use_cases.get_by_horario(hora_inicio, hora_fin)
         return bloques
@@ -211,10 +212,10 @@ async def get_bloques_by_horario(
 @router.get("/libres", response_model=List[Bloque], status_code=status.HTTP_200_OK, summary="Obtener bloques libres", tags=["bloques"])
 async def get_bloques_libres(
     dia_semana: Optional[int] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission(Permission.BLOQUE_READ)),  # ✅ MIGRADO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Obtener bloques libres, opcionalmente filtrados por día de la semana"""
+    """Obtener bloques libres, opcionalmente filtrados por día de la semana (requiere permiso BLOQUE:READ)"""
     try:
         bloques = use_cases.get_bloques_libres(dia_semana)
         return bloques

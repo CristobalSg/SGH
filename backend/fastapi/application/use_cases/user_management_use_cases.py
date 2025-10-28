@@ -2,6 +2,7 @@ from typing import List
 from fastapi import HTTPException, status
 from domain.entities import User, UserUpdate
 from infrastructure.repositories.user_repository import SQLUserRepository
+from application.services.authorization_service import AuthorizationService  # ✅ Nuevo
 
 class UserManagementUseCase:
     def __init__(self, user_repository: SQLUserRepository):
@@ -17,6 +18,31 @@ class UserManagementUseCase:
         return users
 
     def get_user_by_id(self, user_id: int) -> User:
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuario con id {user_id} no encontrado"
+            )
+        return user
+
+    def get_user_by_id_with_authorization(self, actor: User, user_id: int) -> User:
+        """Obtener usuario por ID con verificación de acceso horizontal
+        
+        Args:
+            actor: Usuario que realiza la solicitud
+            user_id: ID del usuario a consultar
+            
+        Returns:
+            User: Usuario solicitado
+            
+        Raises:
+            HTTPException: 404 si no existe, 403 si no tiene acceso
+        """
+        # ✅ Verificar acceso horizontal usando el servicio de autorización
+        AuthorizationService.verify_can_access_user(actor, user_id)
+        
+        # Si pasa la verificación, obtener el usuario
         user = self.user_repository.get_by_id(user_id)
         if not user:
             raise HTTPException(
