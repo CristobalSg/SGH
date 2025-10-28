@@ -36,13 +36,15 @@ def custom_openapi():
         for method in openapi_schema["paths"][path]:
             if method in ["get", "post", "put", "delete", "patch"]:
                 endpoint_info = openapi_schema["paths"][path][method]
+                # Endpoints públicos (sin autenticación requerida)
                 public_endpoints = [
-                    "/api/auth/register",
                     "/api/auth/login", 
                     "/api/auth/login-json",
+                    "/api/auth/refresh",
                     "/api/",
                     "/api/health"
                 ]
+                # NOTA: /api/auth/register NO es público - requiere admin (USER:CREATE)
                 if path not in public_endpoints:
                     if "security" not in endpoint_info:
                         endpoint_info["security"] = [{"BearerAuth": []}]
