@@ -88,105 +88,102 @@ async def refresh_token(
             detail="Error interno del servidor"
         )
 
-@router.get("/validate-role/{required_role}")
-async def validate_user_role(
-    required_role: str,
-    current_user: User = Depends(get_current_active_user),
-    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
-):
-    """Validar si el usuario actual tiene el rol requerido"""
-    try:
-        has_role = auth_use_case.require_role(current_user, [required_role])
-        return {
-            "valid": has_role,
-            "user_rol": current_user.rol,
-            "required_role": required_role,
-            "message": f"Usuario tiene el rol {current_user.rol}"
-        }
-    except HTTPException as e:
-        return {
-            "valid": False,
-            "user_rol": current_user.rol,
-            "required_role": required_role,
-            "message": e.detail
-        }
+# ============================================================================
+# ENDPOINTS DE VALIDACIÓN DE ROLES - TEMPORALMENTE COMENTADOS
+# ============================================================================
+# NOTA DE SEGURIDAD: Estos endpoints exponen información sensible sobre roles
+# Serán reemplazados por un sistema de logging de auditoría en el futuro
+# Por ahora, la validación de roles debe hacerse usando las dependencies:
+# - get_current_admin_user
+# - get_current_docente_user  
+# - get_current_estudiante_user
+# - get_current_docente_or_admin_user
+# ============================================================================
 
-@router.get("/validate-admin")
-async def validate_admin(
-    current_user: User = Depends(get_current_active_user),
-    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
-):
-    """Validar si el usuario actual es administrador"""
-    try:
-        is_admin = auth_use_case.require_admin(current_user)
-        return {
-            "valid": is_admin,
-            "user_rol": current_user.rol,
-            "message": "Usuario es administrador"
-        }
-    except HTTPException as e:
-        return {
-            "valid": False,
-            "user_rol": current_user.rol,
-            "message": e.detail
-        }
+# @router.get("/validate-role/{required_role}")
+# async def validate_user_role(
+#     required_role: str,
+#     current_user: User = Depends(get_current_active_user),
+#     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+# ):
+#     """[DESHABILITADO] Validar si el usuario actual tiene el rol requerido
+#     
+#     Este endpoint ha sido deshabilitado por razones de seguridad.
+#     Expone información sensible sobre la estructura de roles del sistema.
+#     Use las dependencies de FastAPI para validación de roles en el backend.
+#     """
+#     # TODO: Implementar logging de auditoría antes de reactivar
+#     try:
+#         has_role = auth_use_case.require_role(current_user, [required_role])
+#         # No retornar información de roles
+#         return {"valid": has_role}
+#     except HTTPException:
+#         return {"valid": False}
 
-@router.get("/validate-docente")
-async def validate_docente(
-    current_user: User = Depends(get_current_active_user),
-    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
-):
-    """Validar si el usuario actual es docente"""
-    try:
-        is_docente = auth_use_case.require_docente(current_user)
-        return {
-            "valid": is_docente,
-            "user_rol": current_user.rol,
-            "message": "Usuario es docente"
-        }
-    except HTTPException as e:
-        return {
-            "valid": False,
-            "user_rol": current_user.rol,
-            "message": e.detail
-        }
+# @router.get("/validate-admin")
+# async def validate_admin(
+#     current_user: User = Depends(get_current_active_user),
+#     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+# ):
+#     """[DESHABILITADO] Validar si el usuario actual es administrador
+#     
+#     Este endpoint ha sido deshabilitado por razones de seguridad.
+#     Use get_current_admin_user dependency en los endpoints que lo requieran.
+#     """
+#     # TODO: Implementar logging de auditoría antes de reactivar
+#     try:
+#         is_admin = auth_use_case.require_admin(current_user)
+#         return {"valid": is_admin}
+#     except HTTPException:
+#         return {"valid": False}
 
-@router.get("/validate-estudiante")
-async def validate_estudiante(
-    current_user: User = Depends(get_current_active_user),
-    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
-):
-    """Validar si el usuario actual es estudiante"""
-    try:
-        is_estudiante = auth_use_case.require_estudiante(current_user)
-        return {
-            "valid": is_estudiante,
-            "user_rol": current_user.rol,
-            "message": "Usuario es estudiante"
-        }
-    except HTTPException as e:
-        return {
-            "valid": False,
-            "user_rol": current_user.rol,
-            "message": e.detail
-        }
+# @router.get("/validate-docente")
+# async def validate_docente(
+#     current_user: User = Depends(get_current_active_user),
+#     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+# ):
+#     """[DESHABILITADO] Validar si el usuario actual es docente
+#     
+#     Este endpoint ha sido deshabilitado por razones de seguridad.
+#     Use get_current_docente_user dependency en los endpoints que lo requieran.
+#     """
+#     # TODO: Implementar logging de auditoría antes de reactivar
+#     try:
+#         is_docente = auth_use_case.require_docente(current_user)
+#         return {"valid": is_docente}
+#     except HTTPException:
+#         return {"valid": False}
 
-@router.get("/validate-docente-or-admin")
-async def validate_docente_or_admin(
-    current_user: User = Depends(get_current_active_user),
-    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
-):
-    """Validar si el usuario actual es docente o administrador"""
-    try:
-        is_docente_or_admin = auth_use_case.require_docente_or_admin(current_user)
-        return {
-            "valid": is_docente_or_admin,
-            "user_rol": current_user.rol,
-            "message": f"Usuario es {current_user.rol}"
-        }
-    except HTTPException as e:
-        return {
-            "valid": False,
-            "user_rol": current_user.rol,
-            "message": e.detail
-        }
+# @router.get("/validate-estudiante")
+# async def validate_estudiante(
+#     current_user: User = Depends(get_current_active_user),
+#     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+# ):
+#     """[DESHABILITADO] Validar si el usuario actual es estudiante
+#     
+#     Este endpoint ha sido deshabilitado por razones de seguridad.
+#     Use get_current_estudiante_user dependency en los endpoints que lo requieran.
+#     """
+#     # TODO: Implementar logging de auditoría antes de reactivar
+#     try:
+#         is_estudiante = auth_use_case.require_estudiante(current_user)
+#         return {"valid": is_estudiante}
+#     except HTTPException:
+#         return {"valid": False}
+
+# @router.get("/validate-docente-or-admin")
+# async def validate_docente_or_admin(
+#     current_user: User = Depends(get_current_active_user),
+#     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+# ):
+#     """[DESHABILITADO] Validar si el usuario actual es docente o administrador
+#     
+#     Este endpoint ha sido deshabilitado por razones de seguridad.
+#     Use get_current_docente_or_admin_user dependency en los endpoints que lo requieran.
+#     """
+#     # TODO: Implementar logging de auditoría antes de reactivar
+#     try:
+#         is_docente_or_admin = auth_use_case.require_docente_or_admin(current_user)
+#         return {"valid": is_docente_or_admin}
+#     except HTTPException:
+#         return {"valid": False}

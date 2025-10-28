@@ -11,9 +11,12 @@ async def get_users(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_admin_user)  # ✅ CORREGIDO: Solo administradores
 ):
-    """Obtener todos los usuarios con paginación (requiere autenticación)"""
+    """Obtener todos los usuarios con paginación (solo administradores)
+    
+    SEGURIDAD: Restringido a administradores para prevenir exposición masiva de datos.
+    """
     try:
         users = user_use_case.get_all_users(skip=skip, limit=limit)
         return users
@@ -31,7 +34,19 @@ async def get_user_by_id(
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Obtener un usuario por ID (requiere autenticación)"""
+    """Obtener un usuario por ID
+    
+    SEGURIDAD: 
+    - Los usuarios pueden ver solo su propia información
+    - Los administradores pueden ver cualquier usuario
+    """
+    # ✅ CORREGIDO: Control de acceso horizontal
+    if current_user.id != user_id and current_user.rol != "administrador":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para acceder a este recurso"
+        )
+    
     try:
         user = user_use_case.get_user_by_id(user_id)
         return user
