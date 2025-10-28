@@ -6,12 +6,19 @@ from application.use_cases.user_auth_use_cases import UserAuthUseCase
 
 router = APIRouter()
 
-@router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=User,
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar nuevo usuario (Solo Admin)",
+    description="Crea un nuevo usuario en el sistema. **Requiere permisos de administrador (USER:CREATE)**"
+)
 async def register(
     user_data: UserCreate,
+    current_user: User = Depends(require_permission(Permission.USER_CREATE)),
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
 ):
-    """Registrar un nuevo usuario"""
+    """Registrar un nuevo usuario (requiere permiso USER:CREATE - solo administradores)"""
     try:
         user = auth_use_case.register_user(user_data)
         return user

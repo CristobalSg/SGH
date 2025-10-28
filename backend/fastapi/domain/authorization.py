@@ -61,6 +61,7 @@ class Permission(str, Enum):
     # Usuarios
     USER_READ = "user:read"
     USER_READ_ALL = "user:read:all"
+    USER_CREATE = "user:create"
     USER_WRITE = "user:write"
     USER_DELETE = "user:delete"
     USER_ACTIVATE = "user:activate"
@@ -110,9 +111,12 @@ class Permission(str, Enum):
     
     # Restricciones de Horario
     RESTRICCION_HORARIO_READ = "restriccion_horario:read"
-    RESTRICCION_HORARIO_WRITE = "restriccion_horario:write"
-    RESTRICCION_HORARIO_DELETE = "restriccion_horario:delete"
+    RESTRICCION_HORARIO_READ_OWN = "restriccion_horario:read:own"
     RESTRICCION_HORARIO_READ_ALL = "restriccion_horario:read:all"
+    RESTRICCION_HORARIO_WRITE = "restriccion_horario:write"
+    RESTRICCION_HORARIO_WRITE_OWN = "restriccion_horario:write:own"
+    RESTRICCION_HORARIO_DELETE = "restriccion_horario:delete"
+    RESTRICCION_HORARIO_DELETE_OWN = "restriccion_horario:delete:own"
     
     # Clases
     CLASE_READ = "clase:read"
@@ -139,6 +143,7 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         # Usuarios
         Permission.USER_READ,
         Permission.USER_READ_ALL,
+        Permission.USER_CREATE,
         Permission.USER_WRITE,
         Permission.USER_DELETE,
         Permission.USER_ACTIVATE,
@@ -184,9 +189,9 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         
         # Restricciones de Horario
         Permission.RESTRICCION_HORARIO_READ,
+        Permission.RESTRICCION_HORARIO_READ_ALL,
         Permission.RESTRICCION_HORARIO_WRITE,
         Permission.RESTRICCION_HORARIO_DELETE,
-        Permission.RESTRICCION_HORARIO_READ_ALL,
         
         # Clases
         Permission.CLASE_READ,
@@ -222,14 +227,15 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.RESTRICCION_DELETE_OWN,
         
         # Gestión de restricciones de horario propias
-        Permission.RESTRICCION_HORARIO_READ,
-        Permission.RESTRICCION_HORARIO_WRITE,
-        Permission.RESTRICCION_HORARIO_DELETE,
+        Permission.RESTRICCION_HORARIO_READ_OWN,
+        Permission.RESTRICCION_HORARIO_WRITE_OWN,
+        Permission.RESTRICCION_HORARIO_DELETE_OWN,
     },
     
-    # ESTUDIANTE: Solo lectura de información pública
+    # ESTUDIANTE: Solo lectura de información pública y sus propios datos
     UserRole.ESTUDIANTE: {
         Permission.USER_READ,  # Su propio perfil
+        Permission.ESTUDIANTE_READ,  # Sus propios datos de estudiante
         Permission.ASIGNATURA_READ,
         Permission.SECCION_READ,
         Permission.SALA_READ,
