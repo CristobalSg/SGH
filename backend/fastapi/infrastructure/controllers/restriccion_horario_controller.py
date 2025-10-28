@@ -8,7 +8,7 @@ from infrastructure.database.config import get_db
 from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
 from application.use_cases.restriccion_horario_use_cases import RestriccionHorarioUseCases
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission, require_any_permission  # ✅ MIGRADO
 
 router = APIRouter()
 
@@ -138,10 +138,13 @@ async def eliminar_restriccion_horario(
 async def docente_get_mis_restricciones_horario(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a devolver"),
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_READ)),  # ✅ MIGRADO (docente + admin)
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_READ_ALL,  # Admin: todas
+        Permission.RESTRICCION_HORARIO_READ_OWN   # Docente: solo las propias
+    )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Obtener las restricciones de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:READ)"""
+    """Obtener las restricciones de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:READ:ALL o :READ:OWN)"""
     try:
         restricciones = use_cases.get_by_docente_user(current_user, skip=skip, limit=limit)
         return restricciones
@@ -154,10 +157,13 @@ async def docente_get_mis_restricciones_horario(
 @router.post("/docente/mis-restricciones", response_model=RestriccionHorario, status_code=status.HTTP_201_CREATED, tags=["docente-restricciones-horario"])
 async def docente_crear_restriccion_horario(
     restriccion_data: RestriccionHorarioCreate,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),  # ✅ MIGRADO (docente + admin)
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_WRITE,      # Admin: crear para cualquiera
+        Permission.RESTRICCION_HORARIO_WRITE_OWN   # Docente: crear para sí mismo
+    )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Crear una nueva restricción de horario para el docente autenticado (requiere permiso RESTRICCION_HORARIO:WRITE)"""
+    """Crear una nueva restricción de horario para el docente autenticado (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
     try:
         restriccion = use_cases.create_for_docente_user(restriccion_data, current_user)
         return restriccion
@@ -172,10 +178,13 @@ async def docente_crear_restriccion_horario(
 @router.get("/docente/mis-restricciones/{restriccion_id}", response_model=RestriccionHorario, tags=["docente-restricciones-horario"])
 async def docente_get_restriccion_horario(
     restriccion_id: int,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_READ)),  # ✅ MIGRADO (docente + admin)
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_READ_ALL,  # Admin: cualquier restricción
+        Permission.RESTRICCION_HORARIO_READ_OWN   # Docente: solo las propias
+    )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Obtener una restricción de horario específica del docente autenticado (requiere permiso RESTRICCION_HORARIO:READ)"""
+    """Obtener una restricción de horario específica del docente autenticado (requiere permiso RESTRICCION_HORARIO:READ:ALL o :READ:OWN)"""
     try:
         restriccion = use_cases.get_by_id_and_docente_user(restriccion_id, current_user)
         return restriccion
@@ -191,10 +200,13 @@ async def docente_get_restriccion_horario(
 async def docente_actualizar_restriccion_horario(
     restriccion_id: int,
     restriccion_patch: RestriccionHorarioPatch,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),  # ✅ MIGRADO (docente + admin)
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_WRITE,      # Admin: modificar cualquiera
+        Permission.RESTRICCION_HORARIO_WRITE_OWN   # Docente: modificar solo las propias
+    )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Actualizar una restricción de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:WRITE)"""
+    """Actualizar una restricción de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
     try:
         # Convertir a dict y filtrar valores None
         update_data = {k: v for k, v in restriccion_patch.model_dump(exclude_unset=True).items() if v is not None}
@@ -218,10 +230,13 @@ async def docente_actualizar_restriccion_horario(
 @router.delete("/docente/mis-restricciones/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["docente-restricciones-horario"])
 async def docente_eliminar_restriccion_horario(
     restriccion_id: int,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_DELETE)),  # ✅ MIGRADO (docente + admin)
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_DELETE,      # Admin: eliminar cualquiera
+        Permission.RESTRICCION_HORARIO_DELETE_OWN   # Docente: eliminar solo las propias
+    )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Eliminar una restricción de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:DELETE)"""
+    """Eliminar una restricción de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:DELETE o :DELETE:OWN)"""
     try:
         use_cases.delete_for_docente_user(restriccion_id, current_user)
         return
@@ -236,7 +251,10 @@ async def docente_eliminar_restriccion_horario(
 @router.get("/docente/mi-disponibilidad", response_model=List[RestriccionHorario], tags=["docente-restricciones-horario"])
 async def docente_get_mi_disponibilidad(
     dia_semana: Optional[int] = Query(None, ge=0, le=6, description="Día de la semana (opcional)"),
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_READ)),  # ✅ MIGRADO (docente + admin)
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_READ_ALL,  # Admin: ver disponibilidad de todos
+        Permission.RESTRICCION_HORARIO_READ_OWN   # Docente: ver su propia disponibilidad
+    )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
     """Obtener la disponibilidad del docente autenticado (requiere permiso RESTRICCION_HORARIO:READ)"""

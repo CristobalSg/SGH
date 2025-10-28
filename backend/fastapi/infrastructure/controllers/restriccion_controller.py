@@ -7,7 +7,7 @@ from domain.authorization import Permission  # ✅ MIGRADO
 from application.use_cases.restriccion_use_cases import RestriccionUseCases
 from infrastructure.repositories.restriccion_repository import RestriccionRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission, require_any_permission  # ✅ MIGRADO
 
 router = APIRouter()
 
@@ -18,10 +18,13 @@ def get_restriccion_use_cases(db: Session = Depends(get_db)) -> RestriccionUseCa
 
 @router.get("/", response_model=List[Restriccion], status_code=status.HTTP_200_OK, summary="Obtener restricciones", tags=["restricciones"])
 async def get_restricciones(
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_READ)),  # ✅ MIGRADO
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_READ_ALL,  # Admin: todas las restricciones
+        Permission.RESTRICCION_READ_OWN   # Docente: solo las propias
+    )),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """Obtener restricciones (docentes: sus propias / administradores: todas) - requiere RESTRICCION:READ"""
+    """Obtener restricciones (docentes: sus propias / administradores: todas) - requiere RESTRICCION:READ:ALL o RESTRICCION:READ:OWN"""
     try:
         if current_user.rol == "administrador":
             restricciones = use_cases.get_all()
@@ -37,10 +40,13 @@ async def get_restricciones(
 @router.get("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Obtener restricción por ID", tags=["restricciones"])
 async def obtener_restriccion(
     restriccion_id: int,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_READ)),  # ✅ MIGRADO
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_READ_ALL,  # Admin: cualquier restricción
+        Permission.RESTRICCION_READ_OWN   # Docente: solo las propias
+    )),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """Obtener restricción por ID (con verificación de propiedad) - requiere RESTRICCION:READ"""
+    """Obtener restricción por ID (con verificación de propiedad) - requiere RESTRICCION:READ:ALL o RESTRICCION:READ:OWN"""
     try:
         restriccion = use_cases.get_by_id_and_docente_user(restriccion_id, current_user)
         return restriccion
@@ -56,9 +62,12 @@ async def obtener_restriccion(
 async def create_restriccion(
     restriccion_data: RestriccionCreate,
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_WRITE))  # ✅ MIGRADO
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_WRITE,      # Admin: crear para cualquiera
+        Permission.RESTRICCION_WRITE_OWN   # Docente: crear para sí mismo
+    ))
 ):
-    """Crear restricción (docentes: para sí mismos / admin: para cualquiera) - requiere RESTRICCION:WRITE"""
+    """Crear restricción (docentes: para sí mismos / admin: para cualquiera) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
     try:
         nueva_restriccion = use_cases.create_for_docente_user(restriccion_data, current_user)
         return nueva_restriccion
@@ -79,10 +88,13 @@ async def create_restriccion(
 async def update_restriccion(
     restriccion_id: int,
     restriccion_data: RestriccionCreate,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_WRITE,      # Admin: modificar cualquiera
+        Permission.RESTRICCION_WRITE_OWN   # Docente: modificar solo las propias
+    )),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """Actualizar restricción completa (con verificación de propiedad) - requiere RESTRICCION:WRITE"""
+    """Actualizar restricción completa (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
     try:
         update_data = {
             'tipo': restriccion_data.tipo,
@@ -118,10 +130,13 @@ async def update_restriccion(
 async def patch_restriccion(
     restriccion_id: int,
     patch_data: RestriccionPatch,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_WRITE,      # Admin: modificar cualquiera
+        Permission.RESTRICCION_WRITE_OWN   # Docente: modificar solo las propias
+    )),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """Actualizar restricción parcial (con verificación de propiedad) - requiere RESTRICCION:WRITE"""
+    """Actualizar restricción parcial (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
     try:
         # Validar que se envíen datos usando el modelo Pydantic
         update_data = patch_data.model_dump(exclude_unset=True)
@@ -157,10 +172,13 @@ async def patch_restriccion(
 @router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar restricción", tags=["restricciones"])
 async def delete_restriccion(
     restriccion_id: int,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_DELETE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_DELETE,      # Admin: eliminar cualquiera
+        Permission.RESTRICCION_DELETE_OWN   # Docente: eliminar solo las propias
+    )),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """Eliminar restricción (con verificación de propiedad) - requiere RESTRICCION:DELETE"""
+    """Eliminar restricción (con verificación de propiedad) - requiere RESTRICCION:DELETE o RESTRICCION:DELETE:OWN"""
     try:
         deleted = use_cases.delete_for_docente_user(restriccion_id, current_user)
         if not deleted:
