@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import os
+import warnings
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
@@ -9,12 +10,70 @@ from domain.entities import TokenData
 # Configuración de hashing de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Función auxiliar para obtener secretos de forma segura
+def _get_secret_key(env_var: str, development_fallback: Optional[str] = None) -> str:
+    """
+    Obtener secret key de forma segura desde variables de entorno.
+    
+    En producción: requiere que la variable esté configurada.
+    En desarrollo: permite fallback pero emite advertencia.
+    
+    Args:
+        env_var: Nombre de la variable de entorno
+        development_fallback: Valor por defecto solo para desarrollo
+    
+    Returns:
+        El secret key configurado
+    
+    Raises:
+        ValueError: Si la variable no está configurada en producción
+    """
+    env = os.getenv("NODE_ENV", "development")
+    secret = os.getenv(env_var)
+    
+    if secret:
+        return secret
+    
+    # En producción, forzar que esté configurado
+    if env == "production":
+        raise ValueError(
+            f"CRITICAL: La variable {env_var} DEBE estar configurada en producción. "
+            f"Genera un secret seguro usando: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+        )
+    
+    # En desarrollo, usar fallback pero advertir
+    if development_fallback:
+        warnings.warn(
+            f"⚠️  Usando secret por defecto para {env_var} - SOLO PARA DESARROLLO",
+            RuntimeWarning,
+            stacklevel=2
+        )
+        return development_fallback
+    
+    # Si no hay fallback, generar error
+    raise ValueError(f"Variable de entorno {env_var} no configurada")
+
 # Configuración JWT desde variables de entorno
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback_secret_key_for_development")
-REFRESH_SECRET_KEY = os.getenv("JWT_REFRESH_SECRET_KEY", "fallback_refresh_secret_key_for_development")
+SECRET_KEY = _get_secret_key(
+    "JWT_SECRET_KEY",
+    development_fallback="dev_secret_not_for_production_use"
+)
+
+REFRESH_SECRET_KEY = _get_secret_key(
+    "JWT_REFRESH_SECRET_KEY",
+    development_fallback="dev_refresh_secret_not_for_production_use"
+)
+
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "15"))  # 15 minutos
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "7"))  # 7 días
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "7"))
+
+# Validación adicional: los secretos deben ser diferentes
+if SECRET_KEY == REFRESH_SECRET_KEY:
+    raise ValueError(
+        "CRITICAL: JWT_SECRET_KEY y JWT_REFRESH_SECRET_KEY deben ser diferentes. "
+        "Esto es un requisito de seguridad."
+    )
 
 class AuthService:
     @staticmethod
