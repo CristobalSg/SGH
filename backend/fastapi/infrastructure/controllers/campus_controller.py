@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Campus, CampusCreate
-from domain.authorization import Permission  # ✅ MIGRADO
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from domain.entities import Campus  # Response models
+from domain.schemas import CampusSecureCreate, CampusSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
+from infrastructure.dependencies import require_permission
 from application.use_cases.campus_use_cases import CampusUseCase
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -16,11 +17,11 @@ def get_campus_use_case(db: Session = Depends(get_db)) -> CampusUseCase:
 
 @router.post("/", response_model=Campus, status_code=status.HTTP_201_CREATED)
 async def create_campus(
-    campus_data: CampusCreate,
+    campus_data: CampusSecureCreate,  # ✅ SCHEMA SEGURO
     campus_use_case: CampusUseCase = Depends(get_campus_use_case),
-    current_user = Depends(require_permission(Permission.CAMPUS_WRITE))  # ✅ MIGRADO
+    current_user = Depends(require_permission(Permission.CAMPUS_WRITE))
 ):
-    """Crear un nuevo campus (requiere permiso CAMPUS:WRITE)"""
+    """Crear un nuevo campus con validaciones anti-inyección (requiere permiso CAMPUS:WRITE)"""
     try:
         campus = campus_use_case.create_campus(campus_data)
         return campus

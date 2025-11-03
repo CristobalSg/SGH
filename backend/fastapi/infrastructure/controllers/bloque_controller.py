@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
-from domain.entities import Bloque, BloqueCreate, BloqueBase, BloquePatch, User
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import Bloque, User  # Response models
+from domain.schemas import BloqueSecureCreate, BloqueSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
 from application.use_cases.bloque_use_cases import BloqueUseCases
 from infrastructure.repositories.bloque_repository import BloqueRepository
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission
 
 router = APIRouter()
 
@@ -54,11 +55,11 @@ async def obtener_bloque(
 
 @router.post("/", response_model=Bloque, status_code=status.HTTP_201_CREATED, summary="Crear nuevo bloque", tags=["bloques"])
 async def create_bloque(
-    bloque_data: BloqueCreate,
+    bloque_data: BloqueSecureCreate,  # ✅ SCHEMA SEGURO
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases),
-    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE))  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE))
 ):
-    """Crear un nuevo bloque de horario (requiere permiso BLOQUE:WRITE - solo administradores)"""
+    """Crear un nuevo bloque de horario con validaciones anti-inyección (requiere permiso BLOQUE:WRITE - solo administradores)"""
     try:
         nuevo_bloque = use_cases.create(bloque_data)
         return nuevo_bloque
@@ -77,12 +78,12 @@ async def create_bloque(
 
 @router.put("/{bloque_id}", response_model=Bloque, status_code=status.HTTP_200_OK, summary="Actualizar bloque completo", tags=["bloques"])
 async def update_bloque(
+    bloque_data: BloqueSecureCreate,  # ✅ SCHEMA SEGURO
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
-    bloque_data: BloqueCreate = None,
-    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE)),
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Actualizar completamente un bloque (requiere permiso BLOQUE:WRITE - solo administradores)"""
+    """Actualizar completamente un bloque con validaciones anti-inyección (requiere permiso BLOQUE:WRITE - solo administradores)"""
     try:
         update_data = {
             'dia_semana': bloque_data.dia_semana,
@@ -112,14 +113,14 @@ async def update_bloque(
             detail=f"Error al actualizar el bloque: {str(e)}"
         )
 
-@router.patch("/{bloque_id}", response_model=Bloque, status_code=status.HTTP_200_OK, summary="Actualizar bloque parcial", tags=["bloques"])
-async def patch_bloque(
-    bloque_data: BloquePatch,
+@router.patch("/{bloque_id}", response_model=Bloque, status_code=status.HTTP_200_OK, summary="Actualizar campos específicos de bloque", tags=["bloques"])
+async def partial_update_bloque(
+    bloque_data: BloqueSecurePatch,  # ✅ SCHEMA SEGURO
     bloque_id: int = Path(..., gt=0, description="ID del bloque"),
-    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.BLOQUE_WRITE)),
     use_cases: BloqueUseCases = Depends(get_bloque_use_cases)
 ):
-    """Actualizar parcialmente un bloque (requiere permiso BLOQUE:WRITE - solo administradores)"""
+    """Actualizar parcialmente un bloque con validaciones anti-inyección (requiere permiso BLOQUE:WRITE - solo administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in bloque_data.model_dump().items() if v is not None}

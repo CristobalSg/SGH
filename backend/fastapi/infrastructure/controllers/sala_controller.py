@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Sala, SalaCreate
-from domain.authorization import Permission  # ✅ Nuevo sistema
-from infrastructure.dependencies import require_permission  # ✅ Nuevo sistema
+from domain.entities import Sala  # Response models
+from domain.schemas import SalaSecureCreate, SalaSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
+from infrastructure.dependencies import require_permission
 from application.use_cases.sala_use_cases import SalaUseCases
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -16,13 +17,13 @@ def get_sala_use_case(db: Session = Depends(get_db)) -> SalaUseCases:
     edificio_repository = SQLEdificioRepository(db)
     return SalaUseCases(sala_repository, edificio_repository)
 
-@router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED, summary="Crear nueva sala", tags=["salas"])
 async def create_sala(
-    sala_data: SalaCreate,
-    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(require_permission(Permission.SALA_WRITE))  # ✅ MIGRADO
+    sala_data: SalaSecureCreate,  # ✅ SCHEMA SEGURO
+    use_cases: SalaUseCases = Depends(get_sala_use_cases),
+    current_user: User = Depends(require_permission(Permission.SALA_WRITE))
 ):
-    """Crear una nueva sala (requiere permiso SALA:WRITE)"""
+    """Crear una nueva sala con validaciones anti-inyección (requiere permiso SALA:WRITE - solo administradores)"""
     try:
         sala = sala_use_case.create(sala_data)
         return sala
@@ -110,12 +111,12 @@ async def get_salas_by_edificio(
 
 @router.put("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK)
 async def update_sala(
+    sala_data: SalaSecureCreate,  # ✅ SCHEMA SEGURO
     sala_id: int,
-    sala_data: SalaCreate,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(require_permission(Permission.SALA_WRITE))  # ✅ MIGRADO
+    current_user = Depends(require_permission(Permission.SALA_WRITE))
 ):
-    """Actualizar una sala (requiere permiso SALA:WRITE)"""
+    """Actualizar una sala con validaciones anti-inyección (requiere permiso SALA:WRITE)"""
     try:
         update_data = {
             'codigo': sala_data.codigo,

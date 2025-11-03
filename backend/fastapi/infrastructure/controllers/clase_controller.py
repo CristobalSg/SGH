@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
-from domain.entities import Clase, ClaseCreate, ClaseBase, ClasePatch, User
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import Clase, User  # Response models
+from domain.schemas import ClaseSecureCreate, ClaseSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
 from application.use_cases.clase_uses_cases import ClaseUseCases
 from infrastructure.repositories.clase_repository import ClaseRepository
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission
 
 router = APIRouter()
 
@@ -54,11 +55,11 @@ async def obtener_clase(
 
 @router.post("/", response_model=Clase, status_code=status.HTTP_201_CREATED, summary="Crear nueva clase", tags=["clases"])
 async def create_clase(
-    clase_data: ClaseCreate,
+    clase_data: ClaseSecureCreate,  # ✅ SCHEMA SEGURO
     use_cases: ClaseUseCases = Depends(get_clase_use_cases),
-    current_user: User = Depends(require_permission(Permission.CLASE_WRITE))  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.CLASE_WRITE))
 ):
-    """Crear una nueva clase (requiere permiso CLASE:WRITE - solo administradores)"""
+    """Crear una nueva clase con validaciones anti-inyección (requiere permiso CLASE:WRITE - solo administradores)"""
     try:
         nueva_clase = use_cases.create(clase_data)
         return nueva_clase
@@ -77,12 +78,12 @@ async def create_clase(
 
 @router.put("/{clase_id}", response_model=Clase, status_code=status.HTTP_200_OK, summary="Actualizar clase completa", tags=["clases"])
 async def update_clase(
+    clase_data: ClaseSecureCreate,  # ✅ SCHEMA SEGURO
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
-    clase_data: ClaseCreate = None,
-    current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),  # ✅ MIGRADO (docentes + admin)
+    current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Actualizar completamente una clase (requiere permiso CLASE:WRITE - docentes y administradores)"""
+    """Actualizar completamente una clase con validaciones anti-inyección (requiere permiso CLASE:WRITE - solo administradores)"""
     try:
         update_data = {
             'estado': clase_data.estado,
@@ -114,45 +115,14 @@ async def update_clase(
             detail=f"Error al actualizar la clase: {str(e)}"
         )
 
-@router.patch("/{clase_id}", response_model=Clase, status_code=status.HTTP_200_OK, summary="Actualizar clase parcial", tags=["clases"])
-async def patch_clase(
-    clase_data: ClasePatch,
+@router.patch("/{clase_id}", response_model=Clase, status_code=status.HTTP_200_OK, summary="Actualizar campos específicos de clase", tags=["clases"])
+async def partial_update_clase(
+    clase_data: ClaseSecurePatch,  # ✅ SCHEMA SEGURO
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
-    current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),  # ✅ MIGRADO (docentes + admin)
+    current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
-    """Actualizar parcialmente una clase (requiere permiso CLASE:WRITE - docentes y administradores)"""
-    try:
-        # Filtrar solo los campos que no son None
-        update_data = {k: v for k, v in clase_data.model_dump().items() if v is not None}
-        
-        if not update_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se proporcionaron campos para actualizar"
-            )
-        
-        clase_actualizada = use_cases.update(clase_id, **update_data)
-        
-        if not clase_actualizada:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Clase con ID {clase_id} no encontrada"
-            )
-        
-        return clase_actualizada
-    except HTTPException:
-        raise
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error de validación: {str(e)}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al actualizar la clase: {str(e)}"
-        )
+    """Actualizar parcialmente una clase con validaciones anti-inyección (requiere permiso CLASE:WRITE - solo administradores)"""
 
 @router.delete("/{clase_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar clase", tags=["clases"])
 async def delete_clase(

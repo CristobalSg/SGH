@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Docente, DocenteCreate
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import Docente, DocenteSecureCreate
+from domain.authorization import Permission  # ✅ MIGRADO  # Response models
 from infrastructure.dependencies import require_permission  # ✅ MIGRADO
 from application.use_cases.docente_use_cases import DocenteUseCases
 from sqlalchemy.orm import Session
@@ -18,11 +18,11 @@ def get_docente_use_case(db: Session = Depends(get_db)) -> DocenteUseCases:
 
 @router.post("/", response_model=Docente, status_code=status.HTTP_201_CREATED)
 async def create_docente(
-    docente_data: DocenteCreate,
+    docente_data: DocenteSecureCreate,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
     current_user = Depends(require_permission(Permission.DOCENTE_WRITE))  # ✅ MIGRADO
 ):
-    """Crear un nuevo docente (requiere permiso DOCENTE:WRITE)"""
+    """Crear.*? con validaciones anti-inyección
     try:
         docente = docente_use_case.create(docente_data)
         return docente
