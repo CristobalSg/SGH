@@ -59,16 +59,72 @@ class UserCreate(UserBase):
         if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/~`]', v):
             raise ValueError('La contraseña debe contener al menos un carácter especial (!@#$%^&*...)')
         
-        # Validar contra contraseñas comunes (lista reducida)
+        # Validar contra contraseñas comunes (considerando contexto chileno y validaciones)
+        # Nota: Estas contraseñas cumplen requisitos técnicos pero son predecibles
         common_passwords = [
-            'password', '12345678', '123456789', '1234567890',
-            'qwerty', 'abc123', 'password123', 'admin123', 
-            'letmein', 'welcome123', 'monkey', 'dragon',
-            'master', 'sunshine', 'princess', 'football',
-            'iloveyou', 'admin', 'welcome', '123123'
+            # Patrones comunes en español
+            'password123!', 'password123@', 'password2024!', 'password2025!',
+            'contrasena123!', 'contraseña123!', 'clave123!', 'clave2024!',
+            'admin123!', 'admin123@', 'administrador1!', 'administrador123!',
+            'usuario123!', 'usuario2024!', 'bienvenido1!', 'bienvenido123!',
+            
+            # Patrones chilenos comunes
+            'chile123!', 'chile2024!', 'santiago123!', 'vivalchile1!',
+            'chileno123!', 'chilenito1!', 'putoelqlee1!', 'weonqlio1!',
+            
+            # Patrones universitarios
+            'estudiante1!', 'estudiante123!', 'profesor123!', 'docente123!',
+            'alumno123!', 'universidad1!', 'universidad123!', 'campus123!',
+            'usach123!', 'uchile123!', 'pucv123!', 'utfsm123!',
+            
+            # Patrones de teclado con requisitos
+            'qwerty123!', 'qwerty123@', 'asdfgh123!', 'zxcvbn123!',
+            'qwertyuiop1!', '1qaz2wsx3edc!', '1q2w3e4r5t!',
+            
+            # Nombres comunes chilenos con patrones
+            'juan123!', 'maria123!', 'jose123!', 'pedro123!',
+            'carmen123!', 'carlos123!', 'francisco1!', 'carolina1!',
+            
+            # Fechas y eventos chilenos
+            '18septiembre!', '18sept2024!', 'fiestas18!', 'dieciocho1!',
+            'navidad2024!', 'añonuevo2025!', 'verano2025!',
+            
+            # Deportes y equipos chilenos
+            'colo-colo123!', 'universidad123!', 'catolica123!', 
+            'chile2026!', 'laroja123!', 'futbol123!',
+            
+            # Patrones secuenciales que cumplen requisitos
+            'abcdef123!', 'abc123def!', '123456abc!', '123abc456!',
+            '1234567890ab!', 'abcd1234!', 'a1b2c3d4!',
+            
+            # Palabras comunes con modificaciones mínimas
+            'welcome123!', 'letmein123!', 'monkey123!', 'dragon123!',
+            'master123!', 'sunshine1!', 'princess1!', 'iloveyou1!',
+            'baseball1!', 'football1!', 'superman1!', 'batman123!',
+            
+            # Patrones de sistema/testing
+            'test123!', 'test2024!', 'testing123!', 'demo123!',
+            'prueba123!', 'ejemplo123!', 'temporal1!', 'temp2024!',
+            
+            # Patrones emocionales
+            'teamo123!', 'tequiero1!', 'miamor123!', 'micariño1!',
+            'bebé123!', 'corazon1!', 'amor2024!',
+            
+            # Comida y bebidas chilenas
+            'completo123!', 'empanada1!', 'terremo123!', 'piscola123!',
+            'pastelchoclo1!', 'pebre123!', 'sopaipilla1!',
+            
+            # Lugares chilenos
+            'valparaiso1!', 'concepcion1!', 'viñadelmar1!', 'temuco123!',
+            'antofagasta1!', 'laserena123!', 'puertomontt1!',
+            
+            # Patrones repetitivos que cumplen requisitos
+            'aaaaaa123!', '111111aa!', 'abcabc123!', '123123abc!',
+            'password!', 'password1!', 'password12!',
         ]
         
-        if v.lower() in common_passwords:
+        # Convertir a minúsculas para comparación (case-insensitive)
+        if v.lower() in [p.lower() for p in common_passwords]:
             raise ValueError('La contraseña es demasiado común. Elige una más segura.')
         
         # Verificar que no sea solo caracteres repetidos
