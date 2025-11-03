@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
-from domain.entities import Asignatura, AsignaturaCreate, AsignaturaBase, AsignaturaPatch, User
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import Asignatura, User  # Response models
+from domain.schemas import AsignaturaSecureCreate, AsignaturaSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
 from application.use_cases.asignatura_use_cases import AsignaturaUseCases
 from infrastructure.repositories.asignatura_repository import AsignaturaRepository
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission
 
 router = APIRouter()
 
@@ -54,11 +55,11 @@ async def obtener_asignatura(
 
 @router.post("/", response_model=Asignatura, status_code=status.HTTP_201_CREATED, summary="Crear nueva asignatura", tags=["asignaturas"])
 async def create_asignatura(
-    asignatura_data: AsignaturaCreate,
+    asignatura_data: AsignaturaSecureCreate,  # ✅ SCHEMA SEGURO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
-    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE))  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE))
 ):
-    """Crear una nueva asignatura (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
+    """Crear una nueva asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         nueva_asignatura = use_cases.create(asignatura_data)
         return nueva_asignatura
@@ -77,12 +78,12 @@ async def create_asignatura(
 
 @router.put("/{asignatura_id}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Actualizar asignatura completa", tags=["asignaturas"])
 async def update_asignatura(
+    asignatura_data: AsignaturaSecureCreate,  # ✅ SCHEMA SEGURO
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
-    asignatura_data: AsignaturaCreate = None,
-    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Actualizar completamente una asignatura (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
+    """Actualizar completamente una asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         update_data = {
             'codigo': asignatura_data.codigo,
@@ -114,12 +115,12 @@ async def update_asignatura(
 
 @router.patch("/{asignatura_id}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Actualizar asignatura parcial", tags=["asignaturas"])
 async def patch_asignatura(
-    asignatura_data: AsignaturaPatch,
+    asignatura_data: AsignaturaSecurePatch,  # ✅ SCHEMA SEGURO
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
-    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
 ):
-    """Actualizar parcialmente una asignatura (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
+    """Actualizar parcialmente una asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in asignatura_data.model_dump().items() if v is not None}

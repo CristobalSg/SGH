@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Edificio, EdificioCreate
-from domain.authorization import Permission  # ✅ MIGRADO
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from domain.entities import Edificio  # Response models
+from domain.schemas import EdificioSecureCreate, EdificioSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
+from infrastructure.dependencies import require_permission
 from application.use_cases.edificio_use_cases import EdificioUseCase
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -18,11 +19,11 @@ def get_edificio_use_case(db: Session = Depends(get_db)) -> EdificioUseCase:
 
 @router.post("/", response_model=Edificio, status_code=status.HTTP_201_CREATED)
 async def create_edificio(
-    edificio_data: EdificioCreate,
+    edificio_data: EdificioSecureCreate,  # ✅ SCHEMA SEGURO
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
-    current_user = Depends(require_permission(Permission.EDIFICIO_WRITE))  # ✅ MIGRADO
+    current_user = Depends(require_permission(Permission.EDIFICIO_WRITE))
 ):
-    """Crear un nuevo edificio (requiere permiso EDIFICIO:WRITE)"""
+    """Crear un nuevo edificio con validaciones anti-inyección (requiere permiso EDIFICIO:WRITE)"""
     try:
         edificio = edificio_use_case.create_edificio(edificio_data)
         return edificio
@@ -89,12 +90,12 @@ async def get_edificios_by_campus(
 
 @router.put("/{edificio_id}", response_model=Edificio, status_code=status.HTTP_200_OK)
 async def update_edificio(
+    edificio_data: EdificioSecureCreate,  # ✅ SCHEMA SEGURO
     edificio_id: int,
-    edificio_data: EdificioCreate,
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
-    current_user = Depends(require_permission(Permission.EDIFICIO_WRITE))  # ✅ MIGRADO
+    current_user = Depends(require_permission(Permission.EDIFICIO_WRITE))
 ):
-    """Actualizar un edificio completo (requiere permiso EDIFICIO:WRITE)"""
+    """Actualizar un edificio completo con validaciones anti-inyección (requiere permiso EDIFICIO:WRITE)"""
     try:
         edificio = edificio_use_case.update_edificio(edificio_id, edificio_data)
         return edificio

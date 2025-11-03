@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from infrastructure.database.config import get_db
-from domain.entities import Seccion, SeccionCreate, SeccionBase, SeccionPatch, User
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import Seccion, User  # Response models
+from domain.schemas import SeccionSecureCreate, SeccionSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
 from application.use_cases.seccion_use_cases import SeccionUseCases
 from infrastructure.repositories.seccion_repository import SeccionRepository
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission
 
 router = APIRouter()
 
@@ -54,11 +55,11 @@ async def obtener_seccion(
 
 @router.post("/", response_model=Seccion, status_code=status.HTTP_201_CREATED, summary="Crear nueva sección", tags=["secciones"])
 async def create_seccion(
-    seccion_data: SeccionCreate,
+    seccion_data: SeccionSecureCreate,  # ✅ SCHEMA SEGURO
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases),
-    current_user: User = Depends(require_permission(Permission.SECCION_WRITE))  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.SECCION_WRITE))
 ):
-    """Crear una nueva sección (requiere permiso SECCION:WRITE - solo administradores)"""
+    """Crear una nueva sección con validaciones anti-inyección (requiere permiso SECCION:WRITE - solo administradores)"""
     try:
         nueva_seccion = use_cases.create(seccion_data)
         return nueva_seccion
@@ -77,12 +78,12 @@ async def create_seccion(
 
 @router.put("/{seccion_id}", response_model=Seccion, status_code=status.HTTP_200_OK, summary="Actualizar sección completa", tags=["secciones"])
 async def update_seccion(
+    seccion_data: SeccionSecureCreate,  # ✅ SCHEMA SEGURO
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
-    seccion_data: SeccionCreate = None,
-    current_user: User = Depends(require_permission(Permission.SECCION_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.SECCION_WRITE)),
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Actualizar completamente una sección (requiere permiso SECCION:WRITE - solo administradores)"""
+    """Actualizar completamente una sección con validaciones anti-inyección (requiere permiso SECCION:WRITE - solo administradores)"""
     try:
         update_data = {
             'codigo': seccion_data.codigo,
@@ -114,14 +115,14 @@ async def update_seccion(
             detail=f"Error al actualizar la sección: {str(e)}"
         )
 
-@router.patch("/{seccion_id}", response_model=Seccion, status_code=status.HTTP_200_OK, summary="Actualizar sección parcial", tags=["secciones"])
-async def patch_seccion(
-    seccion_data: SeccionPatch,
+@router.patch("/{seccion_id}", response_model=Seccion, status_code=status.HTTP_200_OK, summary="Actualizar campos específicos de sección", tags=["secciones"])
+async def partial_update_seccion(
+    seccion_data: SeccionSecurePatch,  # ✅ SCHEMA SEGURO
     seccion_id: int = Path(..., gt=0, description="ID de la sección"),
-    current_user: User = Depends(require_permission(Permission.SECCION_WRITE)),  # ✅ MIGRADO
+    current_user: User = Depends(require_permission(Permission.SECCION_WRITE)),
     use_cases: SeccionUseCases = Depends(get_seccion_use_cases)
 ):
-    """Actualizar parcialmente una sección (requiere permiso SECCION:WRITE - solo administradores)"""
+    """Actualizar parcialmente una sección con validaciones anti-inyección (requiere permiso SECCION:WRITE - solo administradores)"""
     try:
         # Filtrar solo los campos que no son None
         update_data = {k: v for k, v in seccion_data.model_dump().items() if v is not None}

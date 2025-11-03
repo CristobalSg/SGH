@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from domain.entities import UserCreate, User, UserLogin, Token, TokenResponse, RefreshTokenRequest
+from domain.entities import User, UserLogin, Token, TokenResponse, RefreshTokenRequest  # Response models
+from domain.schemas import UserSecureCreate  # ✅ SCHEMAS SEGUROS
 from domain.authorization import Permission  # ✅ MIGRADO
 from infrastructure.dependencies import get_user_auth_use_case, require_permission  # ✅ MIGRADO
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
@@ -14,7 +15,7 @@ router = APIRouter()
     description="Crea un nuevo usuario en el sistema. **Requiere permisos de administrador (USER:CREATE)**"
 )
 async def register(
-    user_data: UserCreate,
+    user_data: UserSecureCreate,
     current_user: User = Depends(require_permission(Permission.USER_CREATE)),
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
 ):

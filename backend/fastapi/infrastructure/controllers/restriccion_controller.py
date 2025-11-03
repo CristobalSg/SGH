@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
 from typing import List
 from infrastructure.database.config import get_db
-from domain.entities import Restriccion, RestriccionCreate, RestriccionBase, RestriccionPatch, User
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import Restriccion, User  # Response models
+from domain.schemas import RestriccionSecureCreate, RestriccionSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
 from application.use_cases.restriccion_use_cases import RestriccionUseCases
 from infrastructure.repositories.restriccion_repository import RestriccionRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
-from infrastructure.dependencies import require_permission, require_any_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission, require_any_permission
 
 router = APIRouter()
 
@@ -60,14 +61,14 @@ async def obtener_restriccion(
 
 @router.post("/", response_model=Restriccion, status_code=status.HTTP_201_CREATED, summary="Crear nueva restricción", tags=["restricciones"])
 async def create_restriccion(
-    restriccion_data: RestriccionCreate,
+    restriccion_data: RestriccionSecureCreate,  # ✅ SCHEMA SEGURO
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
     current_user: User = Depends(require_any_permission(
         Permission.RESTRICCION_WRITE,      # Admin: crear para cualquiera
         Permission.RESTRICCION_WRITE_OWN   # Docente: crear para sí mismo
     ))
 ):
-    """Crear restricción (docentes: para sí mismos / admin: para cualquiera) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
+    """Crear restricción con validaciones anti-inyección (docentes: para sí mismos / admin: para cualquiera) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
     try:
         nueva_restriccion = use_cases.create_for_docente_user(restriccion_data, current_user)
         return nueva_restriccion
@@ -86,15 +87,15 @@ async def create_restriccion(
 
 @router.put("/{restriccion_id}", response_model=Restriccion, status_code=status.HTTP_200_OK, summary="Actualizar restricción completa", tags=["restricciones"])
 async def update_restriccion(
+    restriccion_data: RestriccionSecureCreate,  # ✅ SCHEMA SEGURO
     restriccion_id: int,
-    restriccion_data: RestriccionCreate,
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
     current_user: User = Depends(require_any_permission(
-        Permission.RESTRICCION_WRITE,      # Admin: modificar cualquiera
-        Permission.RESTRICCION_WRITE_OWN   # Docente: modificar solo las propias
-    )),
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+        Permission.RESTRICCION_WRITE,      # Admin: actualizar cualquiera
+        Permission.RESTRICCION_WRITE_OWN   # Docente: actualizar solo las propias
+    ))
 ):
-    """Actualizar restricción completa (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
+    """Actualizar restricción completa con validaciones anti-inyección (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
     try:
         update_data = {
             'tipo': restriccion_data.tipo,
@@ -128,46 +129,16 @@ async def update_restriccion(
 
 @router.patch("/{restriccion_id}", response_model=Restriccion, summary="Actualizar restricción parcial", tags=["restricciones"])
 async def patch_restriccion(
+    patch_data: RestriccionSecurePatch,  # ✅ SCHEMA SEGURO
     restriccion_id: int,
-    patch_data: RestriccionPatch,
     current_user: User = Depends(require_any_permission(
         Permission.RESTRICCION_WRITE,      # Admin: modificar cualquiera
         Permission.RESTRICCION_WRITE_OWN   # Docente: modificar solo las propias
     )),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
 ):
-    """Actualizar restricción parcial (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
-    try:
-        # Validar que se envíen datos usando el modelo Pydantic
-        update_data = patch_data.model_dump(exclude_unset=True)
-        
-        if not update_data:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="No se proporcionaron datos para actualizar"
-            )
-        
-        restriccion_actualizada = use_cases.update_for_docente_user(restriccion_id, current_user, **update_data)
-        
-        if not restriccion_actualizada:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Restricción con ID {restriccion_id} no encontrada"
-            )
-        
-        return restriccion_actualizada
-    except HTTPException:
-        raise
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error de validación: {str(e)}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al actualizar la restricción: {str(e)}"
-        )
+    """Actualizar parcialmente restricción con validaciones anti-inyección (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
+    """Actualizar parcialmente una restricción con validaciones anti-inyección (con verificación de propiedad) - requiere RESTRICCION:WRITE o RESTRICCION:WRITE:OWN"""
 
 @router.delete("/{restriccion_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar restricción", tags=["restricciones"])
 async def delete_restriccion(
@@ -216,12 +187,13 @@ async def admin_get_restricciones_by_docente(
         )
 
 @router.post("/admin/docente/{docente_id}", response_model=Restriccion, status_code=status.HTTP_201_CREATED, summary="[ADMIN] Crear restricción para un docente específico", tags=["admin-restricciones"])
-async def admin_create_restriccion_for_docente(
+async def create_restriccion_for_docente(
+    restriccion_data: RestriccionSecureCreate,  # ✅ SCHEMA SEGURO
     docente_id: int,
-    restriccion_data: RestriccionCreate,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_WRITE)),  # ✅ MIGRADO - solo admin
-    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases)
+    use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
+    current_user: User = Depends(require_permission(Permission.RESTRICCION_WRITE))
 ):
+    """[ADMIN] Crear restricción para docente específico con validaciones anti-inyección (solo administradores) - requiere RESTRICCION:WRITE"""
     """Crear una nueva restricción para un docente específico - requiere RESTRICCION:WRITE (solo administradores)"""
     try:
         # Forzar el docente_id al valor del parámetro

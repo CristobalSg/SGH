@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from domain.entities import RestriccionHorario, RestriccionHorarioCreate, RestriccionHorarioPatch, User
-from domain.authorization import Permission  # ✅ MIGRADO
+from domain.entities import RestriccionHorario, User  # Response models
+from domain.schemas import RestriccionHorarioSecureCreate, RestriccionHorarioSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
 from infrastructure.database.config import get_db
 from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
 from application.use_cases.restriccion_horario_use_cases import RestriccionHorarioUseCases
-from infrastructure.dependencies import require_permission, require_any_permission  # ✅ MIGRADO
+from infrastructure.dependencies import require_permission, require_any_permission
 
 router = APIRouter()
 
@@ -26,11 +27,11 @@ def get_restriccion_horario_use_cases(
 
 @router.post("/", response_model=RestriccionHorario, status_code=status.HTTP_201_CREATED, tags=["admin-restricciones-horario"])
 async def crear_restriccion_horario(
-    restriccion_data: RestriccionHorarioCreate,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),  # ✅ MIGRADO (admin)
+    restriccion_data: RestriccionHorarioSecureCreate,  # ✅ SCHEMA SEGURO
+    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Crear una nueva restricción de horario (requiere permiso RESTRICCION_HORARIO:WRITE - solo administradores)"""
+    """Crear una nueva restricción de horario con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE - solo administradores)"""
     try:
         restriccion = use_cases.create(restriccion_data)
         return restriccion
@@ -83,13 +84,13 @@ async def obtener_restriccion_horario(
         )
 
 @router.patch("/{restriccion_id}", response_model=RestriccionHorario, tags=["admin-restricciones-horario"])
-async def actualizar_restriccion_horario(
-    restriccion_id: int,
-    restriccion_patch: RestriccionHorarioPatch,
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),  # ✅ MIGRADO (admin)
+async def actualizar_restriccion_horario_parcial(
+    restriccion_patch: RestriccionHorarioSecurePatch,  # ✅ SCHEMA SEGURO
+    restriccion_id: int = Path(..., gt=0, description="ID de la restricción de horario"),
+    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Actualizar parcialmente una restricción de horario (requiere permiso RESTRICCION_HORARIO:WRITE - solo administradores)"""
+    """Actualizar parcialmente una restricción de horario con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE - solo administradores)"""
     try:
         # Convertir a dict y filtrar valores None
         update_data = {k: v for k, v in restriccion_patch.model_dump(exclude_unset=True).items() if v is not None}
@@ -156,14 +157,14 @@ async def docente_get_mis_restricciones_horario(
 
 @router.post("/docente/mis-restricciones", response_model=RestriccionHorario, status_code=status.HTTP_201_CREATED, tags=["docente-restricciones-horario"])
 async def docente_crear_restriccion_horario(
-    restriccion_data: RestriccionHorarioCreate,
+    restriccion_data: RestriccionHorarioSecureCreate,  # ✅ SCHEMA SEGURO
     current_user: User = Depends(require_any_permission(
         Permission.RESTRICCION_HORARIO_WRITE,      # Admin: crear para cualquiera
         Permission.RESTRICCION_HORARIO_WRITE_OWN   # Docente: crear para sí mismo
     )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
-    """Crear una nueva restricción de horario para el docente autenticado (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
+    """Crear una nueva restricción de horario para el docente autenticado con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
     try:
         restriccion = use_cases.create_for_docente_user(restriccion_data, current_user)
         return restriccion
@@ -198,14 +199,15 @@ async def docente_get_restriccion_horario(
 
 @router.patch("/docente/mis-restricciones/{restriccion_id}", response_model=RestriccionHorario, tags=["docente-restricciones-horario"])
 async def docente_actualizar_restriccion_horario(
-    restriccion_id: int,
-    restriccion_patch: RestriccionHorarioPatch,
+    restriccion_patch: RestriccionHorarioSecurePatch,  # ✅ SCHEMA SEGURO
+    restriccion_id: int = Path(..., gt=0, description="ID de la restricción de horario"),
     current_user: User = Depends(require_any_permission(
-        Permission.RESTRICCION_HORARIO_WRITE,      # Admin: modificar cualquiera
-        Permission.RESTRICCION_HORARIO_WRITE_OWN   # Docente: modificar solo las propias
+        Permission.RESTRICCION_HORARIO_WRITE,      # Admin: actualizar cualquiera
+        Permission.RESTRICCION_HORARIO_WRITE_OWN   # Docente: actualizar solo las propias
     )),
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
 ):
+    """Actualizar parcialmente una restricción de horario del docente autenticado con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
     """Actualizar una restricción de horario del docente autenticado (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
     try:
         # Convertir a dict y filtrar valores None
