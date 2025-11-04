@@ -21,6 +21,9 @@ RUN chmod +x /app/start.sh
 
 COPY . .
 
+# Crear directorio de logs
+RUN mkdir -p /app/logs
+
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
 
