@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import HTTPException, status
 from domain.entities import Edificio, EdificioCreate
+from domain.schemas import EdificioSecureCreate, EdificioSecurePatch
 from infrastructure.repositories.edificio_repository import SQLEdificioRepository
 from infrastructure.repositories.campus_repository import SQLCampusRepository
 
@@ -9,7 +10,7 @@ class EdificioUseCase:
         self.edificio_repository = edificio_repository
         self.campus_repository = campus_repository
 
-    def create_edificio(self, edificio_data: EdificioCreate) -> Edificio:
+    def create_edificio(self, edificio_data: EdificioSecureCreate) -> Edificio:
         """Crear un nuevo edificio"""
         # Verificar que el campus existe
         campus = self.campus_repository.get_by_id(edificio_data.campus_id)
@@ -19,7 +20,9 @@ class EdificioUseCase:
                 detail=f"Campus con id {edificio_data.campus_id} no encontrado"
             )
         
-        return self.edificio_repository.create(edificio_data)
+        # Convertir schema seguro a entidad
+        edificio_create = EdificioCreate(**edificio_data.model_dump())
+        return self.edificio_repository.create(edificio_create)
 
     def get_all_edificios(self) -> List[Edificio]:
         """Obtener todos los edificios"""
@@ -70,7 +73,7 @@ class EdificioUseCase:
         
         return self.edificio_repository.delete(edificio_id)
 
-    def update_edificio(self, edificio_id: int, edificio_data: EdificioCreate) -> Edificio:
+    def update_edificio(self, edificio_id: int, edificio_data: EdificioSecurePatch) -> Edificio:
         """Actualizar un edificio existente"""
         # Verificar que el edificio existe
         edificio = self.edificio_repository.get_by_id(edificio_id)
@@ -80,12 +83,24 @@ class EdificioUseCase:
                 detail=f"Edificio con id {edificio_id} no encontrado"
             )
         
-        # Verificar que el campus existe
-        campus = self.campus_repository.get_by_id(edificio_data.campus_id)
-        if not campus:
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in edificio_data.model_dump().items() if v is not None}
+        
+        if not update_data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Campus con id {edificio_data.campus_id} no encontrado"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
-        return self.edificio_repository.update(edificio_id, edificio_data)
+        # Verificar que el campus existe si se está actualizando
+        if 'campus_id' in update_data:
+            campus = self.campus_repository.get_by_id(update_data['campus_id'])
+            if not campus:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Campus con id {update_data['campus_id']} no encontrado"
+                )
+        
+        # Convertir a EdificioCreate para mantener compatibilidad con el repositorio
+        edificio_create = EdificioCreate(**{**edificio_data.model_dump(exclude_unset=True)})
+        return self.edificio_repository.update(edificio_id, edificio_create)

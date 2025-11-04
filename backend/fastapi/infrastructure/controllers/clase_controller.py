@@ -78,22 +78,14 @@ async def create_clase(
 
 @router.put("/{clase_id}", response_model=Clase, status_code=status.HTTP_200_OK, summary="Actualizar clase completa", tags=["clases"])
 async def update_clase(
-    clase_data: ClaseSecureCreate,  # ✅ SCHEMA SEGURO
+    clase_data: ClaseSecurePatch,  # ✅ SCHEMA SEGURO (cambiado a Patch para flexibilidad)
     clase_id: int = Path(..., gt=0, description="ID de la clase"),
     current_user: User = Depends(require_permission(Permission.CLASE_WRITE)),
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
     """Actualizar completamente una clase con validaciones anti-inyección (requiere permiso CLASE:WRITE - solo administradores)"""
     try:
-        update_data = {
-            'estado': clase_data.estado,
-            'seccion_id': clase_data.seccion_id,
-            'docente_id': clase_data.docente_id,
-            'sala_id': clase_data.sala_id,
-            'bloque_id': clase_data.bloque_id
-        }
-        
-        clase_actualizada = use_cases.update(clase_id, **update_data)
+        clase_actualizada = use_cases.update(clase_id, clase_data)
         
         if not clase_actualizada:
             raise HTTPException(
@@ -123,6 +115,28 @@ async def partial_update_clase(
     use_cases: ClaseUseCases = Depends(get_clase_use_cases)
 ):
     """Actualizar parcialmente una clase con validaciones anti-inyección (requiere permiso CLASE:WRITE - solo administradores)"""
+    try:
+        clase_actualizada = use_cases.update(clase_id, clase_data)
+        
+        if not clase_actualizada:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Clase con ID {clase_id} no encontrada"
+            )
+        
+        return clase_actualizada
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error de validación: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al actualizar la clase: {str(e)}"
+        )
 
 @router.delete("/{clase_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar clase", tags=["clases"])
 async def delete_clase(

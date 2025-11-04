@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
-from domain.entities import DocenteCreate, Docente
+from domain.entities import DocenteCreate, Docente, DocentePatch
+from domain.schemas import DocenteSecureCreate, DocenteSecurePatch
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.user_repository import SQLUserRepository
 
@@ -23,7 +24,7 @@ class DocenteUseCases:
             )
         return docente
 
-    def create(self, docente_data: DocenteCreate) -> Docente:
+    def create(self, docente_data: DocenteSecureCreate) -> Docente:
         """Crear un nuevo docente"""
         # Verificar que el usuario existe y tiene rol de docente
         user = self.user_repository.get_by_id(docente_data.user_id)
@@ -47,7 +48,9 @@ class DocenteUseCases:
                 detail=f"Ya existe un docente asociado al usuario {docente_data.user_id}"
             )
         
-        return self.docente_repository.create(docente_data)
+        # Convertir schema seguro a entidad
+        docente_create = DocenteCreate(**docente_data.model_dump())
+        return self.docente_repository.create(docente_create)
 
     def get_by_departamento(self, departamento: str) -> List[Docente]:
         """Obtener docentes por departamento"""
@@ -58,6 +61,35 @@ class DocenteUseCases:
                 detail=f"No hay docentes en el departamento {departamento}"
             )
         return docentes
+
+    def update(self, docente_id: int, docente_data: DocenteSecurePatch) -> Docente:
+        """Actualizar parcialmente un docente"""
+        # Verificar que el docente existe
+        existing_docente = self.docente_repository.get_by_id(docente_id)
+        if not existing_docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Docente no encontrado"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_dict = {k: v for k, v in docente_data.model_dump().items() if v is not None}
+        
+        if not update_dict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
+            )
+        
+        # Actualizar usando el repositorio
+        updated_docente = self.docente_repository.update(docente_id, **update_dict)
+        if not updated_docente:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al actualizar el docente"
+            )
+        
+        return updated_docente
 
     def delete(self, docente_id: int) -> bool:
         """Eliminar un docente"""

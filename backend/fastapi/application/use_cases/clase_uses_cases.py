@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import ClaseCreate, Clase
+from domain.schemas import ClaseSecureCreate, ClaseSecurePatch
 from infrastructure.repositories.clase_repository import ClaseRepository
 from infrastructure.repositories.seccion_repository import SeccionRepository
 
@@ -23,7 +24,7 @@ class ClaseUseCases:
             )
         return clase
 
-    def create(self, clase_data: ClaseCreate) -> Clase:
+    def create(self, clase_data: ClaseSecureCreate) -> Clase:
         """Crear una nueva clase"""
         # Obtener la sección para obtener el docente_id
         if self.seccion_repository:
@@ -63,9 +64,11 @@ class ClaseUseCases:
                 detail="La sala ya está ocupada en ese bloque"
             )
         
-        return self.clase_repository.create(clase_data)
+        # Convertir schema seguro a entidad
+        clase_create = ClaseCreate(**clase_data.model_dump())
+        return self.clase_repository.create(clase_create)
 
-    def update(self, clase_id: int, **update_data) -> Clase:
+    def update(self, clase_id: int, clase_data: ClaseSecurePatch) -> Clase:
         """Actualizar una clase"""
         # Verificar que la clase existe
         existing_clase = self.clase_repository.get_by_id(clase_id)
@@ -73,6 +76,15 @@ class ClaseUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Clase no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in clase_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         # Si se actualiza docente o bloque, verificar conflictos
