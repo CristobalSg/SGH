@@ -64,9 +64,9 @@ class UserCreate(UserBase):
         common_passwords = [
             # Patrones comunes en español
             'password123!', 'password123@', 'password2024!', 'password2025!',
-            'contrasena123!', 'contraseña123!', 'clave123!', 'clave2024!',
+            'contrasena123!', 'contraseña123!', 'clave123!', 'clave2025!',
             'admin123!', 'admin123@', 'administrador1!', 'administrador123!',
-            'usuario123!', 'usuario2024!', 'bienvenido1!', 'bienvenido123!',
+            'usuario123!', 'usuario2025!', 'bienvenido1!', 'bienvenido123!',
             
             # Patrones chilenos comunes
             'chile123!', 'chile2024!', 'santiago123!', 'vivalchile1!',
@@ -108,7 +108,7 @@ class UserCreate(UserBase):
             
             # Patrones emocionales
             'teamo123!', 'tequiero1!', 'miamor123!', 'micariño1!',
-            'bebé123!', 'corazon1!', 'amor2024!',
+            'bebé123!', 'corazon1!', 'amor2025!',
             
             # Comida y bebidas chilenas
             'completo123!', 'empanada1!', 'terremo123!', 'piscola123!',
