@@ -12,7 +12,7 @@ class TestSystemEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["message"] == "SGH Backend API"
-        assert data["version"] == "0.1.0"
+        assert data["version"] == "1.0.0"  # Actualizado a la versión actual
         assert "environment" in data
 
     def test_health_endpoint(self, client: TestClient):
@@ -99,16 +99,35 @@ class TestErrorHandling:
             data="{invalid json}",
             headers={"Content-Type": "application/json"}
         )
-        assert response.status_code == 422
+        # El middleware de sanitización retorna 400 para JSON inválido
+        assert response.status_code == 400
 
 
 class TestDatabaseConnection:
     """Tests específicos para la conexión de base de datos"""
 
-    def test_database_connection_with_data(self, client: TestClient, admin_user):
+    def test_database_connection_with_data(self, client: TestClient, db_session, admin_user_data):
         """Test conexión a base de datos con datos existentes"""
-        # Primero crear un usuario para tener datos en la DB
-        assert admin_user["id"] is not None
+        # Crear un usuario directamente en la base de datos para tener datos
+        from domain.models import User, Administrador
+        from infrastructure.auth import AuthService
+        
+        db_user = User(
+            nombre=admin_user_data.nombre,
+            email=admin_user_data.email,
+            pass_hash=AuthService.get_password_hash(admin_user_data.contrasena),
+            rol=admin_user_data.rol
+        )
+        db_session.add(db_user)
+        db_session.commit()
+        db_session.refresh(db_user)
+        
+        # Crear registro de administrador
+        admin = Administrador(user_id=db_user.id)
+        db_session.add(admin)
+        db_session.commit()
+        
+        assert db_user.id is not None
         
         # Luego probar la conexión
         response = client.get("/api/db/test-db")
