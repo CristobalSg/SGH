@@ -88,14 +88,14 @@ async def get_edificios_by_campus(
             detail="Error interno del servidor"
         )
 
-@router.put("/{edificio_id}", response_model=Edificio, status_code=status.HTTP_200_OK)
-async def update_edificio(
-    edificio_data: EdificioSecureCreate,  # ✅ SCHEMA SEGURO
+@router.put("/{edificio_id}", response_model=Edificio, status_code=status.HTTP_200_OK, summary="Actualizar edificio completo", tags=["edificios"])
+async def update_edificio_complete(
     edificio_id: int,
+    edificio_data: EdificioSecurePatch,  # ✅ SCHEMA SEGURO PATCH
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
     current_user = Depends(require_permission(Permission.EDIFICIO_WRITE))
 ):
-    """Actualizar un edificio completo con validaciones anti-inyección (requiere permiso EDIFICIO:WRITE)"""
+    """Actualizar un edificio completamente con validaciones anti-inyección (requiere permiso EDIFICIO:WRITE)"""
     try:
         edificio = edificio_use_case.update_edificio(edificio_id, edificio_data)
         return edificio
@@ -107,7 +107,26 @@ async def update_edificio(
             detail="Error interno del servidor"
         )
 
-@router.delete("/{edificio_id}")
+@router.patch("/{edificio_id}", response_model=Edificio, status_code=status.HTTP_200_OK, summary="Actualizar campos específicos de edificio", tags=["edificios"])
+async def update_edificio_partial(
+    edificio_id: int,
+    edificio_data: EdificioSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),
+    current_user = Depends(require_permission(Permission.EDIFICIO_WRITE))
+):
+    """Actualizar parcialmente un edificio con validaciones anti-inyección (requiere permiso EDIFICIO:WRITE)"""
+    try:
+        edificio = edificio_use_case.update_edificio(edificio_id, edificio_data)
+        return edificio
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.delete("/{edificio_id}", summary="Eliminar edificio", tags=["edificios"])
 async def delete_edificio(
     edificio_id: int,
     edificio_use_case: EdificioUseCase = Depends(get_edificio_use_case),

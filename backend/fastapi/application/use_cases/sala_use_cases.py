@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import SalaCreate, Sala
+from domain.schemas import SalaSecureCreate, SalaSecurePatch
 from infrastructure.repositories.sala_repository import SalaRepository
 from infrastructure.repositories.edificio_repository import SQLEdificioRepository
 
@@ -33,7 +34,7 @@ class SalaUseCases:
             )
         return sala
 
-    def create(self, sala_data: SalaCreate) -> Sala:
+    def create(self, sala_data: SalaSecureCreate) -> Sala:
         """Crear una nueva sala"""
         # Verificar que el edificio existe
         edificio = self.edificio_repository.get_by_id(sala_data.edificio_id)
@@ -51,7 +52,9 @@ class SalaUseCases:
                 detail="El código de sala ya existe"
             )
         
-        return self.sala_repository.create(sala_data)
+        # Convertir schema seguro a entidad
+        sala_create = SalaCreate(**sala_data.model_dump())
+        return self.sala_repository.create(sala_create)
 
     def get_by_edificio(self, edificio_id: int) -> List[Sala]:
         """Obtener salas por edificio"""
@@ -71,7 +74,7 @@ class SalaUseCases:
             )
         return salas
 
-    def update(self, sala_id: int, **update_data) -> Sala:
+    def update(self, sala_id: int, sala_data: SalaSecurePatch) -> Sala:
         """Actualizar una sala"""
         # Verificar que la sala existe
         existing_sala = self.sala_repository.get_by_id(sala_id)
@@ -79,6 +82,15 @@ class SalaUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Sala no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in sala_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         # Si se actualiza el código, verificar que no exista otra sala con ese código

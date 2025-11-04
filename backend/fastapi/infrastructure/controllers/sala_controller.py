@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Sala  # Response models
+from domain.entities import Sala, User  # Response models
 from domain.schemas import SalaSecureCreate, SalaSecurePatch  # ✅ SCHEMAS SEGUROS
 from domain.authorization import Permission
 from infrastructure.dependencies import require_permission
@@ -20,7 +20,7 @@ def get_sala_use_case(db: Session = Depends(get_db)) -> SalaUseCases:
 @router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED, summary="Crear nueva sala", tags=["salas"])
 async def create_sala(
     sala_data: SalaSecureCreate,  # ✅ SCHEMA SEGURO
-    use_cases: SalaUseCases = Depends(get_sala_use_cases),
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
     current_user: User = Depends(require_permission(Permission.SALA_WRITE))
 ):
     """Crear una nueva sala con validaciones anti-inyección (requiere permiso SALA:WRITE - solo administradores)"""
@@ -109,23 +109,35 @@ async def get_salas_by_edificio(
             detail="Error interno del servidor"
         )
 
-@router.put("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK)
-async def update_sala(
-    sala_data: SalaSecureCreate,  # ✅ SCHEMA SEGURO
+@router.put("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK, summary="Actualizar sala completa", tags=["salas"])
+async def update_sala_complete(
     sala_id: int,
+    sala_data: SalaSecurePatch,  # ✅ SCHEMA SEGURO PATCH
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
     current_user = Depends(require_permission(Permission.SALA_WRITE))
 ):
-    """Actualizar una sala con validaciones anti-inyección (requiere permiso SALA:WRITE)"""
+    """Actualizar una sala completamente con validaciones anti-inyección (requiere permiso SALA:WRITE)"""
     try:
-        update_data = {
-            'codigo': sala_data.codigo,
-            'nombre': sala_data.nombre,
-            'capacidad': sala_data.capacidad,
-            'tipo': sala_data.tipo,
-            'edificio_id': sala_data.edificio_id
-        }
-        sala = sala_use_case.update(sala_id, **update_data)
+        sala = sala_use_case.update(sala_id, sala_data)
+        return sala
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.patch("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK, summary="Actualizar campos específicos de sala", tags=["salas"])
+async def update_sala_partial(
+    sala_id: int,
+    sala_data: SalaSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(require_permission(Permission.SALA_WRITE))
+):
+    """Actualizar parcialmente una sala con validaciones anti-inyección (requiere permiso SALA:WRITE)"""
+    try:
+        sala = sala_use_case.update(sala_id, sala_data)
         return sala
     except HTTPException:
         raise

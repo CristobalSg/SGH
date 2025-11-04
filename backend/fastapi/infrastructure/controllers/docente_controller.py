@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Docente, DocenteSecureCreate
-from domain.authorization import Permission  # ✅ MIGRADO  # Response models
-from infrastructure.dependencies import require_permission  # ✅ MIGRADO
+from domain.entities import Docente  # Response models
+from domain.schemas import DocenteSecureCreate, DocenteSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
+from infrastructure.dependencies import require_permission
 from application.use_cases.docente_use_cases import DocenteUseCases
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -18,11 +19,11 @@ def get_docente_use_case(db: Session = Depends(get_db)) -> DocenteUseCases:
 
 @router.post("/", response_model=Docente, status_code=status.HTTP_201_CREATED)
 async def create_docente(
-    docente_data: DocenteSecureCreate,
+    docente_data: DocenteSecureCreate,  # ✅ SCHEMA SEGURO
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))  # ✅ MIGRADO
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
 ):
-    """Crear.*? con validaciones anti-inyección
+    """Crear un nuevo docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
     try:
         docente = docente_use_case.create(docente_data)
         return docente
@@ -81,6 +82,44 @@ async def get_docentes_by_departamento(
     try:
         docentes = docente_use_case.get_by_departamento(departamento)
         return docentes
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.put("/{docente_id}", response_model=Docente, status_code=status.HTTP_200_OK, summary="Actualizar docente completo", tags=["docentes"])
+async def update_docente_complete(
+    docente_id: int,
+    docente_data: DocenteSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+):
+    """Actualizar completamente un docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
+    try:
+        docente = docente_use_case.update(docente_id, docente_data)
+        return docente
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.patch("/{docente_id}", response_model=Docente, summary="Actualizar docente parcial", tags=["docentes"])
+async def update_docente(
+    docente_id: int,
+    docente_data: DocenteSecurePatch,  # ✅ SCHEMA SEGURO
+    docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+):
+    """Actualizar parcialmente un docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
+    try:
+        docente = docente_use_case.update(docente_id, docente_data)
+        return docente
     except HTTPException:
         raise
     except Exception:

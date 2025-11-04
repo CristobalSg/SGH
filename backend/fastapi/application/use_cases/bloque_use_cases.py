@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import BloqueCreate, Bloque
+from domain.schemas import BloqueSecureCreate, BloqueSecurePatch
 from infrastructure.repositories.bloque_repository import BloqueRepository
 
 class BloqueUseCases:
@@ -21,7 +22,7 @@ class BloqueUseCases:
             )
         return bloque
 
-    def create(self, bloque_data: BloqueCreate) -> Bloque:
+    def create(self, bloque_data: BloqueSecureCreate) -> Bloque:
         """Crear un nuevo bloque"""
         # Verificar si ya existe un bloque con el mismo horario
         conflictos = self.bloque_repository.get_conflictos_horario(
@@ -35,9 +36,11 @@ class BloqueUseCases:
                 detail="Ya existe un bloque con conflicto de horario"
             )
         
-        return self.bloque_repository.create(bloque_data)
+        # Convertir schema seguro a entidad
+        bloque_create = BloqueCreate(**bloque_data.model_dump())
+        return self.bloque_repository.create(bloque_create)
 
-    def update(self, bloque_id: int, **update_data) -> Bloque:
+    def update(self, bloque_id: int, bloque_data: BloqueSecurePatch) -> Bloque:
         """Actualizar un bloque"""
         # Verificar que el bloque existe
         existing_bloque = self.bloque_repository.get_by_id(bloque_id)
@@ -45,6 +48,15 @@ class BloqueUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Bloque no encontrado"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in bloque_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         # Si se actualiza el horario, verificar conflictos

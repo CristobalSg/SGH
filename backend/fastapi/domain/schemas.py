@@ -939,6 +939,154 @@ class ClaseSecureCreate(ClaseSecureBase, IDPositivoMixin):
         return cls.validate_id_field(v, "ID de bloque")
 
 
+# ==========================================
+# SCHEMAS SEGUROS PARA DOCENTE
+# ==========================================
+
+class DocenteSecureBase(BaseModel, BaseSecureValidator):
+    """Schema base para docente con validaciones de seguridad"""
+    
+    departamento: Optional[constr(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=100,
+        to_upper=True
+    )] = Field(
+        None,
+        description="Departamento del docente (validado contra inyección)"
+    )
+    
+    @field_validator('departamento')
+    @classmethod
+    def validate_departamento(cls, v: Optional[str]) -> Optional[str]:
+        """Validar departamento del docente"""
+        if v is None:
+            return v
+        
+        # Validar contra inyecciones
+        cls.validate_no_injection(v, "departamento")
+        
+        # Validar nombre válido (letras, espacios, guiones, tildes)
+        cls.validate_name(v, "departamento")
+        
+        return v
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'
+    )
+
+
+class DocenteSecureCreate(DocenteSecureBase, IDPositivoMixin):
+    """Schema para creación de docente con validaciones anti-inyección"""
+    
+    user_id: conint(gt=0) = Field(
+        ...,
+        description="ID del usuario asociado al docente"
+    )
+    
+    @field_validator('user_id')
+    @classmethod
+    def validate_user_id(cls, v: int) -> int:
+        """Validación de ID de usuario"""
+        return cls.validate_id_field(v, "ID de usuario")
+
+
+class EstudianteSecureBase(BaseModel, BaseSecureValidator):
+    """Schema base para estudiante con validaciones anti-inyección"""
+    
+    matricula: Optional[constr(
+        strip_whitespace=True,
+        to_upper=True,
+        min_length=1,
+        max_length=50
+    )] = Field(
+        None,
+        description="Matrícula del estudiante"
+    )
+    
+    @field_validator('matricula')
+    @classmethod
+    def validate_matricula(cls, v: Optional[str]) -> Optional[str]:
+        """Validar matrícula contra inyecciones"""
+        if v is None:
+            return v
+        
+        # Validar contra inyecciones
+        cls.validate_no_injection(v, "matrícula")
+        
+        # Validar formato alfanumérico (puede contener letras, números, guiones)
+        if not v.replace('-', '').replace('_', '').isalnum():
+            raise ValueError("La matrícula solo puede contener letras, números, guiones y guiones bajos")
+        
+        return v
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'
+    )
+
+
+class EstudianteSecureCreate(EstudianteSecureBase, IDPositivoMixin):
+    """Schema para creación de estudiante con validaciones anti-inyección"""
+    
+    user_id: conint(gt=0) = Field(
+        ...,
+        description="ID del usuario asociado al estudiante"
+    )
+    
+    @field_validator('user_id')
+    @classmethod
+    def validate_user_id(cls, v: int) -> int:
+        """Validación de ID de usuario"""
+        return cls.validate_id_field(v, "ID de usuario")
+
+
+class AdministradorSecureBase(BaseModel, BaseSecureValidator):
+    """Schema base para administrador con validaciones anti-inyección"""
+    
+    permisos: Optional[constr(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=500
+    )] = Field(
+        None,
+        description="Permisos del administrador"
+    )
+    
+    @field_validator('permisos')
+    @classmethod
+    def validate_permisos(cls, v: Optional[str]) -> Optional[str]:
+        """Validar permisos contra inyecciones"""
+        if v is None:
+            return v
+        
+        # Validar contra inyecciones
+        cls.validate_no_injection(v, "permisos")
+        
+        return v
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'
+    )
+
+
+class AdministradorSecureCreate(AdministradorSecureBase, IDPositivoMixin):
+    """Schema para creación de administrador con validaciones anti-inyección"""
+    
+    user_id: conint(gt=0) = Field(
+        ...,
+        description="ID del usuario asociado al administrador"
+    )
+    
+    @field_validator('user_id')
+    @classmethod
+    def validate_user_id(cls, v: int) -> int:
+        """Validación de ID de usuario"""
+        return cls.validate_id_field(v, "ID de usuario")
+
+
 # ============================================================================
 # SCHEMAS DE ACTUALIZACIÓN PARCIAL (PATCH) - Todos los campos opcionales
 # ============================================================================
@@ -1079,6 +1227,105 @@ class EdificioSecurePatch(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
 
+class DocenteSecurePatch(BaseModel):
+    """Schema para actualización parcial de docente"""
+    
+    departamento: Optional[constr(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=100,
+        to_upper=True
+    )] = Field(
+        None,
+        description="Departamento del docente"
+    )
+    
+    @field_validator('departamento')
+    @classmethod
+    def validate_departamento(cls, v: Optional[str]) -> Optional[str]:
+        """Validar departamento"""
+        if v is None:
+            return v
+        
+        # Validar contra inyecciones
+        BaseSecureValidator.validate_no_injection(v, "departamento")
+        
+        # Validar nombre válido
+        BaseSecureValidator.validate_name(v, "departamento")
+        
+        return v
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'
+    )
+
+
+class EstudianteSecurePatch(BaseModel):
+    """Schema para actualización parcial de estudiante"""
+    
+    matricula: Optional[constr(
+        strip_whitespace=True,
+        to_upper=True,
+        min_length=1,
+        max_length=50
+    )] = Field(
+        None,
+        description="Matrícula del estudiante"
+    )
+    
+    @field_validator('matricula')
+    @classmethod
+    def validate_matricula(cls, v: Optional[str]) -> Optional[str]:
+        """Validar matrícula"""
+        if v is None:
+            return v
+        
+        # Validar contra inyecciones
+        BaseSecureValidator.validate_no_injection(v, "matrícula")
+        
+        # Validar formato alfanumérico
+        if not v.replace('-', '').replace('_', '').isalnum():
+            raise ValueError("La matrícula solo puede contener letras, números, guiones y guiones bajos")
+        
+        return v
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'
+    )
+
+
+class AdministradorSecurePatch(BaseModel):
+    """Schema para actualización parcial de administrador"""
+    
+    permisos: Optional[constr(
+        strip_whitespace=True,
+        min_length=1,
+        max_length=500
+    )] = Field(
+        None,
+        description="Permisos del administrador"
+    )
+    
+    @field_validator('permisos')
+    @classmethod
+    def validate_permisos(cls, v: Optional[str]) -> Optional[str]:
+        """Validar permisos"""
+        if v is None:
+            return v
+        
+        # Validar contra inyecciones
+        BaseSecureValidator.validate_no_injection(v, "permisos")
+        
+        return v
+    
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'
+    )
+
+
 class ClaseSecurePatch(BaseModel):
     """Schema para actualización parcial de clase"""
     
@@ -1154,6 +1401,9 @@ for schema_class in [
     CampusSecureBase, CampusSecureCreate,
     EdificioSecureBase, EdificioSecureCreate,
     ClaseSecureBase, ClaseSecureCreate,
+    DocenteSecureBase, DocenteSecureCreate,
+    EstudianteSecureBase, EstudianteSecureCreate,
+    AdministradorSecureBase, AdministradorSecureCreate,
 ]:
     if not hasattr(schema_class, 'model_config'):
         schema_class.model_config = ConfigDict(extra='forbid')

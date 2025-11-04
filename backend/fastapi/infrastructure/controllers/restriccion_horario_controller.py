@@ -83,6 +83,25 @@ async def obtener_restriccion_horario(
             detail=f"Error interno del servidor: {str(e)}"
         )
 
+@router.put("/{restriccion_id}", response_model=RestriccionHorario, status_code=status.HTTP_200_OK, summary="Actualizar restricción de horario completa", tags=["admin-restricciones-horario"])
+async def actualizar_restriccion_horario_completa(
+    restriccion_id: int,
+    restriccion_data: RestriccionHorarioSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+):
+    """Actualizar completamente una restricción de horario con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE - solo administradores)"""
+    try:
+        restriccion = use_cases.update(restriccion_id, restriccion_data)
+        return restriccion
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
 @router.patch("/{restriccion_id}", response_model=RestriccionHorario, tags=["admin-restricciones-horario"])
 async def actualizar_restriccion_horario_parcial(
     restriccion_patch: RestriccionHorarioSecurePatch,  # ✅ SCHEMA SEGURO
@@ -188,6 +207,28 @@ async def docente_get_restriccion_horario(
     """Obtener una restricción de horario específica del docente autenticado (requiere permiso RESTRICCION_HORARIO:READ:ALL o :READ:OWN)"""
     try:
         restriccion = use_cases.get_by_id_and_docente_user(restriccion_id, current_user)
+        return restriccion
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
+@router.put("/docente/mis-restricciones/{restriccion_id}", response_model=RestriccionHorario, status_code=status.HTTP_200_OK, summary="Actualizar restricción de horario completa (docente)", tags=["docente-restricciones-horario"])
+async def docente_actualizar_restriccion_horario_completa(
+    restriccion_id: int,
+    restriccion_data: RestriccionHorarioSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    current_user: User = Depends(require_any_permission(
+        Permission.RESTRICCION_HORARIO_WRITE,      # Admin: actualizar cualquiera
+        Permission.RESTRICCION_HORARIO_WRITE_OWN   # Docente: actualizar solo las propias
+    )),
+    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases)
+):
+    """Actualizar completamente una restricción de horario del docente autenticado con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE o :WRITE:OWN)"""
+    try:
+        restriccion = use_cases.update_for_docente_user(restriccion_id, current_user, restriccion_data)
         return restriccion
     except HTTPException:
         raise

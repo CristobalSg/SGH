@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import RestriccionHorario, RestriccionHorarioCreate, User
+from domain.schemas import RestriccionHorarioSecureCreate, RestriccionHorarioSecurePatch
 from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
 
@@ -23,7 +24,7 @@ class RestriccionHorarioUseCases:
             )
         return restriccion
 
-    def create(self, restriccion_data: RestriccionHorarioCreate) -> RestriccionHorario:
+    def create(self, restriccion_data: RestriccionHorarioSecureCreate) -> RestriccionHorario:
         """Crear una nueva restricción de horario"""
         # Verificar si ya existe una restricción similar para el mismo docente y horario
         restricciones_existentes = self.restriccion_horario_repository.get_by_docente_y_horario(
@@ -39,9 +40,11 @@ class RestriccionHorarioUseCases:
                 detail="Ya existe una restricción de horario para el docente en ese período"
             )
         
-        return self.restriccion_horario_repository.create(restriccion_data)
+        # Convertir schema seguro a entidad
+        restriccion_create = RestriccionHorarioCreate(**restriccion_data.model_dump())
+        return self.restriccion_horario_repository.create(restriccion_create)
 
-    def update(self, restriccion_id: int, **update_data) -> RestriccionHorario:
+    def update(self, restriccion_id: int, restriccion_data: RestriccionHorarioSecurePatch) -> RestriccionHorario:
         """Actualizar una restricción de horario"""
         # Verificar que la restricción existe
         existing_restriccion = self.restriccion_horario_repository.get_by_id(restriccion_id)
@@ -49,6 +52,15 @@ class RestriccionHorarioUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Restricción de horario no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in restriccion_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         updated_restriccion = self.restriccion_horario_repository.update(restriccion_id, update_data)
@@ -153,7 +165,7 @@ class RestriccionHorarioUseCases:
         
         return restriccion
 
-    def create_for_docente_user(self, restriccion_data: RestriccionHorarioCreate, user: User) -> RestriccionHorario:
+    def create_for_docente_user(self, restriccion_data: RestriccionHorarioSecureCreate, user: User) -> RestriccionHorario:
         """Crear una nueva restricción de horario para el docente autenticado"""
         docente_id = self._get_docente_id_from_user(user)
         
@@ -181,9 +193,11 @@ class RestriccionHorarioUseCases:
                 detail="Ya existe una restricción de horario para este día y horario"
             )
         
-        return self.restriccion_horario_repository.create(restriccion_data)
+        # Convertir schema seguro a entidad
+        restriccion_create = RestriccionHorarioCreate(**restriccion_data.model_dump())
+        return self.restriccion_horario_repository.create(restriccion_create)
 
-    def update_for_docente_user(self, restriccion_id: int, user: User, **update_data) -> RestriccionHorario:
+    def update_for_docente_user(self, restriccion_id: int, user: User, restriccion_data: RestriccionHorarioSecurePatch) -> RestriccionHorario:
         """Actualizar una restricción de horario verificando que pertenezca al docente autenticado"""
         docente_id = self._get_docente_id_from_user(user)
         
@@ -199,6 +213,15 @@ class RestriccionHorarioUseCases:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No puede modificar restricciones de horario de otros docentes"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in restriccion_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         # Validar que no se intente cambiar el docente_id
