@@ -1,67 +1,100 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Events, SlotRef } from "../types/schedule";
+import { useMemo } from "react";
+import type { Events } from "../types/schedule";
 
-const STORAGE_KEY = "eventsHorario";
-
-const seed: Events = {
-  lunes: { "08:00": ["Matemática"], "10:00": ["Física"] },
-  martes: { "09:00": ["Química"], "11:00": ["Lenguaje"] },
+const previewEvents: Events = {
+  lunes: {
+    "08:15 - 09:45": [
+      "Cálculo Vectorial\nSala B104 • Prof. López",
+    ],
+    "10:00 - 11:30": [
+      "Estructuras de Datos\nSala C203 • Prof. Rojas",
+    ],
+    "11:45 - 13:15": [
+      "Laboratorio de Programación\nLab Redes • Ing. Vergara",
+    ],
+    "14:30 - 16:00": [
+      "Arquitectura de Computadores\nSala A210 • Dra. Núñez",
+    ],
+    "16:15 - 17:45": [
+      "Gestión de Servicios TI\nSala E101 • Prof. Fuentes",
+    ],
+  },
+  martes: {
+    "08:15 - 09:45": [
+      "Probabilidades y Estadística\nSala C105 • Prof. Gutiérrez",
+    ],
+    "10:00 - 11:30": [
+      "Sistemas Distribuidos\nSala B206 • Dra. Pinto",
+    ],
+    "11:45 - 13:15": [
+      "Proyecto Integrador I\nSala Innovation • Mg. Saavedra",
+    ],
+    "14:30 - 16:00": [
+      "Metodologías Ágiles\nSala Scrum • Coach Díaz",
+    ],
+    "16:15 - 17:45": [
+      "Gestión de Proyectos TI\nSala D101 • Prof. Ortiz",
+    ],
+  },
+  miércoles: {
+    "08:15 - 09:45": [
+      "Ingeniería de Software\nSala B302 • Prof. Carrasco",
+    ],
+    "10:00 - 11:30": [
+      "Bases de Datos Avanzadas\nSala DataLab • Dra. Morales",
+    ],
+    "11:45 - 13:15": [
+      "Laboratorio de Datos\nSala DataLab • Equipo Ayudantes",
+    ],
+    "14:30 - 16:00": [
+      "Redes y Comunicaciones\nSala Telecom • Ing. Salinas",
+    ],
+    "16:15 - 17:45": [
+      "Seminario de Investigación\nSala I+D • Dr. Valdés",
+    ],
+  },
+  jueves: {
+    "08:15 - 09:45": [
+      "Inteligencia Artificial\nSala AI Lab • Dr. Blanco",
+    ],
+    "10:00 - 11:30": [
+      "Electivo: Computación Gráfica\nSala Visual • Prof. Muñoz",
+    ],
+    "11:45 - 13:15": [
+      "Formulación y Evaluación de Proyectos\nSala C201 • Prof. Vera",
+    ],
+    "14:30 - 16:00": [
+      "Electivo: Ciberseguridad\nSala SecOps • Ing. Molina",
+    ],
+    "16:15 - 17:45": [
+      "Seminario de Título\nSala Consejo • Comisión Carrera",
+    ],
+  },
+  viernes: {
+    "08:15 - 09:45": [
+      "Sistemas Operativos\nSala C108 • Prof. Herrera",
+    ],
+    "10:00 - 11:30": [
+      "Ética Profesional\nSala Magna • Dra. Silva",
+    ],
+    "11:45 - 13:15": [
+      "Taller de Innovación Tecnológica\nHub UCI • Equipo Mentores",
+    ],
+    "14:30 - 16:00": [
+      "Práctica Profesional\nSala Vinculación • Coordinación UCI",
+    ],
+    "16:15 - 17:45": [
+      "Actividad de Extensión\nAuditorio Central • Invitados",
+    ],
+  },
 };
 
 export function useScheduleEvents() {
-  const [events, setEvents] = useState<Events>({});
-  const [selected, setSelected] = useState<SlotRef | null>(null);
-  const [tipoUsuario] = useState<"profesor" | "alumno">("profesor");
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) setEvents(JSON.parse(stored));
-    else {
-      setEvents(seed);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-    }
-  }, []);
-
-  const persist = useCallback((updated: Events) => {
-    setEvents(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }, []);
-
-  const addEvent = useCallback((slot: SlotRef, text: string) => {
-    const updated: Events = { ...events };
-    if (!updated[slot.day]) updated[slot.day] = {};
-    if (!updated[slot.day][slot.hour]) updated[slot.day][slot.hour] = [];
-    updated[slot.day][slot.hour] = [...updated[slot.day][slot.hour], text];
-    persist(updated);
-  }, [events, persist]);
-
-  const editEvent = useCallback((slot: SlotRef, idx: number, text: string) => {
-    const updated: Events = { ...events };
-    updated[slot.day][slot.hour] = [...(updated[slot.day][slot.hour] || [])];
-    updated[slot.day][slot.hour][idx] = text;
-    persist(updated);
-  }, [events, persist]);
-
-  const deleteEvent = useCallback((slot: SlotRef, idx: number) => {
-    const updated: Events = { ...events };
-    updated[slot.day][slot.hour] = [...(updated[slot.day][slot.hour] || [])];
-    updated[slot.day][slot.hour].splice(idx, 1);
-    if (updated[slot.day][slot.hour].length === 0) {
-      delete updated[slot.day][slot.hour];
-    }
-    persist(updated);
-  }, [events, persist]);
-
+  const events = useMemo(() => previewEvents, []);
   const allEventsCount = useMemo(
-    () => Object.values(events).flatMap(h => Object.values(h)).flat().length,
-    [events]
+    () => Object.values(events).flatMap((h) => Object.values(h)).flat().length,
+    [events],
   );
 
-  return {
-    events,
-    selected, setSelected,
-    tipoUsuario,
-    addEvent, editEvent, deleteEvent,
-    allEventsCount,
-  };
+  return { events, allEventsCount };
 }

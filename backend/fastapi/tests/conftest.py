@@ -19,10 +19,21 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+# Importar main ANTES de modificar los middlewares
 from main import app
 from domain.models import Base
 from infrastructure.database.config import get_db
 from domain.entities import UserCreate
+
+# Modificar límites de rate limiting para tests
+# Esto debe hacerse después de importar app pero antes de crear el cliente
+for middleware in app.user_middleware:
+    if hasattr(middleware, 'kwargs'):
+        # Aumentar los límites para testing
+        if 'requests_limit' in middleware.kwargs:
+            middleware.kwargs['requests_limit'] = 10000
+        if 'auth_requests_limit' in middleware.kwargs:
+            middleware.kwargs['auth_requests_limit'] = 20000
 
 # Base de datos en memoria
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -69,7 +80,11 @@ def client(db_session):
     from domain.models import Base
     Base.metadata.create_all(bind=db_session.bind)
     
-    yield TestClient(app)
+    # Crear un nuevo TestClient que inicializará nuevas instancias de middlewares
+    test_client = TestClient(app)
+    
+    yield test_client
+    
     app.dependency_overrides.clear()
 
 @pytest.fixture
@@ -77,7 +92,7 @@ def admin_user_data():
     return UserCreate(
         nombre="Admin Test",
         email="admin@test.com",
-        contrasena="Admin123!",
+        contrasena="AdminT3st!2024#Secure",
         rol="administrador"
     )
 
@@ -86,7 +101,7 @@ def docente_user_data():
     return UserCreate(
         nombre="Docente Test",
         email="docente@test.com",
-        contrasena="Docente123!",
+        contrasena="Doc3nteT3st!2024#Strong",
         rol="docente"
     )
 
@@ -95,13 +110,32 @@ def estudiante_user_data():
     return UserCreate(
         nombre="Estudiante Test",
         email="estudiante@test.com",
-        contrasena="Estudiante123!",
+        contrasena="Estud1ant3T3st!2024#Pass",
         rol="estudiante"
     )
 
 @pytest.fixture
-def admin_token(client, admin_user_data):
-    client.post("/api/auth/register", json=admin_user_data.model_dump())
+def admin_token(client, db_session, admin_user_data):
+    # Crear usuario directamente en la base de datos
+    from domain.models import User, Administrador
+    from infrastructure.auth import AuthService
+    
+    db_user = User(
+        nombre=admin_user_data.nombre,
+        email=admin_user_data.email,
+        pass_hash=AuthService.get_password_hash(admin_user_data.contrasena),
+        rol=admin_user_data.rol
+    )
+    db_session.add(db_user)
+    db_session.commit()
+    db_session.refresh(db_user)
+    
+    # Crear registro de administrador
+    admin = Administrador(user_id=db_user.id)
+    db_session.add(admin)
+    db_session.commit()
+    
+    # Hacer login
     login_response = client.post(
         "/api/auth/login",
         json={
@@ -112,8 +146,27 @@ def admin_token(client, admin_user_data):
     return login_response.json()["access_token"]
 
 @pytest.fixture
-def docente_token(client, docente_user_data):
-    client.post("/api/auth/register", json=docente_user_data.model_dump())
+def docente_token(client, db_session, docente_user_data):
+    # Crear usuario directamente en la base de datos
+    from domain.models import User, Docente
+    from infrastructure.auth import AuthService
+    
+    db_user = User(
+        nombre=docente_user_data.nombre,
+        email=docente_user_data.email,
+        pass_hash=AuthService.get_password_hash(docente_user_data.contrasena),
+        rol=docente_user_data.rol
+    )
+    db_session.add(db_user)
+    db_session.commit()
+    db_session.refresh(db_user)
+    
+    # Crear registro de docente
+    docente = Docente(user_id=db_user.id)
+    db_session.add(docente)
+    db_session.commit()
+    
+    # Hacer login
     login_response = client.post(
         "/api/auth/login",
         json={
@@ -124,8 +177,27 @@ def docente_token(client, docente_user_data):
     return login_response.json()["access_token"]
 
 @pytest.fixture
-def estudiante_token(client, estudiante_user_data):
-    client.post("/api/auth/register", json=estudiante_user_data.model_dump())
+def estudiante_token(client, db_session, estudiante_user_data):
+    # Crear usuario directamente en la base de datos
+    from domain.models import User, Estudiante
+    from infrastructure.auth import AuthService
+    
+    db_user = User(
+        nombre=estudiante_user_data.nombre,
+        email=estudiante_user_data.email,
+        pass_hash=AuthService.get_password_hash(estudiante_user_data.contrasena),
+        rol=estudiante_user_data.rol
+    )
+    db_session.add(db_user)
+    db_session.commit()
+    db_session.refresh(db_user)
+    
+    # Crear registro de estudiante
+    estudiante = Estudiante(user_id=db_user.id)
+    db_session.add(estudiante)
+    db_session.commit()
+    
+    # Hacer login
     login_response = client.post(
         "/api/auth/login",
         json={
@@ -148,38 +220,38 @@ def auth_headers_estudiante(estudiante_token):
     return {"Authorization": f"Bearer {estudiante_token}"}
 
 @pytest.fixture
-def docente_completo(client, auth_headers_admin):
+def docente_completo(client, db_session, auth_headers_admin):
     """Crea un usuario docente y su registro en la tabla Docente"""
-    # Primero crear el usuario con rol docente
-    user_data = {
-        "nombre": "Carlos Ramírez Docente",
-        "email": "docente.completo@test.com",
-        "contrasena": "Docente123!",
-        "rol": "docente"
-    }
+    from domain.models import User, Docente
+    from infrastructure.auth import AuthService
     
-    # Registrar el usuario
-    user_response = client.post("/api/auth/register", json=user_data)
-    assert user_response.status_code == 201
-    user_id = user_response.json()["id"]
+    # Crear usuario docente directamente en la base de datos
+    password = "D0c3nt3C0mpl3t0!2024#Secure"
+    db_user = User(
+        nombre="Carlos Ramírez Docente",
+        email="docente.completo@test.com",
+        pass_hash=AuthService.get_password_hash(password),
+        rol="docente"
+    )
+    db_session.add(db_user)
+    db_session.commit()
+    db_session.refresh(db_user)
     
-    # Ahora crear el perfil de docente asociado al usuario
-    docente_data = {
-        "user_id": user_id,
-        "departamento": "Ingeniería"
-    }
-    
-    # Crear el docente
-    docente_response = client.post("/api/docentes/", json=docente_data, headers=auth_headers_admin)
-    assert docente_response.status_code == 201
-    docente_id = docente_response.json()["id"]
+    # Crear el perfil de docente asociado al usuario
+    docente = Docente(
+        user_id=db_user.id,
+        departamento="Ingeniería"
+    )
+    db_session.add(docente)
+    db_session.commit()
+    db_session.refresh(docente)
     
     # Retornar tanto el user_id como el id del docente
     return {
-        "user_id": user_id,
-        "docente_id": docente_id,
-        "email": user_data["email"],
-        "password": user_data["contrasena"]
+        "user_id": db_user.id,
+        "docente_id": docente.id,
+        "email": db_user.email,
+        "password": password
     }
 
 @pytest.fixture
@@ -196,11 +268,32 @@ def auth_headers_docente_completo(client, docente_completo):
     return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture
-def admin_user(client, admin_user_data):
+def admin_user(client, db_session, auth_headers_admin, admin_user_data):
     """Usuario administrador creado y registrado en la base de datos"""
-    response = client.post("/api/auth/register", json=admin_user_data.model_dump())
-    assert response.status_code == 201
-    return response.json()
+    from domain.models import User, Administrador
+    from infrastructure.auth import AuthService
+    
+    db_user = User(
+        nombre=admin_user_data.nombre,
+        email=admin_user_data.email,
+        pass_hash=AuthService.get_password_hash(admin_user_data.contrasena),
+        rol=admin_user_data.rol
+    )
+    db_session.add(db_user)
+    db_session.commit()
+    db_session.refresh(db_user)
+    
+    # Crear registro de administrador
+    admin = Administrador(user_id=db_user.id)
+    db_session.add(admin)
+    db_session.commit()
+    
+    return {
+        "id": db_user.id,
+        "nombre": db_user.nombre,
+        "email": db_user.email,
+        "rol": db_user.rol
+    }
 
 @pytest.fixture
 def campus_completo(client, auth_headers_admin):

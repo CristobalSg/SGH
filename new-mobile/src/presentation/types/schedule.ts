@@ -12,6 +12,9 @@ export interface SlotRef {
 export const DIAS: DayKey[] = ["lunes", "martes", "miércoles", "jueves", "viernes"];
 
 export const HORAS: string[] = [
-  "08:00","09:00","10:00","11:00","12:00",
-  "13:00","14:00","15:00","16:00","17:00",
+  "08:15 - 09:45",
+  "10:00 - 11:30",
+  "11:45 - 13:15",
+  "14:30 - 16:00",
+  "16:15 - 17:45",
 ];

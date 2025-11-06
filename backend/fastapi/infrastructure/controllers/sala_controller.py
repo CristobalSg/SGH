@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Sala, SalaCreate
-from infrastructure.dependencies import get_current_active_user
+from domain.entities import Sala, User  # Response models
+from domain.schemas import SalaSecureCreate, SalaSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
+from infrastructure.dependencies import require_permission
 from application.use_cases.sala_use_cases import SalaUseCases
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -15,13 +17,13 @@ def get_sala_use_case(db: Session = Depends(get_db)) -> SalaUseCases:
     edificio_repository = SQLEdificioRepository(db)
     return SalaUseCases(sala_repository, edificio_repository)
 
-@router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED, summary="Crear nueva sala", tags=["salas"])
 async def create_sala(
-    sala_data: SalaCreate,
+    sala_data: SalaSecureCreate,  # ✅ SCHEMA SEGURO
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user: User = Depends(require_permission(Permission.SALA_WRITE))
 ):
-    """Crear una nueva sala"""
+    """Crear una nueva sala con validaciones anti-inyección (requiere permiso SALA:WRITE - solo administradores)"""
     try:
         sala = sala_use_case.create(sala_data)
         return sala
@@ -38,9 +40,9 @@ async def get_all_salas(
     skip: int = 0,
     limit: int = 100,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener todas las salas"""
+    """Obtener todas las salas (requiere permiso SALA:READ)"""
     try:
         salas = sala_use_case.get_all(skip=skip, limit=limit)
         return salas
@@ -56,9 +58,9 @@ async def get_all_salas(
 async def get_sala_by_id(
     sala_id: int,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener sala por ID"""
+    """Obtener sala por ID (requiere permiso SALA:READ)"""
     try:
         sala = sala_use_case.get_by_id(sala_id)
         return sala
@@ -74,9 +76,9 @@ async def get_sala_by_id(
 async def get_sala_by_codigo(
     codigo: str,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener sala por código"""
+    """Obtener sala por código (requiere permiso SALA:READ)"""
     try:
         sala = sala_use_case.get_by_codigo(codigo)
         return sala
@@ -93,9 +95,9 @@ async def get_sala_by_codigo(
 async def get_salas_by_edificio(
     edificio_id: int,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener salas por edificio"""
+    """Obtener salas por edificio (requiere permiso SALA:READ)"""
     try:
         salas = sala_use_case.get_by_edificio(edificio_id)
         return salas
@@ -107,23 +109,35 @@ async def get_salas_by_edificio(
             detail="Error interno del servidor"
         )
 
-@router.put("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK)
-async def update_sala(
+@router.put("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK, summary="Actualizar sala completa", tags=["salas"])
+async def update_sala_complete(
     sala_id: int,
-    sala_data: SalaCreate,
+    sala_data: SalaSecurePatch,  # ✅ SCHEMA SEGURO PATCH
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_WRITE))
 ):
-    """Actualizar una sala"""
+    """Actualizar una sala completamente con validaciones anti-inyección (requiere permiso SALA:WRITE)"""
     try:
-        update_data = {
-            'codigo': sala_data.codigo,
-            'nombre': sala_data.nombre,
-            'capacidad': sala_data.capacidad,
-            'tipo': sala_data.tipo,
-            'edificio_id': sala_data.edificio_id
-        }
-        sala = sala_use_case.update(sala_id, **update_data)
+        sala = sala_use_case.update(sala_id, sala_data)
+        return sala
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.patch("/{sala_id}", response_model=Sala, status_code=status.HTTP_200_OK, summary="Actualizar campos específicos de sala", tags=["salas"])
+async def update_sala_partial(
+    sala_id: int,
+    sala_data: SalaSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    sala_use_case: SalaUseCases = Depends(get_sala_use_case),
+    current_user = Depends(require_permission(Permission.SALA_WRITE))
+):
+    """Actualizar parcialmente una sala con validaciones anti-inyección (requiere permiso SALA:WRITE)"""
+    try:
+        sala = sala_use_case.update(sala_id, sala_data)
         return sala
     except HTTPException:
         raise
@@ -137,9 +151,9 @@ async def update_sala(
 async def delete_sala(
     sala_id: int,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_DELETE))  # ✅ MIGRADO
 ):
-    """Eliminar una sala"""
+    """Eliminar una sala (requiere permiso SALA:DELETE)"""
     try:
         sala_use_case.delete(sala_id)
     except HTTPException:
@@ -154,9 +168,9 @@ async def delete_sala(
 async def get_salas_by_tipo(
     tipo: str,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener salas por tipo"""
+    """Obtener salas por tipo (requiere permiso SALA:READ)"""
     try:
         salas = sala_use_case.get_by_tipo(tipo)
         return salas
@@ -173,9 +187,9 @@ async def get_salas_by_capacidad(
     capacidad_min: int = None,
     capacidad_max: int = None,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener salas por rango de capacidad"""
+    """Obtener salas por rango de capacidad (requiere permiso SALA:READ)"""
     try:
         salas = sala_use_case.get_by_capacidad(capacidad_min, capacidad_max)
         return salas
@@ -191,9 +205,9 @@ async def get_salas_by_capacidad(
 async def get_salas_disponibles(
     bloque_id: int = None,
     sala_use_case: SalaUseCases = Depends(get_sala_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.SALA_READ))  # ✅ MIGRADO
 ):
-    """Obtener salas disponibles, opcionalmente filtradas por bloque"""
+    """Obtener salas disponibles (requiere permiso SALA:READ)"""
     try:
         salas = sala_use_case.get_salas_disponibles(bloque_id)
         return salas

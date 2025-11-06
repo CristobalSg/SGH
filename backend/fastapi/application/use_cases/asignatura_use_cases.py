@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import AsignaturaCreate, Asignatura
+from domain.schemas import AsignaturaSecureCreate, AsignaturaSecurePatch
 from infrastructure.repositories.asignatura_repository import AsignaturaRepository
 
 class AsignaturaUseCases:
@@ -31,7 +32,7 @@ class AsignaturaUseCases:
             )
         return asignatura
 
-    def create(self, asignatura_data: AsignaturaCreate) -> Asignatura:
+    def create(self, asignatura_data: AsignaturaSecureCreate) -> Asignatura:
         """Crear una nueva asignatura"""
         # Verificar si el código ya existe
         existing_asignatura = self.asignatura_repository.get_by_codigo(asignatura_data.codigo)
@@ -41,9 +42,11 @@ class AsignaturaUseCases:
                 detail="El código de asignatura ya existe"
             )
         
-        return self.asignatura_repository.create(asignatura_data)
+        # Convertir schema seguro a entidad
+        asignatura_create = AsignaturaCreate(**asignatura_data.model_dump())
+        return self.asignatura_repository.create(asignatura_create)
 
-    def update(self, asignatura_id: int, **update_data) -> Asignatura:
+    def update(self, asignatura_id: int, asignatura_data: AsignaturaSecurePatch) -> Asignatura:
         """Actualizar una asignatura"""
         # Verificar que la asignatura existe
         existing_asignatura = self.asignatura_repository.get_by_id(asignatura_id)
@@ -51,6 +54,15 @@ class AsignaturaUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Asignatura no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in asignatura_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         # Si se actualiza el código, verificar que no exista otra asignatura con ese código

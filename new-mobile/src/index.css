@@ -1,5 +1,50 @@
 @import "tailwindcss";
 
+/* iOS base fixes */
+@layer base {
+  /* Evita zoom en inputs (Safari auto-zoomea si font <16px) */
+  input, select, textarea, button { font-size: 16px; }
+
+  /* Quita look nativo y sombras raras en iOS */
+  button, input, select, textarea {
+    -webkit-appearance: none;
+    appearance: none;
+    box-shadow: none;
+  }
+
+  /* Sin parpadeo azul al tocar */
+  * { -webkit-tap-highlight-color: transparent; }
+
+  /* Render de tipografía más nítido */
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  /* Schema explícito (evita inversiones raras de colores) */
+  :root { color-scheme: light dark; }
+}
+
+/* Autofill iOS/Chrome: mantener tus colores */
+@layer base {
+  input:-webkit-autofill,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,0.1) inset !important; /* combina con bg-white/10 */
+    box-shadow: 0 0 0 1000px rgba(255,255,255,0.1) inset !important;
+    -webkit-text-fill-color: #fff !important;
+  }
+}
+
+/* Utilidades extra útiles en iOS */
+@layer utilities {
+  /* Momentum scrolling en contenedores con overflow */
+  .ios-scroll { -webkit-overflow-scrolling: touch; }
+
+  /* Padding seguro con notch (usa cuando tengas header/footer pegado) */
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+
 /* Tema claro */
 :root {
   --color-primary-light: #6366f1;

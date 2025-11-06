@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import HTTPException, status
 from domain.entities import Administrador, AdministradorCreate
+from domain.schemas import AdministradorSecureCreate, AdministradorSecurePatch
 from infrastructure.repositories.administrador_repository import SQLAdministradorRepository
 from infrastructure.repositories.user_repository import SQLUserRepository
 
@@ -9,7 +10,7 @@ class AdministradorUseCase:
         self.administrador_repository = administrador_repository
         self.user_repository = user_repository
 
-    def create_administrador(self, administrador_data: AdministradorCreate) -> Administrador:
+    def create_administrador(self, administrador_data: AdministradorSecureCreate) -> Administrador:
         """Crear un nuevo administrador"""
         # Verificar que el usuario existe y tiene rol de administrador
         user = self.user_repository.get_by_id(administrador_data.user_id)
@@ -33,7 +34,9 @@ class AdministradorUseCase:
                 detail=f"Ya existe un administrador asociado al usuario {administrador_data.user_id}"
             )
         
-        return self.administrador_repository.create(administrador_data)
+        # Convertir schema seguro a entidad
+        administrador_create = AdministradorCreate(**administrador_data.model_dump())
+        return self.administrador_repository.create(administrador_create)
 
     def get_all_administradores(self) -> List[Administrador]:
         """Obtener todos los administradores"""
@@ -54,6 +57,35 @@ class AdministradorUseCase:
                 detail=f"Administrador con id {administrador_id} no encontrado"
             )
         return administrador
+
+    def update_administrador(self, administrador_id: int, administrador_data: AdministradorSecurePatch) -> Administrador:
+        """Actualizar parcialmente un administrador"""
+        # Verificar que el administrador existe
+        existing_administrador = self.administrador_repository.get_by_id(administrador_id)
+        if not existing_administrador:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Administrador no encontrado"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_dict = {k: v for k, v in administrador_data.model_dump().items() if v is not None}
+        
+        if not update_dict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
+            )
+        
+        # Actualizar usando el repositorio
+        updated_administrador = self.administrador_repository.update(administrador_id, **update_dict)
+        if not updated_administrador:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al actualizar el administrador"
+            )
+        
+        return updated_administrador
 
     def delete_administrador(self, administrador_id: int) -> bool:
         """Eliminar un administrador"""

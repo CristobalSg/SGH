@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import SeccionCreate, Seccion
+from domain.schemas import SeccionSecureCreate, SeccionSecurePatch
 from infrastructure.repositories.seccion_repository import SeccionRepository
 
 class SeccionUseCases:
@@ -21,7 +22,7 @@ class SeccionUseCases:
             )
         return seccion
 
-    def create(self, seccion_data: SeccionCreate) -> Seccion:
+    def create(self, seccion_data: SeccionSecureCreate) -> Seccion:
         """Crear una nueva sección"""
         # Verificar si ya existe una sección con el mismo código
         existing_seccion = self.seccion_repository.get_by_codigo(seccion_data.codigo)
@@ -31,9 +32,11 @@ class SeccionUseCases:
                 detail="Ya existe una sección con ese código"
             )
         
-        return self.seccion_repository.create(seccion_data)
+        # Convertir schema seguro a entidad
+        seccion_create = SeccionCreate(**seccion_data.model_dump())
+        return self.seccion_repository.create(seccion_create)
 
-    def update(self, seccion_id: int, **update_data) -> Seccion:
+    def update(self, seccion_id: int, seccion_data: SeccionSecurePatch) -> Seccion:
         """Actualizar una sección"""
         # Verificar que la sección existe
         existing_seccion = self.seccion_repository.get_by_id(seccion_id)
@@ -41,6 +44,15 @@ class SeccionUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Sección no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in seccion_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         updated_seccion = self.seccion_repository.update(seccion_id, update_data)

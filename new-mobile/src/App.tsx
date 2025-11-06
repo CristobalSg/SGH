@@ -5,14 +5,15 @@ import StatsPage from "./presentation/pages/StatsPage"; // si lo usas aún
 import ProfilePage from "./presentation/pages/ProfilePage";
 import SettingsPage from "./presentation/pages/SettingsPage";
 import EventsPage from "./presentation/pages/EventsPage";
+import AdminUsersPage from "./presentation/pages/AdminUsersPage";
+import AdminHomePage from "./presentation/pages/AdminHomePage";
 
 import { AuthProvider } from "./app/providers/AuthProvider";
 import PrivateRoute from "./presentation/routes/PrivateRoute";
 import PublicRoute from "./presentation/routes/PublicRoute";
 import RoleRoute from "./presentation/routes/RoleRoute";
 
-import DocenteSchedulePage from "./presentation/pages/docente/DocenteSchedulePage";
-import DocenteRestrictionsPage from "./presentation/pages/docente/DocenteRestrictionsPage";
+import DocenteRestrictionsPage from "./presentation/pages/DocenteRestrictionsPage";
 import UnauthorizedPage from "./presentation/pages/UnauthorizedPage";
 
 export default function App() {
@@ -48,16 +49,6 @@ export default function App() {
             }
           />
           <Route
-            path="/schedule"
-            element={
-              <PrivateRoute>
-                <RoleRoute allowed={["docente"]}>
-                  <DocenteSchedulePage />
-                </RoleRoute>
-              </PrivateRoute>
-            }
-          />
-          <Route
             path="/restrictions"
             element={
               <PrivateRoute>
@@ -81,7 +72,7 @@ export default function App() {
             path="/settings"
             element={
               <PrivateRoute>
-                <RoleRoute allowed={["docente"]}>
+                <RoleRoute allowed={["docente", "admin"]}>
                   <SettingsPage />
                 </RoleRoute>
               </PrivateRoute>
@@ -105,6 +96,28 @@ export default function App() {
               <PrivateRoute>
                 <RoleRoute allowed={["docente"]}>
                   <ProfilePage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["admin"]}>
+                  <AdminHomePage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          {/* Administrador */}
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["admin"]}>
+                  <AdminUsersPage />
                 </RoleRoute>
               </PrivateRoute>
             }

@@ -1,16 +1,16 @@
 import {
   HomeIcon,
-  CalendarDaysIcon,
   AdjustmentsHorizontalIcon,
   CalendarIcon,
   Cog6ToothIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeSolid,
-  CalendarDaysIcon as CalendarDaysSolid,
   AdjustmentsHorizontalIcon as AdjustmentsHorizontalSolid,
   CalendarIcon as CalendarSolid,
   Cog6ToothIcon as CogSolid,
+  UserGroupIcon as UserGroupSolid,
 } from "@heroicons/react/24/solid";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { ComponentType, SVGProps } from "react";
@@ -25,23 +25,23 @@ type Item = {
   solid: ComponentType<SVGProps<SVGSVGElement>>;
 };
 
+// 🔹 Eliminado el item con id: "schedule"
 const docenteItems: Item[] = [
   { id: "home",          label: "Home",          outline: HomeIcon,                solid: HomeSolid,                path: "/home" },
-  { id: "schedule",      label: "Horario",       outline: CalendarDaysIcon,        solid: CalendarDaysSolid,        path: "/schedule" },
   { id: "restrictions",  label: "Restricciones", outline: AdjustmentsHorizontalIcon, solid: AdjustmentsHorizontalSolid, path: "/restrictions" },
   { id: "events",        label: "Eventos",       outline: CalendarIcon,            solid: CalendarSolid,            path: "/events" },
   { id: "settings",      label: "Ajustes",       outline: Cog6ToothIcon,           solid: CogSolid,                 path: "/settings" },
 ];
 
-// Si quieres, define otros menús:
 const estudianteItems: Item[] = [
   { id: "home", label: "Home", outline: HomeIcon, solid: HomeSolid, path: "/home" },
-  { id: "schedule", label: "Horario", outline: CalendarDaysIcon, solid: CalendarDaysSolid, path: "/schedule" },
+  { id: "schedule", label: "Horario", outline: CalendarIcon, solid: CalendarSolid, path: "/schedule" },
   { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
 ];
 
 const adminItems: Item[] = [
-  { id: "home", label: "Dashboard", outline: HomeIcon, solid: HomeSolid, path: "/home" },
+  { id: "home", label: "Inicio", outline: HomeIcon, solid: HomeSolid, path: "/admin" },
+  { id: "users", label: "Usuarios", outline: UserGroupIcon, solid: UserGroupSolid, path: "/admin/users" },
   { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
 ];
 
@@ -53,10 +53,15 @@ const menuByRole: Record<Role, Item[]> = {
 
 const activeClasses: Record<string, string> = {
   home: "bg-violet-500 text-white",
-  schedule: "bg-sky-500 text-white",
   restrictions: "bg-pink-500 text-white",
   events: "bg-emerald-500 text-white",
   settings: "bg-amber-500 text-white",
+  users: "bg-blue-500 text-white",
+};
+
+const isPathActive = (basePath: string, currentPath: string) => {
+  if (currentPath === basePath) return true;
+  return currentPath.startsWith(`${basePath}/`);
 };
 
 export default function BottomNav() {
@@ -66,13 +71,17 @@ export default function BottomNav() {
 
   const items = role ? menuByRole[role] ?? [] : [];
 
-  // Si no hay rol (p.ej. en login) no mostramos barra
   if (items.length === 0) return null;
 
-  const active = items.find((i) => pathname.startsWith(i.path))?.id ?? items[0].id;
+  const activeItem = items.reduce<Item | null>((activeAcc, item) => {
+    if (!isPathActive(item.path, pathname)) return activeAcc;
+    if (!activeAcc) return item;
+    return item.path.length > activeAcc.path.length ? item : activeAcc;
+  }, null);
+  const active = activeItem?.id ?? items[0].id;
 
   const handleClick = (it: Item) => {
-    if (!pathname.startsWith(it.path)) navigate(it.path);
+    if (pathname !== it.path) navigate(it.path);
   };
 
   return (

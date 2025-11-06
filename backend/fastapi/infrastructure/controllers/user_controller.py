@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
 from typing import List
 from domain.entities import User, UserUpdate
-from infrastructure.dependencies import get_user_management_use_case, get_current_active_user, get_current_admin_user
+from domain.authorization import Permission  # ✅ Nuevo sistema
+from infrastructure.dependencies import (
+    get_user_management_use_case,
+    require_permission  # ✅ Nueva dependency
+)
 from application.use_cases.user_management_use_cases import UserManagementUseCase
 
 router = APIRouter()
@@ -11,9 +15,12 @@ async def get_users(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_permission(Permission.USER_READ_ALL))
 ):
-    """Obtener todos los usuarios con paginación (requiere autenticación)"""
+    """Obtener todos los usuarios con paginación (requiere permiso USER:READ:ALL)
+    
+    SEGURIDAD: Restringido a usuarios con permiso USER:READ:ALL (solo administradores).
+    """
     try:
         users = user_use_case.get_all_users(skip=skip, limit=limit)
         return users
@@ -29,11 +36,18 @@ async def get_users(
 async def get_user_by_id(
     user_id: int = Path(..., gt=0, description="ID del usuario"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_permission(Permission.USER_READ))  # ✅ MIGRADO
 ):
-    """Obtener un usuario por ID (requiere autenticación)"""
+    """Obtener un usuario por ID (requiere permiso USER:READ)
+    
+    SEGURIDAD: 
+    - Los usuarios pueden ver solo su propia información
+    - Los administradores pueden ver cualquier usuario
+    - La verificación de acceso horizontal se hace en el use case
+    """
     try:
-        user = user_use_case.get_user_by_id(user_id)
+        # ✅ El use case verifica acceso horizontal
+        user = user_use_case.get_user_by_id_with_authorization(current_user, user_id)
         return user
     except HTTPException:
         raise
@@ -47,9 +61,9 @@ async def get_user_by_id(
 async def get_user_by_email(
     email: str = Path(..., description="Email del usuario"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.USER_READ))  # ✅ MIGRADO
 ):
-    """Obtener un usuario por email (solo administradores)"""
+    """Obtener un usuario por email (requiere permiso USER:READ)"""
     try:
         user = user_use_case.get_user_by_email(email)
         return user
@@ -65,9 +79,9 @@ async def get_user_by_email(
 async def get_users_by_rol(
     rol: str = Path(..., description="Rol del usuario (administrador, docente, estudiante)"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.USER_READ_ALL))
 ):
-    """Obtener todos los usuarios con un rol específico (solo administradores)"""
+    """Obtener todos los usuarios con un rol específico (requiere permiso USER:READ:ALL)"""
     try:
         users = user_use_case.get_users_by_rol(rol)
         return users
@@ -84,9 +98,9 @@ async def update_user(
     user_id: int = Path(..., gt=0, description="ID del usuario"),
     user_data: UserUpdate = None,
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.USER_WRITE))  # ✅ MIGRADO
 ):
-    """Actualizar información de un usuario (solo administradores)"""
+    """Actualizar información de un usuario (requiere permiso USER:WRITE)"""
     try:
         updated_user = user_use_case.update_user(user_id, user_data)
         return updated_user
@@ -102,9 +116,9 @@ async def update_user(
 async def delete_user(
     user_id: int = Path(..., gt=0, description="ID del usuario"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.USER_DELETE))  # ✅ MIGRADO
 ):
-    """Eliminar un usuario (solo administradores)"""
+    """Eliminar un usuario (requiere permiso USER:DELETE)"""
     try:
         user_use_case.delete_user(user_id)
     except HTTPException:
@@ -119,9 +133,9 @@ async def delete_user(
 async def activate_user(
     user_id: int = Path(..., gt=0, description="ID del usuario"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.USER_ACTIVATE))  # ✅ MIGRADO
 ):
-    """Activar un usuario (solo administradores)"""
+    """Activar un usuario (requiere permiso USER:ACTIVATE)"""
     try:
         activated_user = user_use_case.activate_user(user_id)
         return activated_user
@@ -137,9 +151,9 @@ async def activate_user(
 async def deactivate_user(
     user_id: int = Path(..., gt=0, description="ID del usuario"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(require_permission(Permission.USER_ACTIVATE))  # ✅ MIGRADO
 ):
-    """Desactivar un usuario (solo administradores)"""
+    """Desactivar un usuario (requiere permiso USER:ACTIVATE)"""
     try:
         deactivated_user = user_use_case.deactivate_user(user_id)
         return deactivated_user

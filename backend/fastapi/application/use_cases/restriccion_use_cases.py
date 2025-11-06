@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from domain.entities import RestriccionCreate, Restriccion, User
+from domain.schemas import RestriccionSecureCreate, RestriccionSecurePatch
 from infrastructure.repositories.restriccion_repository import RestriccionRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
 
@@ -23,11 +24,13 @@ class RestriccionUseCases:
             )
         return restriccion
 
-    def create(self, restriccion_data: RestriccionCreate) -> Restriccion:
+    def create(self, restriccion_data: RestriccionSecureCreate) -> Restriccion:
         """Crear una nueva restricción"""
-        return self.restriccion_repository.create(restriccion_data)
+        # Convertir schema seguro a entidad
+        restriccion_create = RestriccionCreate(**restriccion_data.model_dump())
+        return self.restriccion_repository.create(restriccion_create)
 
-    def update(self, restriccion_id: int, **update_data) -> Restriccion:
+    def update(self, restriccion_id: int, restriccion_data: RestriccionSecurePatch) -> Restriccion:
         """Actualizar una restricción"""
         # Verificar que la restricción existe
         existing_restriccion = self.restriccion_repository.get_by_id(restriccion_id)
@@ -35,6 +38,15 @@ class RestriccionUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Restricción no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in restriccion_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         updated_restriccion = self.restriccion_repository.update(restriccion_id, update_data)
@@ -140,7 +152,7 @@ class RestriccionUseCases:
         
         return restriccion
 
-    def create_for_docente_user(self, restriccion_data: RestriccionCreate, user: User) -> Restriccion:
+    def create_for_docente_user(self, restriccion_data: RestriccionSecureCreate, user: User) -> Restriccion:
         """Crear una nueva restricción para el docente autenticado o para otro docente si es admin"""
         
         # Si el usuario es administrador, puede crear para cualquier docente
@@ -198,9 +210,11 @@ class RestriccionUseCases:
                     detail=f"Ya existe una restricción activa del tipo '{restriccion_data.tipo}' con valor '{restriccion_data.valor}'"
                 )
         
-        return self.restriccion_repository.create(restriccion_data)
+        # Convertir schema seguro a entidad
+        restriccion_create = RestriccionCreate(**restriccion_data.model_dump())
+        return self.restriccion_repository.create(restriccion_create)
 
-    def update_for_docente_user(self, restriccion_id: int, user: User, **update_data) -> Restriccion:
+    def update_for_docente_user(self, restriccion_id: int, user: User, restriccion_data: RestriccionSecurePatch) -> Restriccion:
         """Actualizar una restricción verificando que pertenezca al docente autenticado o permitir si es admin"""
         
         # Verificar que la restricción existe
@@ -209,6 +223,15 @@ class RestriccionUseCases:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Restricción no encontrada"
+            )
+        
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_data = {k: v for k, v in restriccion_data.model_dump().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar"
             )
         
         # Si es admin, puede modificar cualquier restricción

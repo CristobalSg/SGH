@@ -5,7 +5,8 @@ import Input from "../ui/Input";
 import Button from "../ui/Button";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useAuth } from "../../../app/providers/AuthProvider";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
+import { getDefaultPathByRole } from "../../routes/rolePaths";
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -21,20 +22,19 @@ const LoginForm: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const success = await login(email, password);
-      if (success) {
-        const returnTo = location.state?.from?.pathname ?? "/home";
-        navigate(returnTo, { replace: true });
-      } else {
+    try {
+      const loggedRole = await login(email, password);
+      if (!loggedRole) {
         setError("Credenciales incorrectas");
+        return;
       }
-    
-    setLoading(false);
-
-    if (success) {
-      navigate("/home");
-    } else {
-      setError("Credenciales incorrectas");
+      const returnTo = location.state?.from?.pathname ?? getDefaultPathByRole(loggedRole);
+      navigate(returnTo, { replace: true });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "No se pudo iniciar sesión";
+      setError(detail);
+    } finally {
+      setLoading(false);
     }
   };
 

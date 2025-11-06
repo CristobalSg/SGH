@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from domain.entities import Docente, DocenteCreate
-from infrastructure.dependencies import get_current_active_user
+from domain.entities import Docente  # Response models
+from domain.schemas import DocenteSecureCreate, DocenteSecurePatch  # ✅ SCHEMAS SEGUROS
+from domain.authorization import Permission
+from infrastructure.dependencies import require_permission
 from application.use_cases.docente_use_cases import DocenteUseCases
 from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
@@ -17,11 +19,11 @@ def get_docente_use_case(db: Session = Depends(get_db)) -> DocenteUseCases:
 
 @router.post("/", response_model=Docente, status_code=status.HTTP_201_CREATED)
 async def create_docente(
-    docente_data: DocenteCreate,
+    docente_data: DocenteSecureCreate,  # ✅ SCHEMA SEGURO
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
 ):
-    """Crear un nuevo docente"""
+    """Crear un nuevo docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
     try:
         docente = docente_use_case.create(docente_data)
         return docente
@@ -38,9 +40,9 @@ async def get_all_docentes(
     skip: int = 0,
     limit: int = 100,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
 ):
-    """Obtener todos los docentes"""
+    """Obtener todos los docentes (requiere permiso DOCENTE:READ)"""
     try:
         docentes = docente_use_case.get_all(skip=skip, limit=limit)
         return docentes
@@ -56,9 +58,9 @@ async def get_all_docentes(
 async def get_docente_by_id(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
 ):
-    """Obtener docente por ID"""
+    """Obtener docente por ID (requiere permiso DOCENTE:READ)"""
     try:
         docente = docente_use_case.get_by_id(docente_id)
         return docente
@@ -74,12 +76,50 @@ async def get_docente_by_id(
 async def get_docentes_by_departamento(
     departamento: str,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
 ):
-    """Obtener docentes por departamento"""
+    """Obtener docentes por departamento (requiere permiso DOCENTE:READ)"""
     try:
         docentes = docente_use_case.get_by_departamento(departamento)
         return docentes
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.put("/{docente_id}", response_model=Docente, status_code=status.HTTP_200_OK, summary="Actualizar docente completo", tags=["docentes"])
+async def update_docente_complete(
+    docente_id: int,
+    docente_data: DocenteSecurePatch,  # ✅ SCHEMA SEGURO PATCH
+    docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+):
+    """Actualizar completamente un docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
+    try:
+        docente = docente_use_case.update(docente_id, docente_data)
+        return docente
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+
+@router.patch("/{docente_id}", response_model=Docente, summary="Actualizar docente parcial", tags=["docentes"])
+async def update_docente(
+    docente_id: int,
+    docente_data: DocenteSecurePatch,  # ✅ SCHEMA SEGURO
+    docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
+    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+):
+    """Actualizar parcialmente un docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
+    try:
+        docente = docente_use_case.update(docente_id, docente_data)
+        return docente
     except HTTPException:
         raise
     except Exception:
@@ -92,9 +132,9 @@ async def get_docentes_by_departamento(
 async def delete_docente(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(require_permission(Permission.DOCENTE_DELETE))  # ✅ MIGRADO
 ):
-    """Eliminar un docente"""
+    """Eliminar un docente (requiere permiso DOCENTE:DELETE)"""
     try:
         success = docente_use_case.delete(docente_id)
         return {"message": "Docente eliminado exitosamente"}
