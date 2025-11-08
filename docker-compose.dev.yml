@@ -3,13 +3,13 @@ services:
   postgres:
     image: postgres:${POSTGRES_VERSION}
     container_name: sgh-postgres
-    restart: unless-stopped
+    restart: no 
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     networks:
       - sgh-network
     healthcheck:
@@ -23,10 +23,15 @@ services:
   agent:
     build:
       context: ./algo-agent
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: sgh-agent
-    restart: unless-stopped
+    restart: no
+    volumes:
+      - ./algo-agent:/app
+    networks:
+      - sgh-network
     environment:
+      PORT: ${AGENT_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -51,12 +56,15 @@ services:
   backend:
     build:
       context: ./backend/fastapi
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: sgh-backend
-    restart: unless-stopped
+    restart: no
     ports:
       - "${BACKEND_PORT}:8000"
+    volumes:
+      - ./backend/fastapi:/app
     environment:
+      BACKEND_PORT: ${BACKEND_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -70,6 +78,7 @@ services:
       PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE}
       PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
       NODE_ENV: ${NODE_ENV}
+      BACK_ENV: "development"
       CORS_ORIGINS: ${CORS_ORIGINS}
       test: "false"
     depends_on:
@@ -89,11 +98,21 @@ services:
   new-mobile:
     build:
       context: ./new-mobile
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: sgh-new-mobile
-    restart: unless-stopped
+    restart: no 
     ports:
       - "${MOBILE_PORT}:8100"
+    volumes:
+      - ./new-mobile/src:/app/src
+      - ./new-mobile/public:/app/public
+      - ./new-mobile/index.html:/app/index.html
+      - ./new-mobile/vite.config.ts:/app/vite.config.ts
+      - ./new-mobile/tailwind.config.js:/app/tailwind.config.js
+      - ./new-mobile/tsconfig.json:/app/tsconfig.json
+      - ./new-mobile/tsconfig.node.json:/app/tsconfig.node.json
+      - ./new-mobile/tsconfig.app.json:/app/tsconfig.app.json
+      - ./new-mobile/eslint.config.js:/app/eslint.config.js
     environment:
       NODE_ENV: ${NODE_ENV}
       VITE_API_URL: ${API_URL}
@@ -111,7 +130,7 @@ services:
 
 # Volúmenes para persistencia de datos
 volumes:
-  postgres_data:
+  postgres_data_dev:
     driver: local
 
 # Red personalizada para aislar los servicios

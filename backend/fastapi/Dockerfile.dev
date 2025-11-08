@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     wget \
     curl \
+    postgresql-client \
     make \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,11 +21,14 @@ RUN chmod +x /app/start.sh
 
 COPY . .
 
+# Crear directorio de logs
+RUN mkdir -p /app/logs
+
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
 
 USER appuser
 
-EXPOSE 8200
+EXPOSE 8000
 
-CMD ["fastapi", "run", "main.py", "--host", "0.0.0.0", "--port" , "8200"]
+CMD ["/app/start.sh"]
