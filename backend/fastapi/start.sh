@@ -26,6 +26,11 @@ if [ "$test" == "true" ]; then
     echo "🧪 Ejecutando pruebas con pytest..."
     exec pytest -v
 else
-    echo "🌟 Iniciando FastAPI..."
-    exec uvicorn main:app --host 0.0.0.0 --port 8000
+    if [ "$BACK_ENV" == "development" ]; then
+        echo "🔧 Modo Desarrollo Activado"
+        exec fastapi dev main.py --host 0.0.0.0 --port $BACKEND_PORT
+    else
+        echo "🌟 Iniciando FastAPI..."
+        exec uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT
+    fi
 fi
