@@ -16,7 +16,7 @@ class Settings:
     # API Configuration
     environment: str = os.getenv("NODE_ENV", "development")
     debug: bool = environment == "development"
-    
+
     # CORS
     @property
     def cors_origins(self) -> List[str]:
@@ -27,7 +27,12 @@ class Settings:
         raise ValueError(
             "CORS_ORIGINS no está definido correctamente en las variables de entorno."
         )
-        
+
+    # Usuario administrador inicial
+    initial_admin_name: str = os.getenv("INITIAL_ADMIN_USERNAME", "admin")
+    initial_admin_email: str = os.getenv("INITIAL_ADMIN_EMAIL", "admin@example.com")
+    initial_admin_password: str = os.getenv("INITIAL_ADMIN_PASSWORD")
+
     def __init__(self):
         # Validar configuraciones críticas
         if not all([self.database_url, self.postgres_db, self.postgres_user, self.postgres_password]):

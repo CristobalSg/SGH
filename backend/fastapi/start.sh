@@ -26,6 +26,9 @@ if [ "$test" == "true" ]; then
     echo "🧪 Ejecutando pruebas con pytest..."
     exec pytest -v
 else
+    echo "👩‍💻 Inicializando usuario administrador..."
+    python scripts/bootstrap_admin.py
+
     if [ "$BACK_ENV" == "development" ]; then
         echo "🔧 Modo Desarrollo Activado"
         exec fastapi dev main.py --host 0.0.0.0 --port $BACKEND_PORT

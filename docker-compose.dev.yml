@@ -64,6 +64,9 @@ services:
     volumes:
       - ./backend/fastapi:/app
     environment:
+      INITIAL_ADMIN_USERNAME: admin
+      INITIAL_ADMIN_PASSWORD: Admin123456*
+      INITIAL_ADMIN_EMAIL: admin@inf.uct.cl
       BACKEND_PORT: ${BACKEND_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
