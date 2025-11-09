@@ -1,153 +1,226 @@
+# 🧠 Backend API - Sistema de Gestión de Horarios
+
+API REST desarrollada con **FastAPI** bajo una **arquitectura hexagonal (Ports & Adapters)**, diseñada para la gestión de horarios académicos.  
+Incluye autenticación JWT, persistencia en PostgreSQL y despliegue mediante Docker y Kubernetes.
 
 ---
 
-### **/backend/README.md**
+## 🛠️ Stack Tecnológico
 
-# Gestión de horarios API (Hexagonal + FastAPI)
+| Componente | Descripción |
+|-------------|-------------|
+| ⚡ **FastAPI** | Framework web moderno, asíncrono y de alto rendimiento |
+| 🗃️ **SQLAlchemy** | ORM para manejo de la base de datos |
+| 🐘 **PostgreSQL** | Base de datos relacional |
+| 🔄 **Alembic** | Migraciones de esquema |
+| 🧩 **Pydantic** | Validación y serialización de datos |
+| 🔐 **JWT** | Autenticación basada en tokens |
+| 🧪 **pytest** | Framework de testing |
+| 🐳 **Docker & Compose** | Contenedorización y orquestación local |
+| ☸️ **Kubernetes** | Despliegue en entornos productivos |
 
-## 🛠️ Tecnologías Utilizadas
-- **FastAPI**: Framework web para APIs REST
-- **SQLAlchemy**: ORM para manejo de base de datos
-- **Alembic**: Migraciones de base de datos
-- **Pydantic**: Validación y serialización de datos
-- **PostgreSQL**: Base de datos relacional
-- **pytest**: Framework de pruebas unitarias
-- **pytest-cov**: Análisis de cobertura de código
+---
 
+## 🧱 Arquitectura Hexagonal
 
-## 📂 Estructura del Proyecto
-```
-fastapi/
-├── domain/              # Entidades y puertos (reglas del negocio)
-├── application/         # Casos de uso (orquestación del dominio)
-├── infrastructure/      # Adaptadores (repositorios, controladores HTTP, DB)
-├── tests/              # Pruebas unitarias e integración
-│   └── application/
-│       └── use_cases/
-├── migrations/         # Migraciones de base de datos (Alembic)
-├── main.py            # Composición de la app (inyección de dependencias)
-├── requirements.txt   # Dependencias del proyecto
-├── pytest.ini       # Configuración de pruebas
-└── Makefile.tests   # Comandos para ejecutar pruebas
-```
-
-## 🚀 Requisitos
-- Python 3.12+
-- PostgreSQL 16+
-- Entorno virtual (`venv`)
-
-## ⚙️ Instalación y Configuración
-
-### 1. Configuración del Entorno
-```bash
-# Crear entorno virtual
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Instalar dependencias desde requirements.txt
-pip install -r requirements.txt
-```
-
-### 2. Configuración de la Base de Datos
-
-1. Crear el usuario y la base de datos en PostgreSQL:
-```bash
-# Crear la base de datos (como usuario postgres)
-sudo -u postgres createdb db
-
-# Crear el usuario y asignar permisos (Cambiar variables como user, db, '' por credenciales que correspondan)
-sudo -u postgres psql -c "CREATE USER user WITH PASSWORD '';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE db TO user;"
-sudo -u postgres psql -d SGH -c "GRANT ALL ON SCHEMA public TO user;"
-```
-
-2. Configurar las variables de entorno:
-```bash
-# Crear archivo .env en /backend/fastapi
-echo "DB_URL=postgresql://user:password@localhost:port/db" > .env
-```
-
-3. Ejecutar las migraciones de la base de datos:
-```bash
-# Desde el directorio /backend/fastapi
-alembic upgrade head
-```
-
-### 3. Iniciar el Servidor
-```bash
-# Desde el directorio /backend/fastapi
-uvicorn main:app --reload --port 8000
-```
-
-### 4. Verificar la Instalación
-Para verificar que todo está funcionando correctamente:
-```bash
-# Probar la conexión a la base de datos
-curl -X GET http://localhost:8000/db/test-db
-```
-
-Deberías recibir una respuesta confirmando que la conexión a la base de datos es exitosa.
-
-## 🧪 Sistema de Pruebas
-
-El proyecto cuenta con un sistema completo de pruebas automatizadas que incluye:
-
-### Tipos de Pruebas Implementadas
-- **Pruebas Unitarias**: Testing de casos de uso y lógica de negocio
-- **Pruebas de Integración**: Testing de endpoints API y flujos completos
-- **Análisis de Cobertura**: Reportes detallados de cobertura de código
-
-### Estructura de Pruebas
-```
-tests/
+backend/
+├── api/
+│   └── v1/
+│       ├── api.py
+│       └── endpoints/
+│           ├── academic.py
+│           ├── auth.py
+│           ├── infrastructure.py
+│           ├── personnel.py
+│           ├── restrictions.py
+│           ├── schedule.py
+│           └── system.py
+│
+├── domain/
+│   ├── entities.py
+│   ├── models.py
+│   └── ports.py
+│
 ├── application/
 │   └── use_cases/
-│       └── test_restriccion_horario_use_cases.py    # Pruebas unitarias
-└── integration/
-    ├── conftest.py                                  # Configuración y fixtures
-    └── test_restricciones_api.py                   # Pruebas de integración API
-```
+│       ├── administrador_use_cases.py
+│       ├── asignatura_use_cases.py
+│       ├── bloque_use_cases.py
+│       ├── campus_use_cases.py
+│       ├── clase_use_cases.py
+│       ├── docente_use_cases.py
+│       ├── edificio_use_cases.py
+│       ├── estudiante_use_cases.py
+│       ├── restriccion_use_cases.py
+│       ├── restriccion_horario_use_cases.py
+│       ├── sala_use_cases.py
+│       ├── seccion_use_cases.py
+│       ├── user_auth_use_cases.py
+│       └── user_management_use_cases.py
+│
+├── infrastructure/
+│   ├── controllers/
+│   ├── database/
+│   ├── repositories/
+│   ├── auth.py
+│   └── dependencies.py
+│
+├── migrations/
+│   └── versions/
+│
+├── tests/
+│   ├── test_auth_api.py
+│   ├── test_docentes_api.py
+│   ├── test_asignaturas_api.py
+│   ├── ...
+│
+├── main.py
+├── config.py
+├── requirements.txt
+├── Dockerfile
+└── Dockerfile.test
 
-### Comandos de Pruebas
+---
+
+## 🚀 Inicio Rápido
+
+### 📦 Instalación y Entorno
+
 ```bash
-# Ejecutar todas las pruebas (unitarias + integración)
-make -f Makefile.tests test
+# Crear entorno virtual
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
 
-# Solo pruebas unitarias
-make -f Makefile.tests test-unit
+# Instalar dependencias
+pip install -r requirements.txt
 
-# Solo pruebas de integración
-make -f Makefile.tests test-integration
+El proyecto utiliza variables definidas en .env.development, ubicado en la raíz del monorepo.
+Ejemplo:
+DATABASE_URL=postgresql://user:password@localhost:5432/sgh
+JWT_SECRET=clave_super_secreta
+ENVIRONMENT=development
 
-# Pruebas con reporte de cobertura
-make -f Makefile.tests test-cov
 
-# Pruebas de API específicas
-make -f Makefile.tests test-api
-```
+🐳 Levantar Servicios con Docker Compose
+# Iniciar servicios (backend + db)
+docker compose --env-file .env.development up -d
 
-### Configuración de Testing
-- **SQLite in-memory**: Base de datos temporal para pruebas aisladas
-- **Fixtures**: Datos de prueba reutilizables
-- **pytest**: Framework principal con configuración en `pytest.ini`
-- **Makefile.tests**: Automatización de comandos de pruebas
+# Ver estado de los servicios
+docker compose --env-file .env.development ps
 
-## 📖 API Documentation
+# Logs del backend
+docker compose --env-file .env.development logs -f backend
 
-Una vez que el servidor esté ejecutándose, puedes acceder a la documentación interactiva de la API:
+# Acceder al contenedor
+docker compose --env-file .env.development exec backend bash
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+# Reconstruir imagen
+docker compose --env-file .env.development build backend
 
-## 🎯 Endpoints Principales
+# Detener servicios
+docker compose --env-file .env.development down
 
-### Restricciones
-- `GET /restricciones` - Listar restricciones (con paginación)
-- `POST /restricciones` - Crear nueva restricción
-- `GET /restricciones/{id}` - Obtener restricción por ID
-- `PUT /restricciones/{id}` - Actualizar restricción completa
-- `PATCH /restricciones/{id}` - Actualizar restricción parcial
-- `DELETE /restricciones/{id}` - Eliminar restricción
 
-### Testing Database
-- `GET /db/test-db` - Verificar conexión a la base de datos
+🧪 Testing
+Las pruebas están dockerizadas y usan pytest.
+# Levantar ambiente de test
+docker compose -f docker-compose.test.yml --env-file .env.development up -d
+
+# Ejecutar tests
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest -v
+
+# Con cobertura
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest --cov=. --cov-report=term-missing
+
+# Tests por módulo
+docker compose -f docker-compose.test.yml --env-file .env.development exec backend pytest tests/test_auth_api.py -v
+
+
+📖 Documentación API
+La documentación interactiva se encuentra disponible en:
+
+
+🔗 Swagger UI: https://sgh.inf.uct/api/docs
+
+
+Endpoints principales
+CategoríaEndpointsDescripción🔐 Auth & Users/auth, /usersRegistro, login, gestión de usuarios🎓 Académico/docentes, /asignaturas, /seccionesGestión académica🏫 Infraestructura/campus, /edificios, /salasAdministración de espacios físicos⏰ Horarios/bloques, /clases, /restricciones, /restricciones-horarioGestión de disponibilidad y planificación⚙️ Sistema/health, /db/test-dbEstado y verificación de servicios
+
+🔐 Autenticación
+La API usa JWT (JSON Web Tokens).
+Incluye el token en el header de tus peticiones:
+Authorization: Bearer <tu_token>
+
+
+🧰 Ejemplos de Uso (curl)
+Registro de usuario
+curl -X POST "http://localhost:8000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "docente@universidad.edu",
+    "contrasena": "Docente123!",
+    "nombre": "Juan",
+    "apellido": "Pérez"
+  }'
+
+Login (JSON)
+curl -X POST "http://localhost:8000/api/auth/login-json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "docente@universidad.edu",
+    "password": "Docente123!"
+  }'
+
+Consultar perfil
+curl -X GET "http://localhost:8000/api/auth/me" \
+  -H "Authorization: Bearer $TOKEN"
+
+Verificar conexión DB
+curl -X GET "http://localhost:8000/api/db/test-db"
+
+
+📊 Ejemplo de Flujo Completo
+# 1️⃣ Registrar usuario
+curl -X POST "http://localhost:8000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@universidad.edu","contrasena":"Admin123!","nombre":"Admin","apellido":"Sistema"}'
+
+# 2️⃣ Hacer login y guardar token
+TOKEN=$(curl -s -X POST "http://localhost:8000/api/auth/login-json" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@universidad.edu","password":"Admin123!"}' | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+# 3️⃣ Consultar perfil
+curl -X GET "http://localhost:8000/api/auth/me" -H "Authorization: Bearer $TOKEN"
+
+
+🧾 Notas Técnicas
+
+
+📅 Días de la semana: 1=Lunes … 7=Domingo
+
+
+⏰ Formato de hora: HH:MM (por ejemplo: "08:00", "14:30")
+
+
+⚠️ Códigos HTTP:
+
+
+✅ 200/201/204 — Éxito
+
+
+❌ 400/401/404/409 — Error del cliente
+
+
+💥 500 — Error interno del servidor
+
+
+
+
+
+📄 Licencia
+Este proyecto forma parte del monorepo SGH (Sistema de Gestión de Horarios)
+Distribuido bajo licencia MIT o la definida en el repositorio raíz.
+
+
