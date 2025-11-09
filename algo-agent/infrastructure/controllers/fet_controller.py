@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from domain.authorization import Permission, UserRole
+from domain.entities import User
 from infrastructure.dependencies import (
     get_user_management_use_case,
     require_permission

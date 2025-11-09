@@ -1,11 +1,13 @@
 from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, Callable
 
 from domain.entities import User
 from domain.authorization import Permission, UserRole
+from infrastructure.database.config import get_db
+from infrastructure.repositories.user_repository import SQLUserRepository
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
-
+from application.use_cases.user_management_use_cases import UserManagementUseCase
 from application.services.authorization_service import AuthorizationService
 
 def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
@@ -33,6 +35,23 @@ def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+def get_user_repository(db: Session = Depends(get_db)) -> SQLUserRepository:
+    """Dependency para obtener el repositorio de usuarios"""
+    return SQLUserRepository(db)
+
+def get_user_auth_use_case(
+    user_repository: SQLUserRepository = Depends(get_user_repository)
+) -> UserAuthUseCase:
+    """Dependency para obtener el caso de uso de autenticación"""
+    return UserAuthUseCase(user_repository)
+
+def get_current_user(
+    token: str = Depends(get_token_from_header),
+    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
+) -> User:
+    """Dependency para obtener el usuario actual desde el token"""
+    return auth_use_case.get_current_active_user(token)
+
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
@@ -44,13 +63,6 @@ def get_current_active_user(
         )
     return current_user
 
-def get_current_user(
-    token: str = Depends(get_token_from_header),
-    auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
-) -> User:
-    """Dependency para obtener el usuario actual desde el token"""
-    return auth_use_case.get_current_active_user(token)
-
 def get_current_admin_user(
     current_user: User = Depends(get_current_active_user),
     auth_use_case: UserAuthUseCase = Depends(get_user_auth_use_case)
@@ -58,6 +70,12 @@ def get_current_admin_user(
     """Dependency para obtener el usuario actual que debe ser administrador"""
     auth_use_case.require_admin(current_user)
     return current_user
+
+def get_user_management_use_case(
+    user_repository: SQLUserRepository = Depends(get_user_repository)
+) -> UserManagementUseCase:
+    return UserManagementUseCase(user_repository)
+
 
 
 def require_permission(permission: Permission) -> Callable:
