@@ -1,172 +1,101 @@
-SGH — Sistema de Gestión de Horario
+# SGH - Sistema de Gestión de Horario
 
-El proyecto SGH es un Sistema de Gestión de Horarios Académicos, desarrollado como un monorepo que integra todos los componentes del sistema: backend, frontend móvil, documentación técnica y algoritmo generador de horarios.
-Su arquitectura está pensada para facilitar la colaboración entre equipos, escalar en entornos distribuidos y mantener una base de código organizada.
+Este repositorio corresponde al proyecto **SGH (Sistema de Gestión de Horario)**.  
+El proyecto se organiza como un **monorepo**, con dos carpetas principales:
 
-📁 Estructura del repositorio
-SGH/
-├── .github/                  # Workflows y acciones de CI/CD (integración continua)
-├── .husky/                   # Hooks de git para validar commits antes de hacer push
-├── algorithm/                # Contiene el código fuente del algoritmo FET (generador de horarios)
-├── backend/                  # API principal (FastAPI, PostgreSQL, arquitectura hexagonal)
-├── deploy/                   # Archivos y scripts de despliegue (Docker, Kubernetes, etc.)
-├── docs/                     # Documentación técnica (diagramas UML, arquitectura y roles)
-├── mobile/                   # Versión antigua de la app móvil (Ionic / React Native anterior)
-├── new-mobile/               # Nueva base del frontend móvil y web (React + Vite + Tailwind)
-├── node_modules/             # Dependencias de Node.js (instaladas con pnpm)
-├── .env.development          # Variables de entorno para entorno local
-├── .gitignore                # Archivos y carpetas ignoradas por Git
-├── docker-compose.yml        # Orquestador de servicios principales (backend, DB, frontend)
-├── docker-compose.test.yml   # Entorno de testing automatizado
-├── commitlint.config.js      # Configuración de estilo de commits (Conventional Commits)
-├── LICENSE                   # Licencia del proyecto (MIT / GNU)
-├── package.json              # Configuración y scripts globales del monorepo
-├── pnpm-lock.yaml            # Bloqueo de dependencias instaladas
-└── README.md                 # Este archivo
+## 📂 Estructura del repositorio
 
-🧩 Descripción de carpetas principales
-🧠 algorithm/
+/backend   → Contendrá la lógica del servidor, API y conexión con la base de datos.
+/mobile    → Contendrá la aplicación móvil del sistema.
+/algorithm → Contendrá el código fuente de la aplicación FET, que se encarga de generar los horarios.
 
-Contiene el algoritmo de generación automática de horarios, basado en la herramienta FET (Free Educational Timetabling).
 
-Escrito en C++ y utiliza Qt 6.9.1 o superior.
+## 🚀 Instrucciones iniciales
 
-Su función es generar horarios válidos según restricciones académicas (disponibilidad de docentes, salas, bloques, etc.).
+1. **Clonar el repositorio:**
+Por HTTP:
+```bash
+git clone https://github.com/CristobalSg/SGH.git
+```
 
-Se comunica con el backend mediante archivos o endpoints personalizados.
-
-📄 Compilación:
-
+Por SSH:
+```bash
+git clone git@github.com:CristobalSg/SGH.git
+```
+2. **Navegar a la carpeta deseada:**
+```bash
+cd backend   # para trabajar en el backend
+cd mobile    # para trabajar en la app móvil
+cd algorithm # para trabajar en la integración del algoritmo
+```
+## Compilación del algoritmo de generación de horarios
+Para poder compilar el algoritmo es necesario tener instalados Qt 6.9.1 o superior, y compilador C++ compatible con C++17.
+```bash
 cd algorithm/fet-7.4.4
 qmake fet.pro
-make -j 16  # compila usando 16 hilos
+make -j 16 # suele demorar unos 3 minutos, casi 4
+```
+## Configurar permisos para inicialización con Docker
+```bash
+# Dar permisos al script de inicio
+chmod +x backend/fastapi/start.sh
+```
 
-⚙️ backend/
-
-Implementa la API REST del sistema usando FastAPI bajo una arquitectura hexagonal.
-Gestiona:
-
-Usuarios, autenticación JWT y roles (docentes, estudiantes, administradores)
-
-Asignaturas, clases, secciones, salas y restricciones
-
-Conexión con PostgreSQL y migraciones con Alembic
-
-📄 Tecnologías:
-FastAPI · SQLAlchemy · PostgreSQL · Docker · pytest · JWT
-
-📄 Ejemplo de estructura interna:
-
-backend/fastapi/
-├── api/                 # Endpoints (auth, docentes, asignaturas, etc.)
-├── application/         # Casos de uso (lógica del negocio)
-├── domain/              # Entidades y puertos
-├── infrastructure/      # Controladores, repositorios y DB
-├── tests/               # Pruebas automatizadas
-└── main.py              # Punto de entrada del backend
-
-📱 new-mobile/
-
-Carpeta que contiene la nueva base frontend del sistema SGH.
-Diseñada para reemplazar gradualmente la app anterior, con enfoque en escalabilidad y compatibilidad web/móvil.
-
-📄 Stack principal:
-
-⚡ Vite
-
-⚛️ React 19 + TypeScript
-
-🎨 Tailwind CSS
-
-🧱 Arquitectura limpia (capas de dominio, aplicación y presentación)
-
-📄 Ejemplo de estructura:
-
-src/
- ├─ components/   # Componentes reutilizables (UI)
- ├─ App.tsx
- ├─ main.tsx      # Punto de entrada
- └─ index.css     # Configuración de estilos
-
-
-📄 Scripts útiles:
-
-pnpm run dev        # Inicia el entorno local
-pnpm run build      # Compila para producción
-pnpm run lint       # Analiza el código
-pnpm run preview    # Visualiza la build
-
-🧾 docs/
-
-Contiene la documentación técnica y visual del proyecto.
-Incluye:
-
-Diagramas UML de casos de uso (Administrador, Alumno, Profesor)
-
-Diagramas de arquitectura y componentes (API, BD, frontend, etc.)
-
-Documentación de diseño creada con draw.io / diagrams.net
-
-📂 Ejemplo:
-
-docs/
-├── Diagramas de casos de uso/
-│   ├── Administrador.png
-│   ├── Alumno.png
-│   └── Profesor.png
-└── Diagramas de arquitectura/
-    ├── Diagrama_de_arquitectura_de_software.png
-    └── Diagrama_de_componentes.jpeg
-
-🧰 deploy/
-
-Carpeta dedicada al despliegue del sistema.
-Puede incluir:
-
-Archivos de configuración para entornos de producción (Kubernetes, Docker Swarm, etc.)
-
-Scripts automatizados de despliegue continuo (CI/CD)
-
-📱 mobile/
-
-Versión anterior de la aplicación móvil, desarrollada inicialmente con Ionic / React Native.
-Actualmente reemplazada por new-mobile/, pero se mantiene por compatibilidad y referencia histórica.
-
-🐳 Despliegue con Docker
-
-Para iniciar el sistema completo (backend + frontend + base de datos):
-
+### Levantar con Docker
+```bash
+# Iniciar todos los servicios (backend + frontend + base de datos)
 docker-compose --env-file .env.development up -d
 
+# Ver que todo esté funcionando
+docker-compose --env-file .env.development ps
+```
 
-Ver estado:
+### Acceder al sistema
+- **🌐 Aplicación web**: http://localhost:8100
+- **🔧 API del backend**: http://localhost:8000  
+- **📚 Documentación API**: http://localhost:8000/docs
 
-docker-compose ps
+## 🔄 Actualizar después de cambios en el código
 
+### Si alguien del equipo hizo cambios:
 
-Reiniciar un servicio:
+1. **Obtener cambios:**
+```bash
+git pull origin <rama>
+```
 
-docker-compose restart backend
+2. **Si solo cambió código** (archivos .py, .tsx, .css):
+```bash
+# ✅ NO hacer nada - Los cambios se ven automáticamente
+```
 
+3. **Si cambió dependencias** (package.json, requirements.txt):
+```bash
+# Reconstruir el servicio que cambió
+docker-compose --env-file .env.development build --no-cache mobile    # si cambió frontend
+docker-compose --env-file .env.development build --no-cache backend   # si cambió backend
 
-Parar todos los servicios:
+# Reiniciar servicios
+docker-compose --env-file .env.development up -d
+```
 
-docker-compose down
+## 📋 Comandos útiles
 
-🌍 Acceso al sistema
+```bash
+# Ver logs de todos los servicios
+docker-compose --env-file .env.development logs -f
 
-Aplicación Web: http://localhost:8100
+# Ver logs de un servicio específico
+docker-compose --env-file .env.development logs backend
+docker-compose --env-file .env.development logs mobile
 
-API Backend: http://localhost:8000
+# Parar todos los servicios
+docker-compose --env-file .env.development down
 
-Documentación API (Swagger): http://localhost:8000/docs
+# Reiniciar un servicio específico
+docker-compose --env-file .env.development restart backend
+```
 
-🧩 Archivos clave
-Archivo	Descripción
-.env.development	Variables de entorno locales
-docker-compose.yml	Define los servicios del proyecto
-docker-compose.test.yml	Configuración para testing
-package.json	Scripts y dependencias del monorepo
-commitlint.config.js	Estilo de commits (Conventional Commits)
-pnpm-lock.yaml	Versión bloqueada de dependencias
-LICENSE	Licencia del proyecto
+## ⚙️ Archivo de configuración (.env.development)
+
+El archivo `.env.development` debe contener todas las configuraciones necesarias en la carpeta raiz del proyecto.

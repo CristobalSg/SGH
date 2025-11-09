@@ -1,19 +1,39 @@
-.calendario-centro {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 20px;
-  box-sizing: border-box;
+/* Tab3.css */
+
+:root {
+  --ion-color-primary: #00f0ff; /* Azul eléctrico futurista */
+  --ion-color-light: #fff;
 }
 
-ion-datetime {
-  width: 90%;
-  max-width: 400px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+body, ion-app, ion-content {
+  background-color: #1e1e2f; /* Fondo oscuro futurista */
+  color: #fff;
+  font-family: 'Orbitron', sans-serif; /* Fuente futurista */
 }
-ion-datetime .datetime-text {
-  font-size: 16px;
-  color: #ffffff;
+
+ion-toolbar {
+  --background: #121224;
 }
+
+ion-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+ion-item {
+  --background: #2a2a40;
+  --border-radius: 12px;
+  margin: 8px 16px;
+  --box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+ion-item[slot="header"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+

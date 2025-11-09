@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
 # Base de datos PostgreSQL
   postgres:
@@ -8,6 +10,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -19,34 +23,6 @@ services:
       retries: 3
       start_period: 10s
 
-# Servicio del agente
-  agent:
-    build:
-      context: ./algo-agent
-      dockerfile: Dockerfile
-    container_name: sgh-agent
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      DB_URL: ${DB_URL}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
-      PYTHONPATH: ${PYTHONPATH}
-      PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE}
-      PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
-      NODE_ENV: ${NODE_ENV}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-
 # Backend FastAPI
   backend:
     build:
@@ -57,24 +33,19 @@ services:
     ports:
       - "${BACKEND_PORT}:8000"
     environment:
-      INITIAL_ADMIN_USERNAME: admin
-      INITIAL_ADMIN_PASSWORD: Admin123456*
-      INITIAL_ADMIN_EMAIL: admin@inf.uct.cl
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       DB_URL: ${DB_URL}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
       PYTHONPATH: ${PYTHONPATH}
       PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE}
       PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
       NODE_ENV: ${NODE_ENV}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      test: "false"
+    volumes:
+      - ./backend/fastapi:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,31 +53,41 @@ services:
       - sgh-network
     healthcheck:
       # CAMBIAR: Usar GET en lugar de HEAD/spider
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 -O /dev/null http://localhost:8000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 -O /dev/null http://localhost:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
-# Frontend React + Vite + Tailwind
-  new-mobile:
+# Frontend Ionic
+  mobile:
     build:
-      context: ./new-mobile
+      context: ./mobile
       dockerfile: Dockerfile
-    container_name: sgh-new-mobile
-    restart: always
+    container_name: sgh-mobile
+    restart: unless-stopped
     ports:
       - "${MOBILE_PORT}:8100"
     environment:
       NODE_ENV: ${NODE_ENV}
-      VITE_API_URL: ${API_URL}
+      IONIC_ENV: ${IONIC_ENV}
+      API_URL: ${API_URL}
+    volumes:
+      - ./mobile/aplicacion/src:/app/src
+      - ./mobile/aplicacion/public:/app/public
+      - ./mobile/aplicacion/capacitor.config.ts:/app/capacitor.config.ts
+      - ./mobile/aplicacion/ionic.config.json:/app/ionic.config.json
+      - ./mobile/aplicacion/vite.config.ts:/app/vite.config.ts
+      - ./mobile/aplicacion/tsconfig.json:/app/tsconfig.json
+      # AGREGAR: tsconfig.node.json al volume mount
+      - ./mobile/aplicacion/tsconfig.node.json:/app/tsconfig.node.json
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - sgh-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 --spider http://127.0.0.1:8100 || exit 1"]
+      # CAMBIAR: Usar GET en lugar de HEAD/spider
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --timeout=10 -O /dev/null http://localhost:8100 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

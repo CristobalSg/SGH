@@ -1,101 +1,42 @@
+from dataclasses import dataclass
 from typing import Optional, List
-from fastapi import HTTPException, status
-from domain.entities import SeccionCreate, Seccion
-from domain.schemas import SeccionSecureCreate, SeccionSecurePatch
-from infrastructure.repositories.seccion_repository import SeccionRepository
+from domain.ports import SeccionRepository
+from domain.models import Seccion
 
+@dataclass
 class SeccionUseCases:
-    def __init__(self, seccion_repository: SeccionRepository):
-        self.seccion_repository = seccion_repository
+    repo: SeccionRepository
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Seccion]:
-        """Obtener todas las secciones con paginación"""
-        return self.seccion_repository.get_all(skip=skip, limit=limit)
+    def get_all(self) -> List[Seccion]:
+        return self.repo.get_all()
 
-    def get_by_id(self, seccion_id: int) -> Seccion:
-        """Obtener sección por ID"""
-        seccion = self.seccion_repository.get_by_id(seccion_id)
-        if not seccion:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sección no encontrada"
-            )
-        return seccion
+    def get_by_id(self, id: int) -> Optional[Seccion]:
+        return self.repo.get_by_id(id)
 
-    def create(self, seccion_data: SeccionSecureCreate) -> Seccion:
-        """Crear una nueva sección"""
-        # Verificar si ya existe una sección con el mismo código
-        existing_seccion = self.seccion_repository.get_by_codigo(seccion_data.codigo)
-        if existing_seccion:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ya existe una sección con ese código"
-            )
-        
-        # Convertir schema seguro a entidad
-        seccion_create = SeccionCreate(**seccion_data.model_dump())
-        return self.seccion_repository.create(seccion_create)
+    def create(self, codigo: str, anio: int, semestre: int, asignatura_id: int, cupos: int) -> Seccion:
+        seccion = Seccion(
+            codigo=codigo,
+            anio=anio,
+            semestre=semestre,
+            asignatura_id=asignatura_id,
+            cupos=cupos
+        )
+        return self.repo.add(seccion)
 
-    def update(self, seccion_id: int, seccion_data: SeccionSecurePatch) -> Seccion:
-        """Actualizar una sección"""
-        # Verificar que la sección existe
-        existing_seccion = self.seccion_repository.get_by_id(seccion_id)
-        if not existing_seccion:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sección no encontrada"
-            )
-        
-        # Convertir schema seguro a diccionario y filtrar valores None
-        update_data = {k: v for k, v in seccion_data.model_dump().items() if v is not None}
-        
-        if not update_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se proporcionaron campos para actualizar"
-            )
-        
-        updated_seccion = self.seccion_repository.update(seccion_id, update_data)
-        if not updated_seccion:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al actualizar la sección"
-            )
-        return updated_seccion
+    def update(self, id: int, codigo: str = None, anio: int = None,
+              semestre: int = None, cupos: int = None) -> Optional[Seccion]:
+        seccion = self.repo.get_by_id(id)
+        if seccion:
+            if codigo:
+                seccion.codigo = codigo
+            if anio:
+                seccion.anio = anio
+            if semestre:
+                seccion.semestre = semestre
+            if cupos:
+                seccion.cupos = cupos
+            return self.repo.update(seccion)
+        return None
 
-    def delete(self, seccion_id: int) -> bool:
-        """Eliminar una sección"""
-        # Verificar que la sección existe
-        existing_seccion = self.seccion_repository.get_by_id(seccion_id)
-        if not existing_seccion:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sección no encontrada"
-            )
-        
-        # Verificar si tiene clases asociadas
-        if self.seccion_repository.tiene_clases(seccion_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede eliminar la sección porque tiene clases asociadas"
-            )
-        
-        success = self.seccion_repository.delete(seccion_id)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al eliminar la sección"
-            )
-        return success
-
-    def get_by_asignatura(self, asignatura_id: int) -> List[Seccion]:
-        """Obtener secciones de una asignatura específica"""
-        return self.seccion_repository.get_by_asignatura(asignatura_id)
-
-    def get_by_periodo(self, anio: int, semestre: int) -> List[Seccion]:
-        """Obtener secciones por año y semestre"""
-        return self.seccion_repository.get_by_periodo(anio, semestre)
-
-    def get_secciones_activas(self) -> List[Seccion]:
-        """Obtener secciones activas"""
-        return self.seccion_repository.get_secciones_activas()
+    def delete(self, id: int) -> bool:
+        return self.repo.delete(id)

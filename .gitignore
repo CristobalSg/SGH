@@ -4,7 +4,6 @@
 .env.development
 .env.production
 .env.*.local
-env_development.txt
 
 # Docker
 docker-compose.override.yml
@@ -71,5 +70,3 @@ volumes/
 dev-scripts/
 personal-notes.md
 TODO.local.md
-
-node_modules/

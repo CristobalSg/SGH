@@ -1,8 +1,0 @@
-#!/bin/sh
-# Cargar NVM y Node para que husky pueda usar commitlint
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-ROOT_DIR="$(git rev-parse --show-toplevel)"
-"$ROOT_DIR/node_modules/.bin/commitlint" --edit "$1"
