@@ -123,21 +123,6 @@ def ensure_initial_admin() -> None:
                 session.add(user)
                 logger.info("Usuario admin %s actualizado", admin_email)
 
-        admin_entry = admin_repo.get_by_user_id(user.id)
-        if not admin_entry:
-            admin_repo.create(
-                AdministradorCreate(
-                    user_id=user.id,
-                    #permisos=ROLE_PERMISSIONS[UserRole.ADMINISTRADOR],
-                    role = UserRole.ADMINISTRADOR,
-                )
-            )
-            logger.info("Registro de administrador creado para user_id %s", user.id)
-        else:
-            if admin_entry.role != UserRole.ADMINISTRADOR:
-                admin_entry.role = UserRole.ADMINISTRADOR
-                session.add(admin_entry)
-                logger.info("Permisos del administrador %s actualizados", admin_email)
 
 
 def main() -> None:
