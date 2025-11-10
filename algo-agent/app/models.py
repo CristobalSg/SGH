@@ -1,6 +1,18 @@
-from sqlalchemy import Column, Integer, String, Time, ForeignKey, Text, Boolean, DateTime, func
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Time,
+    func,
+)
 from sqlalchemy.orm import relationship
-from infrastructure.database.config import Base
+
+from app.database import Base
+
 
 class User(Base):
     __tablename__ = "user"
@@ -13,41 +25,44 @@ class User(Base):
     activo = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.current_timestamp())
     updated_at = Column(DateTime, default=func.current_timestamp())
-    
-    # Relaciones inversas
+
     docente = relationship("Docente", back_populates="user", uselist=False)
     estudiante = relationship("Estudiante", back_populates="user", uselist=False)
     administrador = relationship("Administrador", back_populates="user", uselist=False)
+
 
 class Docente(Base):
     __tablename__ = "docente"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(Integer, ForeignKey("user.id"))
     departamento = Column(Text)
-    
+
     user = relationship("User", back_populates="docente")
     clases = relationship("Clase", back_populates="docente")
     restricciones = relationship("Restriccion", back_populates="docente")
     restricciones_horario = relationship("RestriccionHorario", back_populates="docente")
 
+
 class Estudiante(Base):
     __tablename__ = "estudiante"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(Integer, ForeignKey("user.id"))
     matricula = Column(Text)
-    
+
     user = relationship("User", back_populates="estudiante")
+
 
 class Administrador(Base):
     __tablename__ = "administrador"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(Integer, ForeignKey("user.id"))
     permisos = Column(Text)
-    
+
     user = relationship("User", back_populates="administrador")
+
 
 class Campus(Base):
     __tablename__ = "campus"
@@ -55,33 +70,36 @@ class Campus(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(Text, nullable=False)
     direccion = Column(Text)
-    
+
     edificios = relationship("Edificio", back_populates="campus")
+
 
 class Edificio(Base):
     __tablename__ = "edificio"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    campus_id = Column(Integer, ForeignKey('campus.id'))
+    campus_id = Column(Integer, ForeignKey("campus.id"))
     nombre = Column(Text, nullable=False)
     pisos = Column(Integer)
-    
+
     campus = relationship("Campus", back_populates="edificios")
     salas = relationship("Sala", back_populates="edificio")
+
 
 class RestriccionHorario(Base):
     __tablename__ = "restriccion_horario"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    docente_id = Column(Integer, ForeignKey('docente.id'))
+    docente_id = Column(Integer, ForeignKey("docente.id"))
     dia_semana = Column(Integer)
     hora_inicio = Column(Time)
     hora_fin = Column(Time)
     disponible = Column(Boolean, default=True)
     descripcion = Column(Text, nullable=True)
     activa = Column(Boolean, default=True)
-    
+
     docente = relationship("Docente", back_populates="restricciones_horario")
+
 
 class Asignatura(Base):
     __tablename__ = "asignatura"
@@ -90,8 +108,9 @@ class Asignatura(Base):
     codigo = Column(Text, nullable=False)
     nombre = Column(Text, nullable=False)
     creditos = Column(Integer)
-    
+
     secciones = relationship("Seccion", back_populates="asignatura")
+
 
 class Seccion(Base):
     __tablename__ = "seccion"
@@ -100,25 +119,27 @@ class Seccion(Base):
     codigo = Column(Text, nullable=False)
     anio = Column(Integer)
     semestre = Column(Integer)
-    asignatura_id = Column(Integer, ForeignKey('asignatura.id'))
+    asignatura_id = Column(Integer, ForeignKey("asignatura.id"))
     cupos = Column(Integer)
-    
+
     asignatura = relationship("Asignatura", back_populates="secciones")
     clases = relationship("Clase", back_populates="seccion")
+
 
 class Sala(Base):
     __tablename__ = "sala"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    edificio_id = Column(Integer, ForeignKey('edificio.id'))
+    edificio_id = Column(Integer, ForeignKey("edificio.id"))
     codigo = Column(Text, nullable=False)
     capacidad = Column(Integer)
     tipo = Column(Text)
     disponible = Column(Boolean, default=True)
     equipamiento = Column(Text)
-    
+
     edificio = relationship("Edificio", back_populates="salas")
     clases = relationship("Clase", back_populates="sala")
+
 
 class Bloque(Base):
     __tablename__ = "bloque"
@@ -127,34 +148,53 @@ class Bloque(Base):
     dia_semana = Column(Integer)
     hora_inicio = Column(Time)
     hora_fin = Column(Time)
-    
+
     clases = relationship("Clase", back_populates="bloque")
+
 
 class Clase(Base):
     __tablename__ = "clase"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    seccion_id = Column(Integer, ForeignKey('seccion.id'))
-    docente_id = Column(Integer, ForeignKey('docente.id'))
-    sala_id = Column(Integer, ForeignKey('sala.id'))
-    bloque_id = Column(Integer, ForeignKey('bloque.id'))
+    seccion_id = Column(Integer, ForeignKey("seccion.id"))
+    docente_id = Column(Integer, ForeignKey("docente.id"))
+    sala_id = Column(Integer, ForeignKey("sala.id"))
+    bloque_id = Column(Integer, ForeignKey("bloque.id"))
     estado = Column(Text)
-    
+
     seccion = relationship("Seccion", back_populates="clases")
     docente = relationship("Docente", back_populates="clases")
     sala = relationship("Sala", back_populates="clases")
     bloque = relationship("Bloque", back_populates="clases")
 
+
 class Restriccion(Base):
     __tablename__ = "restriccion"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    docente_id = Column(Integer, ForeignKey('docente.id'))
+    docente_id = Column(Integer, ForeignKey("docente.id"))
     tipo = Column(Text)
     valor = Column(Text)
     prioridad = Column(Integer)
     restriccion_blanda = Column(Boolean, default=False)
     restriccion_dura = Column(Boolean, default=False)
     activa = Column(Boolean, default=True)
-    
+
     docente = relationship("Docente", back_populates="restricciones")
+
+
+__all__ = [
+    "User",
+    "Docente",
+    "Estudiante",
+    "Administrador",
+    "Campus",
+    "Edificio",
+    "RestriccionHorario",
+    "Asignatura",
+    "Seccion",
+    "Sala",
+    "Bloque",
+    "Clase",
+    "Restriccion",
+]
