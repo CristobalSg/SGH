@@ -12,7 +12,7 @@ echo "✅ PostgreSQL listo!"
 
 # Ejecutar migraciones
 echo "📊 Ejecutando migraciones de Alembic..."
-alembic upgrade head
+alembic -c .config/alembic/alembic.ini upgrade head
 
 if [ $? -eq 0 ]; then
     echo "✅ Migraciones ejecutadas correctamente"
