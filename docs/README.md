@@ -1,11 +1,37 @@
-# 📘 Documentación de Diagramas
+# 📘 Documentación del Proyecto SGH
 
-Este directorio contiene los **diagramas UML y de arquitectura** utilizados en el proyecto **SGH (Sistema de Gestión de Horarios)**.
-Su objetivo es describir los distintos roles del sistema, la interacción entre componentes y la estructura general del software.
+Este directorio contiene la **documentación técnica completa** del proyecto **SGH (Sistema de Gestión de Horarios)**, incluyendo diagramas UML, arquitectura del sistema y documentación de seguridad.
 
 ---
 
 ## 📂 Estructura de la carpeta
+
+### 🔒 Documentación de Seguridad
+
+La carpeta **`security/`** contiene documentación exhaustiva sobre seguridad del sistema, alineada con **OWASP A04:2021 - Insecure Design**.
+
+| Archivo | Descripción |
+|---------|-------------|
+| **[README.md](./security/README.md)** | Índice general y guía de uso de la documentación de seguridad |
+| **[security-checklist.md](./security/security-checklist.md)** | Checklist completa de controles de seguridad (177 controles, 67% implementados) |
+| **[threat-analysis.md](./security/threat-analysis.md)** | Análisis detallado de amenazas usando metodología STRIDE (20 amenazas identificadas) |
+| **[threat-diagrams.md](./security/threat-diagrams.md)** | Diagramas visuales de arquitectura de seguridad, flujos de datos y superficie de ataque |
+| **[mitigation-controls.md](./security/mitigation-controls.md)** | Controles de mitigación implementados y planificados (105 controles totales) |
+| **[incident-response.md](./security/incident-response.md)** | Plan completo de respuesta a incidentes de seguridad con playbooks |
+
+#### 🎯 Highlights de Seguridad
+
+- ✅ **RBAC Granular**: Sistema de roles y permisos bien implementado
+- ✅ **Autenticación JWT**: Tokens seguros con RS256
+- ✅ **Validación Robusta**: Pydantic + Middlewares de sanitización
+- ✅ **Protección contra Inyección**: ORM SQLAlchemy con prepared statements
+- ✅ **Rate Limiting**: Protección contra ataques de fuerza bruta y DoS
+- 🔄 **En desarrollo**: Token blacklist, auditoría completa, MFA
+- ⏳ **Planificado**: WAF, DDoS protection, monitoring avanzado
+
+---
+
+## 📂 Diagramas y Arquitectura
 
 ### 🧩 Diagramas de casos de uso
 
