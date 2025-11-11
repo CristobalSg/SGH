@@ -1,130 +1,71 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { RestriccionHorarioRepositoryHttp } from "../../infrastructure/repositories/RestriccionHorarioRepositoryHttp";
-import type { DayOfWeek, RestriccionHorario } from "../../domain/restricciones/restriccionHorario";
+import { useState, useEffect } from "react";
+import { restrictionService, type RestriccionHorarioInput, type RestriccionHorarioView } from "../../infrastructure/services/restrictionService";
 
-export interface RestriccionHorarioView {
-  id: number;
-  docenteId: number;
-  day: DayOfWeek;
-  start: string;
-  end: string;
-  disponible: boolean;
-  descripcion?: string | null;
-  activa: boolean;
-}
-
-export interface RestriccionHorarioCreateInput {
-  dia_semana: DayOfWeek;
-  hora_inicio: string;
-  hora_fin: string;
-  disponible: boolean;
-  descripcion?: string | null;
-}
-
-const formatTime = (value: string) => {
-  if (!value) return value;
-  // El backend suele devolver HH:mm:ss; mostramos HH:mm
-  return value.slice(0, 5);
-};
-
-const normalizeView = (item: RestriccionHorario): RestriccionHorarioView => ({
-  id: item.id,
-  docenteId: item.docente_id,
-  day: item.dia_semana,
-  start: formatTime(item.hora_inicio),
-  end: formatTime(item.hora_fin),
-  disponible: item.disponible,
-  descripcion: item.descripcion,
-  activa: item.activa,
-});
-
-const sortByDayAndTime = (a: RestriccionHorarioView, b: RestriccionHorarioView) => {
-  if (a.day !== b.day) return a.day - b.day;
-  return a.start.localeCompare(b.start);
-};
-
-export function useDocenteHorarioRestrictions() {
-  const repo = useMemo(() => new RestriccionHorarioRepositoryHttp(), []);
-  const [docenteId, setDocenteId] = useState<number | null>(null);
+export const useDocenteHorarioRestrictions = () => {
   const [restricciones, setRestricciones] = useState<RestriccionHorarioView[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const fetchMisRestricciones = async () => {
     setLoading(true);
     setError(null);
     try {
-      const docente = await repo.getMyDocenteId();
-      setDocenteId(docente);
-      const data = await repo.listMine();
-      setRestricciones(data.map(normalizeView).sort(sortByDayAndTime));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las restricciones.");
-      setRestricciones([]);
+      const data = await restrictionService.getMisRestricciones();
+      setRestricciones(data);
+    } catch (e: any) {
+      setError(e?.message ?? "Error al cargar restricciones");
     } finally {
       setLoading(false);
     }
-  }, [repo]);
+  };
 
   useEffect(() => {
-    load();
-  }, [load]);
+    fetchMisRestricciones();
+  }, []);
 
-  const addRestriction = useCallback(async (payload: RestriccionHorarioCreateInput) => {
-    if (!docenteId) throw new Error("No se pudo determinar el docente asociado.");
+  const addRestriction = async (input: RestriccionHorarioInput) => {
     setSaving(true);
     setError(null);
     try {
-      const created = await repo.createMine({
-        docente_id: docenteId,
-        ...payload,
-      });
-      setRestricciones((prev) => [...prev, normalizeView(created)].sort(sortByDayAndTime));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la restricción.");
-      throw err;
+      await restrictionService.createForDocente(input);
+      await fetchMisRestricciones();
+    } catch (e: any) {
+      setError(e?.message ?? "Error al agregar restricción");
+      throw e;
     } finally {
       setSaving(false);
     }
-  }, [docenteId, repo]);
+  };
 
-  const updateRestriction = useCallback(async (id: number, payload: RestriccionHorarioCreateInput) => {
-    if (!docenteId) throw new Error("No se pudo determinar el docente asociado.");
+  const updateRestriction = async (id: number, input: RestriccionHorarioInput) => {
     setSaving(true);
     setError(null);
     try {
-      const updated = await repo.updateMine(id, {
-        docente_id: docenteId,
-        ...payload,
-      });
-      setRestricciones((prev) =>
-        prev
-          .map((item) => (item.id === id ? normalizeView(updated) : item))
-          .sort(sortByDayAndTime),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo actualizar la restricción.");
-      throw err;
+      await restrictionService.update(id, input);
+      await fetchMisRestricciones();
+    } catch (e: any) {
+      setError(e?.message ?? "Error al actualizar restricción");
+      throw e;
     } finally {
       setSaving(false);
     }
-  }, [docenteId, repo]);
+  };
 
-  const deleteRestriction = useCallback(async (id: number) => {
+  const deleteRestriction = async (id: number) => {
     setPendingDelete(id);
     setError(null);
     try {
-      await repo.deleteMine(id);
-      setRestricciones((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo eliminar la restricción.");
-      throw err;
+      await restrictionService.delete(id);
+      await fetchMisRestricciones();
+    } catch (e: any) {
+      setError(e?.message ?? "Error al eliminar restricción");
+      throw e;
     } finally {
       setPendingDelete(null);
     }
-  }, [repo]);
+  };
 
   return {
     restricciones,
@@ -132,9 +73,33 @@ export function useDocenteHorarioRestrictions() {
     saving,
     pendingDelete,
     error,
-    refetch: load,
     addRestriction,
     updateRestriction,
     deleteRestriction,
+    refetch: fetchMisRestricciones,
   };
+};
+
+// Ejemplo de obtención de datos desde el formulario
+const dia_semana = 0; // Lunes
+const hora_inicio_input = "21:31"; // valor del input type="time"
+const hora_fin_input = "22:31";    // valor del input type="time"
+const docente_id = 1;
+
+// Convierte la hora a formato ISO (solo hora, fecha ficticia)
+function horaToISO(hora: string): string {
+  // hora: "21:31" → "1970-01-01T21:31:00Z"
+  return new Date(`1970-01-01T${hora}:00Z`).toISOString();
 }
+
+const restriccion = {
+  dia_semana,
+  hora_inicio: horaToISO(hora_inicio_input), // "1970-01-01T21:31:00.000Z"
+  hora_fin: horaToISO(hora_fin_input),       // "1970-01-01T22:31:00.000Z"
+  disponible: true,
+  descripcion: "string",
+  activa: true,
+  docente_id,
+};
+
+export type { RestriccionHorarioInput, RestriccionHorarioView };

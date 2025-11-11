@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import dayjs from "dayjs";
 import { Modal, Form, Select, TimePicker, Input, Switch } from "antd";
-import type { RestriccionHorarioCreateInput, RestriccionHorarioView } from "../../hooks/useDocenteHorarioRestrictions";
+import type { RestriccionHorarioInput, RestriccionHorarioView } from "../../hooks/useDocenteHorarioRestrictions";
 
 const { RangePicker } = TimePicker;
 const { TextArea } = Input;
@@ -9,7 +9,7 @@ const { TextArea } = Input;
 interface AddRestrictionFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: RestriccionHorarioCreateInput, id?: number) => Promise<void> | void;
+  onSubmit: (data: RestriccionHorarioInput, id?: number) => Promise<void> | void;
   saving?: boolean;
   mode?: "create" | "edit";
   initialValues?: RestriccionHorarioView | null;
@@ -40,10 +40,11 @@ const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
 
     if (mode === "edit" && initialValues) {
       form.setFieldsValue({
-        dia: initialValues.day,
+        dia: initialValues.dia_semana,
         horas: [
-          dayjs(initialValues.start, "HH:mm"),
-          dayjs(initialValues.end, "HH:mm"),
+          // Parse ISO timestamps (hora_inicio / hora_fin) into dayjs objects for the TimePicker
+          dayjs(initialValues.hora_inicio),
+          dayjs(initialValues.hora_fin),
         ],
         descripcion: initialValues.descripcion ?? "",
         disponible: initialValues.disponible,
@@ -54,24 +55,33 @@ const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
     }
   }, [open, mode, initialValues, form]);
 
-  const handleOk = async () => {
-    const values = await form.validateFields();
-    const [startTime, endTime] = values.horas;
-    const payload: RestriccionHorarioCreateInput = {
-      dia_semana: values.dia,
-      hora_inicio: startTime.format("HH:mm:ss"),
-      hora_fin: endTime.format("HH:mm:ss"),
-      descripcion: values.descripcion?.trim() || undefined,
-      disponible: values.disponible ?? false,
-    };
-    await onSubmit(payload, initialValues?.id);
-    form.resetFields();
+const handleOk = async () => {
+  const values = await form.validateFields();
+  const [startTime, endTime] = values.horas;
+
+  const payload = {
+    dia_semana: Number(values.dia), // asegura que sea número
+    hora_inicio: horaToBackendFormat(startTime),
+    hora_fin: horaToBackendFormat(endTime),
+    descripcion: values.descripcion?.trim() || "",
+    disponible: !!values.disponible,
+    activa: true,
+    docente_id: 1, // ⚠️ si tu usuario logeado tiene ID dinámico, reemplazalo por su valor
   };
+  await onSubmit(payload, initialValues?.id);
+  form.resetFields();
+};
+
+function horaToBackendFormat(hora: dayjs.Dayjs): string {
+  return hora.format("HH:mm:ss");
+}
+
 
   const handleCancel = () => {
     form.resetFields();
     onClose();
   };
+
 
   return (
     <Modal
