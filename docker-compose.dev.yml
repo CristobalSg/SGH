@@ -63,27 +63,25 @@ services:
       - "${BACKEND_PORT}:8000"
     volumes:
       - ./backend/fastapi:/app
+    env_file:
+      - .env.development
     environment:
+      # Sobrescribir solo las variables que necesitan valores hardcoded
       INITIAL_ADMIN_USERNAME: admin
       INITIAL_ADMIN_PASSWORD: Admin123456*
       INITIAL_ADMIN_EMAIL: admin@inf.uct.cl
-      BACKEND_PORT: ${BACKEND_PORT}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      DB_URL: ${DB_URL}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
-      PYTHONPATH: ${PYTHONPATH}
-      PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE}
-      PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
-      NODE_ENV: ${NODE_ENV}
       BACK_ENV: "development"
-      CORS_ORIGINS: ${CORS_ORIGINS}
       test: "false"
+      # Variables de desarrollo para docente
+      DEV_DOCENTE_NAME: ${DEV_DOCENTE_NAME}
+      DEV_DOCENTE_EMAIL: ${DEV_DOCENTE_EMAIL}
+      DEV_DOCENTE_PASSWORD: ${DEV_DOCENTE_PASSWORD}
+      DEV_DOCENTE_DEPARTAMENTO: ${DEV_DOCENTE_DEPARTAMENTO}
+      # Variables de desarrollo para estudiante
+      DEV_ESTUDIANTE_NAME: ${DEV_ESTUDIANTE_NAME}
+      DEV_ESTUDIANTE_EMAIL: ${DEV_ESTUDIANTE_EMAIL}
+      DEV_ESTUDIANTE_PASSWORD: ${DEV_ESTUDIANTE_PASSWORD}
+      DEV_ESTUDIANTE_MATRICULA: ${DEV_ESTUDIANTE_MATRICULA}
     depends_on:
       postgres:
         condition: service_healthy

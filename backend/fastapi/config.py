@@ -33,6 +33,17 @@ class Settings:
     initial_admin_email: str = os.getenv("INITIAL_ADMIN_EMAIL", "admin@example.com")
     initial_admin_password: str = os.getenv("INITIAL_ADMIN_PASSWORD")
 
+    # Usuarios de desarrollo 
+    dev_docente_name: str = os.getenv("DEV_DOCENTE_NAME")
+    dev_docente_email: str = os.getenv("DEV_DOCENTE_EMAIL")
+    dev_docente_password: str = os.getenv("DEV_DOCENTE_PASSWORD")
+    dev_docente_departamento: str = os.getenv("DEV_DOCENTE_DEPARTAMENTO", "INFORMATICA")
+    
+    dev_estudiante_name: str = os.getenv("DEV_ESTUDIANTE_NAME")
+    dev_estudiante_email: str = os.getenv("DEV_ESTUDIANTE_EMAIL")
+    dev_estudiante_password: str = os.getenv("DEV_ESTUDIANTE_PASSWORD")
+    dev_estudiante_matricula: str = os.getenv("DEV_ESTUDIANTE_MATRICULA", "2024001")
+
     def __init__(self):
         # Validar configuraciones críticas
         if not all([self.database_url, self.postgres_db, self.postgres_user, self.postgres_password]):
