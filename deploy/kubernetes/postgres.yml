@@ -8,7 +8,7 @@ spec:
   bootstrap:
     initdb:
       database: sgh_production
-      owner: sgh
+      owner: sgh_admin
       secret:
         name: postgres-secret
 
