@@ -2,7 +2,7 @@ from config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from api.v1.api import api_router
+from api.api import api_router
 from application.middlewares import (
     SanitizationMiddleware,
     RateLimitMiddleware,

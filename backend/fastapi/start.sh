@@ -12,7 +12,7 @@ echo "✅ PostgreSQL listo!"
 
 # Ejecutar migraciones
 echo "📊 Ejecutando migraciones de Alembic..."
-alembic upgrade head
+alembic -c .config/alembic/alembic.ini upgrade head
 
 if [ $? -eq 0 ]; then
     echo "✅ Migraciones ejecutadas correctamente"
@@ -28,13 +28,6 @@ if [ "$test" == "true" ]; then
 else
     echo "👩‍💻 Inicializando usuario administrador..."
     python scripts/bootstrap_admin.py
-
-    # En desarrollo, crear usuarios de prueba (docente y estudiante)
-    # Detectar si estamos en desarrollo (NODE_ENV o BACK_ENV)
-    if [ "$BACK_ENV" == "development" ] || [ "$NODE_ENV" == "development" ]; then
-        echo "🎓 Inicializando usuarios de desarrollo..."
-        python scripts/bootstrap_dev_users.py || echo "⚠️  Usuarios de desarrollo no configurados o ya existen"
-    fi
 
     if [ "$BACK_ENV" == "development" ] || [ "$NODE_ENV" == "development" ]; then
         echo "🔧 Modo Desarrollo Activado"

@@ -44,12 +44,12 @@ const normalizeDocente = (item: ApiDocente): DocenteSummary => ({
 
 export class UserRepositoryHttp implements UserRepository {
   async listUsers(): Promise<UserSummary[]> {
-    const { data } = await http.get<ApiUser[]>("/users", { params: { limit: 500 } });
+    const { data } = await http.get<ApiUser[]>("/users/", { params: { limit: 500 } });
     return data.map(normalizeUser);
   }
 
   async listDocentes(): Promise<DocenteSummary[]> {
-    const { data } = await http.get<ApiDocente[]>("/docentes", { params: { limit: 500 } });
+    const { data } = await http.get<ApiDocente[]>("/docentes/", { params: { limit: 500 } });
     return data.map(normalizeDocente);
   }
 }
