@@ -6,6 +6,9 @@ from domain.entities import User
 from domain.authorization import Permission, UserRole
 from infrastructure.database.config import get_db
 from infrastructure.repositories.user_repository import SQLUserRepository
+from infrastructure.repositories.docente_repository import DocenteRepository
+from infrastructure.repositories.estudiante_repository import SQLEstudianteRepository
+from infrastructure.repositories.administrador_repository import SQLAdministradorRepository
 from application.use_cases.user_management_use_cases import UserManagementUseCase
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
 from application.services.authorization_service import AuthorizationService
@@ -14,11 +17,31 @@ def get_user_repository(db: Session = Depends(get_db)) -> SQLUserRepository:
     """Dependency para obtener el repositorio de usuarios"""
     return SQLUserRepository(db)
 
+def get_docente_repository(db: Session = Depends(get_db)) -> DocenteRepository:
+    """Dependency para obtener el repositorio de docentes"""
+    return DocenteRepository(db)
+
+def get_estudiante_repository(db: Session = Depends(get_db)) -> SQLEstudianteRepository:
+    """Dependency para obtener el repositorio de estudiantes"""
+    return SQLEstudianteRepository(db)
+
+def get_administrador_repository(db: Session = Depends(get_db)) -> SQLAdministradorRepository:
+    """Dependency para obtener el repositorio de administradores"""
+    return SQLAdministradorRepository(db)
+
 def get_user_auth_use_case(
-    user_repository: SQLUserRepository = Depends(get_user_repository)
+    user_repository: SQLUserRepository = Depends(get_user_repository),
+    docente_repository: DocenteRepository = Depends(get_docente_repository),
+    estudiante_repository: SQLEstudianteRepository = Depends(get_estudiante_repository),
+    administrador_repository: SQLAdministradorRepository = Depends(get_administrador_repository)
 ) -> UserAuthUseCase:
-    """Dependency para obtener el caso de uso de autenticación"""
-    return UserAuthUseCase(user_repository)
+    """Dependency para obtener el caso de uso de autenticación con repositorios de perfiles"""
+    return UserAuthUseCase(
+        user_repository,
+        docente_repository,
+        estudiante_repository,
+        administrador_repository
+    )
 
 def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
     """Extraer token del header Authorization"""
