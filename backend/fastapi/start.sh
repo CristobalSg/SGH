@@ -29,11 +29,18 @@ else
     echo "👩‍💻 Inicializando usuario administrador..."
     python scripts/bootstrap_admin.py
 
-    if [ "$BACK_ENV" == "development" ]; then
+    # En desarrollo, crear usuarios de prueba (docente y estudiante)
+    # Detectar si estamos en desarrollo (NODE_ENV o BACK_ENV)
+    if [ "$BACK_ENV" == "development" ] || [ "$NODE_ENV" == "development" ]; then
+        echo "🎓 Inicializando usuarios de desarrollo..."
+        python scripts/bootstrap_dev_users.py || echo "⚠️  Usuarios de desarrollo no configurados o ya existen"
+    fi
+
+    if [ "$BACK_ENV" == "development" ] || [ "$NODE_ENV" == "development" ]; then
         echo "🔧 Modo Desarrollo Activado"
-        exec fastapi dev main.py --host 0.0.0.0 --port $BACKEND_PORT
+        exec fastapi dev main.py --host 0.0.0.0 --port ${BACKEND_PORT:-8000}
     else
         echo "🌟 Iniciando FastAPI..."
-        exec uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT
+        exec uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000}
     fi
 fi
