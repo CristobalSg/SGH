@@ -1,15 +1,15 @@
 """
-Router principal de la API v1.
+Router principal de la API.
 Agrega todos los routers de los diferentes módulos.
 """
 from fastapi import APIRouter
-from api.v1.endpoints.auth import auth_router, user_router
-from api.v1.endpoints.academic import asignatura_router, seccion_router, clase_router
-from api.v1.endpoints.infrastructure import campus_router, edificio_router, sala_router
-from api.v1.endpoints.schedule import bloque_router
-from api.v1.endpoints.personnel import docente_router
-from api.v1.endpoints.restrictions import restriccion_router, restriccion_horario_router
-from api.v1.endpoints.system import test_db_router
+from api.auth import auth_router, user_router
+from api.academic import asignatura_router, seccion_router, clase_router
+from api.infrastructure import campus_router, edificio_router, sala_router
+from api.schedule import bloque_router
+from api.personnel import docente_router
+from api.restrictions import restriccion_router, restriccion_horario_router
+from api.system import test_db_router
 
 # Router principal de la API v1
 api_router = APIRouter()
