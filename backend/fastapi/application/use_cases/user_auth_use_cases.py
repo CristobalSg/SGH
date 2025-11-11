@@ -1,16 +1,40 @@
 from datetime import timedelta
 from typing import Optional, List
 from fastapi import HTTPException, status
-from domain.entities import UserCreate, User, UserLogin, Token, TokenResponse, RefreshTokenRequest
+from domain.entities import (
+    UserCreate, User, UserLogin, Token, TokenResponse, RefreshTokenRequest,
+    DocenteCreate, EstudianteCreate, AdministradorCreate
+)
 from infrastructure.repositories.user_repository import SQLUserRepository
+from infrastructure.repositories.docente_repository import DocenteRepository
+from infrastructure.repositories.estudiante_repository import SQLEstudianteRepository
+from infrastructure.repositories.administrador_repository import SQLAdministradorRepository
 from infrastructure.auth import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
 class UserAuthUseCase:
-    def __init__(self, user_repository: SQLUserRepository):
+    def __init__(
+        self, 
+        user_repository: SQLUserRepository,
+        docente_repository: Optional[DocenteRepository] = None,
+        estudiante_repository: Optional[SQLEstudianteRepository] = None,
+        administrador_repository: Optional[SQLAdministradorRepository] = None
+    ):
         self.user_repository = user_repository
+        self.docente_repository = docente_repository
+        self.estudiante_repository = estudiante_repository
+        self.administrador_repository = administrador_repository
 
     def register_user(self, user_data: UserCreate) -> User:
-        """Registrar un nuevo usuario"""
+        """
+        Registrar un nuevo usuario y crear automáticamente su perfil según el rol.
+        
+        Esta función garantiza que:
+        1. Se crea el usuario en la tabla users
+        2. Se crea automáticamente el perfil correspondiente según el rol:
+           - Docente → tabla docentes
+           - Estudiante → tabla estudiantes
+           - Administrador → tabla administradores
+        """
         # Verificar si el email ya existe
         existing_user = self.user_repository.get_by_email(user_data.email)
         if existing_user:
@@ -21,6 +45,61 @@ class UserAuthUseCase:
         
         # Crear el usuario
         new_user = self.user_repository.create(user_data)
+        
+        # Crear perfil específico según el rol
+        try:
+            if new_user.rol == "docente":
+                if not self.docente_repository:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Repositorio de docentes no configurado"
+                    )
+                # Crear perfil de docente con valores por defecto
+                docente_data = DocenteCreate(
+                    user_id=new_user.id,
+                    departamento=getattr(user_data, 'departamento', 'SIN_ASIGNAR')
+                )
+                self.docente_repository.create(docente_data)
+                
+            elif new_user.rol == "estudiante":
+                if not self.estudiante_repository:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Repositorio de estudiantes no configurado"
+                    )
+                # Crear perfil de estudiante con valores por defecto
+                estudiante_data = EstudianteCreate(
+                    user_id=new_user.id,
+                    matricula=getattr(user_data, 'matricula', f"EST{new_user.id:06d}")
+                )
+                self.estudiante_repository.create(estudiante_data)
+                
+            elif new_user.rol == "administrador":
+                if not self.administrador_repository:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Repositorio de administradores no configurado"
+                    )
+                # Crear perfil de administrador con permisos por defecto
+                administrador_data = AdministradorCreate(
+                    user_id=new_user.id,
+                    permisos=getattr(user_data, 'permisos', 'ALL')
+                )
+                self.administrador_repository.create(administrador_data)
+                
+        except HTTPException:
+            # Si falla la creación del perfil, eliminar el usuario creado
+            # para mantener consistencia
+            self.user_repository.delete(new_user.id)
+            raise
+        except Exception as e:
+            # Si falla la creación del perfil por cualquier otra razón
+            self.user_repository.delete(new_user.id)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al crear el perfil de {new_user.rol}: {str(e)}"
+            )
+        
         return new_user
 
     def login_user(self, login_data: UserLogin) -> Token:
