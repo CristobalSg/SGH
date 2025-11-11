@@ -80,7 +80,6 @@ def ensure_initial_admin() -> None:
 
     with _db_session() as session:
         user_repo = SQLUserRepository(session)
-        admin_repo = SQLAdministradorRepository(session)
 
         user = user_repo.get_by_email(admin_email)
         if not user:
