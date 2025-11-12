@@ -80,26 +80,7 @@ export const useDocenteHorarioRestrictions = () => {
   };
 };
 
-// Ejemplo de obtención de datos desde el formulario
-const dia_semana = 0; // Lunes
-const hora_inicio_input = "21:31"; // valor del input type="time"
-const hora_fin_input = "22:31";    // valor del input type="time"
-const docente_id = 1;
 
-// Convierte la hora a formato ISO (solo hora, fecha ficticia)
-function horaToISO(hora: string): string {
-  // hora: "21:31" → "1970-01-01T21:31:00Z"
-  return new Date(`1970-01-01T${hora}:00Z`).toISOString();
-}
 
-const restriccion = {
-  dia_semana,
-  hora_inicio: horaToISO(hora_inicio_input), // "1970-01-01T21:31:00.000Z"
-  hora_fin: horaToISO(hora_fin_input),       // "1970-01-01T22:31:00.000Z"
-  disponible: true,
-  descripcion: "string",
-  activa: true,
-  docente_id,
-};
 
 export type { RestriccionHorarioInput, RestriccionHorarioView };

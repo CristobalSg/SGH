@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Empty, Spin, Tag } from "antd";
+import { Alert, Spin, message, Input, Select } from "antd";
 import AppLayout from "../components/layout/AppLayout";
 import { useAdminUsers, type AdminUserView } from "../hooks/useAdminUsers";
-import {
-  useAdminDocenteRestrictions,
-  type AdminRestrictionView,
-} from "../hooks/useAdminDocenteRestrictions";
 
-const dayLabels = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const { Option } = Select;
 
 const roleLabels: Record<string, string> = {
   docente: "Docente",
@@ -15,27 +11,7 @@ const roleLabels: Record<string, string> = {
   admin: "Administrador",
 };
 
-const RestrictionCard = ({ restriction }: { restriction: AdminRestrictionView }) => (
-  <div className="rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <p className="text-sm font-semibold text-gray-900">
-          {dayLabels[restriction.day]} · {restriction.start} - {restriction.end}
-        </p>
-        {restriction.descripcion && (
-          <p className="text-xs text-gray-500">{restriction.descripcion}</p>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <Tag color={restriction.disponible ? "green" : "red"} className="text-xs">
-          {restriction.disponible ? "Disponible" : "No disponible"}
-        </Tag>
-        {!restriction.activa && <Tag color="orange" className="text-xs">Inactiva</Tag>}
-      </div>
-    </div>
-  </div>
-);
-
+// 🟢 Tarjeta de usuario
 const UserRow = ({
   user,
   selected,
@@ -77,132 +53,34 @@ const UserRow = ({
   );
 };
 
-const RestrictionPanel = ({
-  selectedUser,
-  restrictions,
-  loading,
-  error,
-  onRetry,
-}: {
-  selectedUser: AdminUserView | null;
-  restrictions: AdminRestrictionView[];
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void | Promise<void>;
-}) => {
-  if (!selectedUser) {
-    return (
-      <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-        Selecciona un usuario para revisar sus restricciones.
-      </div>
-    );
-  }
-
-  if (selectedUser.role !== "docente" || !selectedUser.docenteId) {
-    return (
-      <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-        Este usuario no está asociado a un docente, por lo que no tiene restricciones horarias.
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="py-10 text-center">
-        <Spin />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert
-        type="error"
-        message="No se pudieron cargar las restricciones"
-        description={error}
-        showIcon
-        action={
-          <button
-            onClick={onRetry}
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
-          >
-            Reintentar
-          </button>
-        }
-      />
-    );
-  }
-
-  if (restrictions.length === 0) {
-    return (
-      <div className="rounded-3xl border border-gray-100 bg-white py-10 text-center">
-        <Empty description="Sin restricciones registradas" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {restrictions.map((item) => (
-        <RestrictionCard key={item.id} restriction={item} />
-      ))}
-    </div>
-  );
-};
-
+// 🟣 Página principal de administración de usuarios (solo usuarios)
 export default function AdminUsersPage() {
   const { users, loading, error, refresh } = useAdminUsers();
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const {
-    restrictions,
-    loading: restrictionsLoading,
-    error: restrictionsError,
-    fetchForDocente,
-    refetch: refetchRestrictions,
-    clear,
-  } = useAdminDocenteRestrictions();
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("todos");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
+  // Ordenar usuarios alfabéticamente
   const sortedUsers = useMemo(
     () =>
       users
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" })),
-    [users],
+    [users]
   );
 
-  const selectedUser = useMemo(
-    () => (selectedUserId ? sortedUsers.find((u) => u.id === selectedUserId) ?? null : null),
-    [sortedUsers, selectedUserId],
-  );
-
-  useEffect(() => {
-    if (sortedUsers.length === 0) {
-      setSelectedUserId(null);
-      return;
-    }
-
-    if (!selectedUserId) {
-      setSelectedUserId(sortedUsers[0].id);
-    } else {
-      const stillExists = sortedUsers.some((user) => user.id === selectedUserId);
-      if (!stillExists) {
-        setSelectedUserId(sortedUsers[0].id);
-      }
-    }
-  }, [sortedUsers, selectedUserId]);
-
-  useEffect(() => {
-    if (!selectedUser) {
-      clear();
-      return;
-    }
-
-    if (selectedUser.docenteId) {
-      fetchForDocente(selectedUser.docenteId);
-    } else {
-      clear();
-    }
-  }, [selectedUser, fetchForDocente, clear]);
+  // Aplicar búsqueda y filtro por tipo
+  const filteredUsers = useMemo(() => {
+    return sortedUsers.filter((user) => {
+      const matchesRole =
+        filterRole === "todos" || user.role?.toLowerCase() === filterRole;
+      const matchesSearch =
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesRole && matchesSearch;
+    });
+  }, [sortedUsers, searchTerm, filterRole]);
 
   const handleSelectUser = (user: AdminUserView) => {
     setSelectedUserId(user.id);
@@ -211,6 +89,33 @@ export default function AdminUsersPage() {
   return (
     <AppLayout title="Usuarios" showBottomNav>
       <div className="space-y-6 pb-6">
+        {/* Filtros y búsqueda */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900 mb-3">
+            Filtros de búsqueda
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              placeholder="Buscar por nombre o correo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+              className="sm:w-2/3"
+            />
+            <Select
+              value={filterRole}
+              onChange={setFilterRole}
+              className="sm:w-1/3"
+            >
+              <Option value="todos">Todos</Option>
+              <Option value="admin">Administrador</Option>
+              <Option value="docente">Docente</Option>
+              <Option value="estudiante">Estudiante</Option>
+            </Select>
+          </div>
+        </div>
+
+        {/* Listado de usuarios */}
         <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">Listado</h2>
@@ -245,13 +150,13 @@ export default function AdminUsersPage() {
             <div className="py-10 text-center">
               <Spin />
             </div>
-          ) : sortedUsers.length === 0 ? (
+          ) : filteredUsers.length === 0 ? (
             <div className="py-6 text-center text-sm text-gray-500">
-              No hay usuarios registrados.
+              No se encontraron usuarios.
             </div>
           ) : (
             <div className="space-y-2">
-              {sortedUsers.map((user) => (
+              {filteredUsers.map((user) => (
                 <UserRow
                   key={user.id}
                   user={user}
@@ -261,36 +166,6 @@ export default function AdminUsersPage() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Restricciones</h2>
-              {selectedUser && (
-                <p className="text-xs text-gray-500">
-                  {selectedUser.name} · {selectedUser.email}
-                </p>
-              )}
-            </div>
-            {selectedUser?.docenteId && (
-              <button
-                onClick={refetchRestrictions}
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                type="button"
-              >
-                Recargar
-              </button>
-            )}
-          </div>
-
-          <RestrictionPanel
-            selectedUser={selectedUser}
-            restrictions={restrictions}
-            loading={restrictionsLoading}
-            error={restrictionsError}
-            onRetry={refetchRestrictions}
-          />
         </div>
       </div>
     </AppLayout>

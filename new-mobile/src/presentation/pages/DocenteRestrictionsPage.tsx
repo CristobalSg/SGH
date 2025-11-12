@@ -4,6 +4,7 @@ import { PlusIcon } from "@heroicons/react/24/solid";
 import AppLayout from "../components/layout/AppLayout";
 import RestrictionList from "../components/docente/RestrictionList";
 import AddRestrictionForm from "../components/docente/AddRestrictionForm";
+
 import {
   useDocenteHorarioRestrictions,
   type RestriccionHorarioInput,
@@ -31,7 +32,7 @@ export default function DocenteRestrictionsPage() {
     deleteRestriction,
     refetch,
   } = useDocenteHorarioRestrictions();
-
+  
   const openCreateModal = () => setFormState({ open: true, mode: "create", target: null });
   const openEditModal = (item: RestriccionHorarioView) =>
     setFormState({ open: true, mode: "edit", target: item });
