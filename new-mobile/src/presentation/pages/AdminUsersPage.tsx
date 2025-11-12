@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Spin, message, Input, Select } from "antd";
 import AppLayout from "../components/layout/AppLayout";
 import { useAdminUsers, type AdminUserView } from "../hooks/useAdminUsers";
+import AddUserModal from "../components/admin/AddUserModal";
 
 const { Option } = Select;
 
@@ -60,6 +61,7 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("todos");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Ordenar usuarios alfabéticamente
   const sortedUsers = useMemo(
@@ -119,13 +121,22 @@ export default function AdminUsersPage() {
         <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">Listado</h2>
-            <button
-              onClick={refresh}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-              type="button"
-            >
-              Actualizar
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={refresh}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                type="button"
+              >
+                Actualizar
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="text-xs font-medium text-green-600 hover:text-green-700"
+                type="button"
+              >
+                Agregar usuario
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -168,6 +179,13 @@ export default function AdminUsersPage() {
           )}
         </div>
       </div>
+
+      {/* Modal para agregar usuario */}
+      <AddUserModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={refresh}
+      />
     </AppLayout>
   );
 }
