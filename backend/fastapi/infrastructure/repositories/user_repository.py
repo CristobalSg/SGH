@@ -1,8 +1,11 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session, joinedload
-from domain.models import User
+
 from domain.entities import UserCreate, UserUpdate
+from domain.models import User
 from infrastructure.auth import AuthService
+
 
 class SQLUserRepository:
     def __init__(self, session: Session):
@@ -12,14 +15,14 @@ class SQLUserRepository:
         """Crear un nuevo usuario"""
         # Hash de la contraseña antes de guardar
         hashed_password = AuthService.get_password_hash(user.contrasena)
-        
+
         # Crear el objeto User con los campos correctos
         db_user = User(
             nombre=user.nombre,
             email=user.email,
             pass_hash=hashed_password,
             rol=user.rol,
-            activo=user.activo
+            activo=user.activo,
         )
         self.session.add(db_user)
         self.session.commit()
@@ -28,21 +31,25 @@ class SQLUserRepository:
 
     def get_by_id(self, user_id: int) -> Optional[User]:
         """Obtener usuario por ID con las relaciones cargadas"""
-        return (self.session.query(User)
-                .options(joinedload(User.docente))
-                .options(joinedload(User.estudiante))
-                .options(joinedload(User.administrador))
-                .filter(User.id == user_id)
-                .first())
+        return (
+            self.session.query(User)
+            .options(joinedload(User.docente))
+            .options(joinedload(User.estudiante))
+            .options(joinedload(User.administrador))
+            .filter(User.id == user_id)
+            .first()
+        )
 
     def get_by_email(self, email: str) -> Optional[User]:
         """Obtener usuario por email con las relaciones cargadas"""
-        return (self.session.query(User)
-                .options(joinedload(User.docente))
-                .options(joinedload(User.estudiante))
-                .options(joinedload(User.administrador))
-                .filter(User.email == email)
-                .first())
+        return (
+            self.session.query(User)
+            .options(joinedload(User.docente))
+            .options(joinedload(User.estudiante))
+            .options(joinedload(User.administrador))
+            .filter(User.email == email)
+            .first()
+        )
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[User]:
         """Obtener todos los usuarios con paginación"""

@@ -1,27 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from application.use_cases.docente_use_cases import DocenteUseCases
+from domain.authorization import Permission
 from domain.entities import Docente  # Response models
 from domain.schemas import DocenteSecureCreate, DocenteSecurePatch  # ✅ SCHEMAS SEGUROS
-from domain.authorization import Permission
-from infrastructure.dependencies import require_permission
-from application.use_cases.docente_use_cases import DocenteUseCases
-from sqlalchemy.orm import Session
 from infrastructure.database.config import get_db
+from infrastructure.dependencies import require_permission
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.user_repository import SQLUserRepository
 
 router = APIRouter()
+
 
 def get_docente_use_case(db: Session = Depends(get_db)) -> DocenteUseCases:
     docente_repository = DocenteRepository(db)
     user_repository = SQLUserRepository(db)
     return DocenteUseCases(docente_repository, user_repository)
 
+
 @router.post("/", response_model=Docente, status_code=status.HTTP_201_CREATED)
 async def create_docente(
     docente_data: DocenteSecureCreate,  # ✅ SCHEMA SEGURO
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+    current_user=Depends(require_permission(Permission.DOCENTE_WRITE)),
 ):
     """Crear un nuevo docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
     try:
@@ -31,16 +35,16 @@ async def create_docente(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )
+
 
 @router.get("/", response_model=List[Docente])
 async def get_all_docentes(
     skip: int = 0,
     limit: int = 100,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
+    current_user=Depends(require_permission(Permission.DOCENTE_READ)),  # ✅ MIGRADO
 ):
     """Obtener todos los docentes (requiere permiso DOCENTE:READ)"""
     try:
@@ -50,15 +54,15 @@ async def get_all_docentes(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )
+
 
 @router.get("/{docente_id}", response_model=Docente)
 async def get_docente_by_id(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
+    current_user=Depends(require_permission(Permission.DOCENTE_READ)),  # ✅ MIGRADO
 ):
     """Obtener docente por ID (requiere permiso DOCENTE:READ)"""
     try:
@@ -68,15 +72,15 @@ async def get_docente_by_id(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )
+
 
 @router.get("/departamento/{departamento}", response_model=List[Docente])
 async def get_docentes_by_departamento(
     departamento: str,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_READ))  # ✅ MIGRADO
+    current_user=Depends(require_permission(Permission.DOCENTE_READ)),  # ✅ MIGRADO
 ):
     """Obtener docentes por departamento (requiere permiso DOCENTE:READ)"""
     try:
@@ -86,16 +90,22 @@ async def get_docentes_by_departamento(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )
 
-@router.put("/{docente_id}", response_model=Docente, status_code=status.HTTP_200_OK, summary="Actualizar docente completo", tags=["docentes"])
+
+@router.put(
+    "/{docente_id}",
+    response_model=Docente,
+    status_code=status.HTTP_200_OK,
+    summary="Actualizar docente completo",
+    tags=["docentes"],
+)
 async def update_docente_complete(
     docente_id: int,
     docente_data: DocenteSecurePatch,  # ✅ SCHEMA SEGURO PATCH
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+    current_user=Depends(require_permission(Permission.DOCENTE_WRITE)),
 ):
     """Actualizar completamente un docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
     try:
@@ -105,16 +115,18 @@ async def update_docente_complete(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )
 
-@router.patch("/{docente_id}", response_model=Docente, summary="Actualizar docente parcial", tags=["docentes"])
+
+@router.patch(
+    "/{docente_id}", response_model=Docente, summary="Actualizar docente parcial", tags=["docentes"]
+)
 async def update_docente(
     docente_id: int,
     docente_data: DocenteSecurePatch,  # ✅ SCHEMA SEGURO
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_WRITE))
+    current_user=Depends(require_permission(Permission.DOCENTE_WRITE)),
 ):
     """Actualizar parcialmente un docente con validaciones anti-inyección (requiere permiso DOCENTE:WRITE)"""
     try:
@@ -124,15 +136,15 @@ async def update_docente(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )
+
 
 @router.delete("/{docente_id}")
 async def delete_docente(
     docente_id: int,
     docente_use_case: DocenteUseCases = Depends(get_docente_use_case),
-    current_user = Depends(require_permission(Permission.DOCENTE_DELETE))  # ✅ MIGRADO
+    current_user=Depends(require_permission(Permission.DOCENTE_DELETE)),  # ✅ MIGRADO
 ):
     """Eliminar un docente (requiere permiso DOCENTE:DELETE)"""
     try:
@@ -142,6 +154,5 @@ async def delete_docente(
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
         )

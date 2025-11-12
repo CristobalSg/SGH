@@ -1,33 +1,18 @@
 # Configuración de Bandit para SGH Backend
 # Análisis de seguridad estático para Python
 
-[bandit]
-# Directorios a excluir
-exclude_dirs = [
-    '/tests',
-    '/migrations',
-    '/__pycache__',
-    '/.venv',
-    '/venv',
-    '/.pytest_cache'
-]
+exclude_dirs:
+  - /tests
+  - /migrations
+  - /__pycache__
+  - /.venv
+  - /venv
+  - /.pytest_cache
 
-# Tests a ejecutar (por defecto todos)
-# tests = ['B201', 'B301']
+skips:
+  - B101  # assert_used - permitido en desarrollo
+  - B601  # paramiko_calls - no lo usamos
 
-# Tests a omitir
-skips = [
-    'B101',  # assert_used - permitido en desarrollo
-    'B601'   # paramiko_calls - no lo usamos
-]
-
-# Nivel de severidad mínimo para reportar
-# Opciones: LOW, MEDIUM, HIGH
-# Por defecto reporta MEDIUM y HIGH
-assert_used = {
-    'skips': ['*/tests/*']
-}
-
-# Nivel de confianza mínimo para reportar
-# Opciones: LOW, MEDIUM, HIGH
-# Por defecto reporta MEDIUM y HIGH
+# assert_used:
+#   skips:
+#     - '*/tests/*'
