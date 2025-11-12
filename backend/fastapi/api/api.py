@@ -2,13 +2,15 @@
 Router principal de la API.
 Agrega todos los routers de los diferentes módulos.
 """
+
 from fastapi import APIRouter
+
+from api.academic import asignatura_router, clase_router, seccion_router
 from api.auth import auth_router, user_router
-from api.academic import asignatura_router, seccion_router, clase_router
 from api.infrastructure import campus_router, edificio_router, sala_router
-from api.schedule import bloque_router
 from api.personnel import docente_router
-from api.restrictions import restriccion_router, restriccion_horario_router
+from api.restrictions import restriccion_horario_router, restriccion_router
+from api.schedule import bloque_router
 from api.system import test_db_router
 
 # Router principal de la API v1
@@ -36,7 +38,9 @@ api_router.include_router(docente_router, prefix="/docentes", tags=["docentes"])
 
 # Restricciones
 api_router.include_router(restriccion_router, prefix="/restricciones", tags=["restricciones"])
-api_router.include_router(restriccion_horario_router, prefix="/restricciones-horario", tags=["restricciones-horario"])
+api_router.include_router(
+    restriccion_horario_router, prefix="/restricciones-horario", tags=["restricciones-horario"]
+)
 
 # Sistema
 api_router.include_router(test_db_router, prefix="/db", tags=["database"])

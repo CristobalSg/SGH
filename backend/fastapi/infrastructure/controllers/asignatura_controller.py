@@ -1,24 +1,34 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Path
-from sqlalchemy.orm import Session
 from typing import List, Optional
-from infrastructure.database.config import get_db
+
+from fastapi import APIRouter, Depends, HTTPException, Path, status
+from sqlalchemy.orm import Session
+
+from application.use_cases.asignatura_use_cases import AsignaturaUseCases
+from domain.authorization import Permission
 from domain.entities import Asignatura, User  # Response models
 from domain.schemas import AsignaturaSecureCreate, AsignaturaSecurePatch  # ✅ SCHEMAS SEGUROS
-from domain.authorization import Permission
-from application.use_cases.asignatura_use_cases import AsignaturaUseCases
-from infrastructure.repositories.asignatura_repository import AsignaturaRepository
+from infrastructure.database.config import get_db
 from infrastructure.dependencies import require_permission
+from infrastructure.repositories.asignatura_repository import AsignaturaRepository
 
 router = APIRouter()
+
 
 def get_asignatura_use_cases(db: Session = Depends(get_db)) -> AsignaturaUseCases:
     repo = AsignaturaRepository(db)
     return AsignaturaUseCases(repo)
 
-@router.get("/", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Obtener asignaturas", tags=["asignaturas"])
+
+@router.get(
+    "/",
+    response_model=List[Asignatura],
+    status_code=status.HTTP_200_OK,
+    summary="Obtener asignaturas",
+    tags=["asignaturas"],
+)
 async def get_asignaturas(
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Obtener todas las asignaturas (requiere permiso ASIGNATURA:READ)"""
     try:
@@ -27,14 +37,21 @@ async def get_asignaturas(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al obtener las asignaturas: {str(e)}"
+            detail=f"Error al obtener las asignaturas: {str(e)}",
         )
 
-@router.get("/{asignatura_id}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Obtener asignatura por ID", tags=["asignaturas"])
+
+@router.get(
+    "/{asignatura_id}",
+    response_model=Asignatura,
+    status_code=status.HTTP_200_OK,
+    summary="Obtener asignatura por ID",
+    tags=["asignaturas"],
+)
 async def obtener_asignatura(
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Obtener una asignatura específica por ID (requiere permiso ASIGNATURA:READ)"""
     try:
@@ -42,7 +59,7 @@ async def obtener_asignatura(
         if not asignatura:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Asignatura con ID {asignatura_id} no encontrada"
+                detail=f"Asignatura con ID {asignatura_id} no encontrada",
             )
         return asignatura
     except HTTPException:
@@ -50,14 +67,21 @@ async def obtener_asignatura(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al obtener la asignatura: {str(e)}"
+            detail=f"Error al obtener la asignatura: {str(e)}",
         )
 
-@router.post("/", response_model=Asignatura, status_code=status.HTTP_201_CREATED, summary="Crear nueva asignatura", tags=["asignaturas"])
+
+@router.post(
+    "/",
+    response_model=Asignatura,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear nueva asignatura",
+    tags=["asignaturas"],
+)
 async def create_asignatura(
     asignatura_data: AsignaturaSecureCreate,  # ✅ SCHEMA SEGURO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
-    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE))
+    current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),
 ):
     """Crear una nueva asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
@@ -67,121 +91,138 @@ async def create_asignatura(
         raise
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error de validación: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error de validación: {str(e)}"
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al crear la asignatura: {str(e)}"
+            detail=f"Error al crear la asignatura: {str(e)}",
         )
 
-@router.put("/{asignatura_id}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Actualizar asignatura completa", tags=["asignaturas"])
+
+@router.put(
+    "/{asignatura_id}",
+    response_model=Asignatura,
+    status_code=status.HTTP_200_OK,
+    summary="Actualizar asignatura completa",
+    tags=["asignaturas"],
+)
 async def update_asignatura(
     asignatura_data: AsignaturaSecureCreate,  # ✅ SCHEMA SEGURO
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Actualizar completamente una asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
-        update_data = {
-            'codigo': asignatura_data.codigo,
-            'nombre': asignatura_data.nombre,
-            'creditos': asignatura_data.creditos
-        }
-        
-        asignatura_actualizada = use_cases.update(asignatura_id, **update_data)
-        
+        # Convertir AsignaturaSecureCreate a AsignaturaSecurePatch para el use case
+        patch_data = AsignaturaSecurePatch(
+            codigo=asignatura_data.codigo,
+            nombre=asignatura_data.nombre,
+            creditos=asignatura_data.creditos,
+        )
+
+        asignatura_actualizada = use_cases.update(asignatura_id, patch_data)
+
         if not asignatura_actualizada:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Asignatura con ID {asignatura_id} no encontrada"
+                detail=f"Asignatura con ID {asignatura_id} no encontrada",
             )
-        
+
         return asignatura_actualizada
     except HTTPException:
         raise
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error de validación: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error de validación: {str(e)}"
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al actualizar la asignatura: {str(e)}"
+            detail=f"Error al actualizar la asignatura: {str(e)}",
         )
 
-@router.patch("/{asignatura_id}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Actualizar asignatura parcial", tags=["asignaturas"])
+
+@router.patch(
+    "/{asignatura_id}",
+    response_model=Asignatura,
+    status_code=status.HTTP_200_OK,
+    summary="Actualizar asignatura parcial",
+    tags=["asignaturas"],
+)
 async def patch_asignatura(
     asignatura_data: AsignaturaSecurePatch,  # ✅ SCHEMA SEGURO
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_WRITE)),
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Actualizar parcialmente una asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
-        # Filtrar solo los campos que no son None
-        update_data = {k: v for k, v in asignatura_data.model_dump().items() if v is not None}
-        
-        if not update_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se proporcionaron campos para actualizar"
-            )
-        
-        asignatura_actualizada = use_cases.update(asignatura_id, **update_data)
-        
+        # El use case maneja la validación de campos vacíos
+        asignatura_actualizada = use_cases.update(asignatura_id, asignatura_data)
+
         if not asignatura_actualizada:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Asignatura con ID {asignatura_id} no encontrada"
+                detail=f"Asignatura con ID {asignatura_id} no encontrada",
             )
-        
+
         return asignatura_actualizada
     except HTTPException:
         raise
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error de validación: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error de validación: {str(e)}"
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al actualizar la asignatura: {str(e)}"
+            detail=f"Error al actualizar la asignatura: {str(e)}",
         )
 
-@router.delete("/{asignatura_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar asignatura", tags=["asignaturas"])
+
+@router.delete(
+    "/{asignatura_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar asignatura",
+    tags=["asignaturas"],
+)
 async def delete_asignatura(
     asignatura_id: int = Path(..., gt=0, description="ID de la asignatura"),
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_DELETE)),  # ✅ MIGRADO
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Eliminar una asignatura (requiere permiso ASIGNATURA:DELETE - solo administradores)"""
     try:
         eliminado = use_cases.delete(asignatura_id)
-        
+
         if not eliminado:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Asignatura con ID {asignatura_id} no encontrada"
+                detail=f"Asignatura con ID {asignatura_id} no encontrada",
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al eliminar la asignatura: {str(e)}"
+            detail=f"Error al eliminar la asignatura: {str(e)}",
         )
 
-@router.get("/codigo/{codigo}", response_model=Asignatura, status_code=status.HTTP_200_OK, summary="Obtener asignatura por código", tags=["asignaturas"])
+
+@router.get(
+    "/codigo/{codigo}",
+    response_model=Asignatura,
+    status_code=status.HTTP_200_OK,
+    summary="Obtener asignatura por código",
+    tags=["asignaturas"],
+)
 async def get_asignatura_by_codigo(
     codigo: str = Path(..., description="Código de la asignatura"),
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Obtener una asignatura específica por su código (requiere permiso ASIGNATURA:READ)"""
     try:
@@ -189,7 +230,7 @@ async def get_asignatura_by_codigo(
         if not asignatura:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Asignatura con código '{codigo}' no encontrada"
+                detail=f"Asignatura con código '{codigo}' no encontrada",
             )
         return asignatura
     except HTTPException:
@@ -197,14 +238,21 @@ async def get_asignatura_by_codigo(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al obtener la asignatura: {str(e)}"
+            detail=f"Error al obtener la asignatura: {str(e)}",
         )
 
-@router.get("/buscar/nombre", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Buscar asignaturas por nombre", tags=["asignaturas"])
+
+@router.get(
+    "/buscar/nombre",
+    response_model=List[Asignatura],
+    status_code=status.HTTP_200_OK,
+    summary="Buscar asignaturas por nombre",
+    tags=["asignaturas"],
+)
 async def search_asignaturas_by_nombre(
     nombre: str,
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Buscar asignaturas por nombre (búsqueda parcial) - requiere permiso ASIGNATURA:READ"""
     try:
@@ -213,15 +261,22 @@ async def search_asignaturas_by_nombre(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al buscar asignaturas: {str(e)}"
+            detail=f"Error al buscar asignaturas: {str(e)}",
         )
 
-@router.get("/buscar/creditos", response_model=List[Asignatura], status_code=status.HTTP_200_OK, summary="Buscar asignaturas por créditos", tags=["asignaturas"])
+
+@router.get(
+    "/buscar/creditos",
+    response_model=List[Asignatura],
+    status_code=status.HTTP_200_OK,
+    summary="Buscar asignaturas por créditos",
+    tags=["asignaturas"],
+)
 async def get_asignaturas_by_creditos(
     creditos_min: Optional[int] = None,
     creditos_max: Optional[int] = None,
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
-    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases)
+    use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
     """Buscar asignaturas por rango de créditos (requiere permiso ASIGNATURA:READ)"""
     try:
@@ -230,5 +285,5 @@ async def get_asignaturas_by_creditos(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al buscar asignaturas: {str(e)}"
+            detail=f"Error al buscar asignaturas: {str(e)}",
         )

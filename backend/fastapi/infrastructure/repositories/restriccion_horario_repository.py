@@ -1,8 +1,11 @@
-from typing import List, Optional
 from datetime import time
+from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import RestriccionHorario
+
 from domain.entities import RestriccionHorarioCreate
+from domain.models import RestriccionHorario
+
 
 class RestriccionHorarioRepository:
     def __init__(self, session: Session):
@@ -18,7 +21,11 @@ class RestriccionHorarioRepository:
 
     def get_by_id(self, restriccion_id: int) -> Optional[RestriccionHorario]:
         """Obtener restricción de horario por ID"""
-        return self.session.query(RestriccionHorario).filter(RestriccionHorario.id == restriccion_id).first()
+        return (
+            self.session.query(RestriccionHorario)
+            .filter(RestriccionHorario.id == restriccion_id)
+            .first()
+        )
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[RestriccionHorario]:
         """Obtener todas las restricciones de horario con paginación"""
@@ -26,24 +33,42 @@ class RestriccionHorarioRepository:
 
     def get_by_docente(self, docente_id: int) -> List[RestriccionHorario]:
         """Obtener restricciones de horario de un docente específico"""
-        return self.session.query(RestriccionHorario).filter(RestriccionHorario.docente_id == docente_id).all()
+        return (
+            self.session.query(RestriccionHorario)
+            .filter(RestriccionHorario.docente_id == docente_id)
+            .all()
+        )
 
-    def get_by_docente_with_pagination(self, docente_id: int, skip: int = 0, limit: int = 100) -> List[RestriccionHorario]:
+    def get_by_docente_with_pagination(
+        self, docente_id: int, skip: int = 0, limit: int = 100
+    ) -> List[RestriccionHorario]:
         """Obtener restricciones de horario de un docente específico con paginación"""
-        return self.session.query(RestriccionHorario).filter(
-            RestriccionHorario.docente_id == docente_id
-        ).offset(skip).limit(limit).all()
+        return (
+            self.session.query(RestriccionHorario)
+            .filter(RestriccionHorario.docente_id == docente_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get_by_dia_semana(self, dia_semana: int) -> List[RestriccionHorario]:
         """Obtener restricciones por día de la semana (1=Lunes, 7=Domingo)"""
-        return self.session.query(RestriccionHorario).filter(RestriccionHorario.dia_semana == dia_semana).all()
+        return (
+            self.session.query(RestriccionHorario)
+            .filter(RestriccionHorario.dia_semana == dia_semana)
+            .all()
+        )
 
     def get_by_docente_and_dia(self, docente_id: int, dia_semana: int) -> List[RestriccionHorario]:
         """Obtener restricciones de un docente en un día específico"""
-        return self.session.query(RestriccionHorario).filter(
-            RestriccionHorario.docente_id == docente_id,
-            RestriccionHorario.dia_semana == dia_semana
-        ).all()
+        return (
+            self.session.query(RestriccionHorario)
+            .filter(
+                RestriccionHorario.docente_id == docente_id,
+                RestriccionHorario.dia_semana == dia_semana,
+            )
+            .all()
+        )
 
     def get_disponibles(self, docente_id: int = None) -> List[RestriccionHorario]:
         """Obtener solo restricciones marcadas como disponibles"""
@@ -73,25 +98,38 @@ class RestriccionHorarioRepository:
 
     def delete_by_docente(self, docente_id: int) -> int:
         """Eliminar todas las restricciones de horario de un docente"""
-        count = self.session.query(RestriccionHorario).filter(RestriccionHorario.docente_id == docente_id).count()
-        self.session.query(RestriccionHorario).filter(RestriccionHorario.docente_id == docente_id).delete()
+        count = (
+            self.session.query(RestriccionHorario)
+            .filter(RestriccionHorario.docente_id == docente_id)
+            .count()
+        )
+        self.session.query(RestriccionHorario).filter(
+            RestriccionHorario.docente_id == docente_id
+        ).delete()
         self.session.commit()
         return count
 
-    def get_by_docente_y_horario(self, docente_id: int, dia_semana: int, hora_inicio: time, hora_fin: time) -> List[RestriccionHorario]:
+    def get_by_docente_y_horario(
+        self, docente_id: int, dia_semana: int, hora_inicio: time, hora_fin: time
+    ) -> List[RestriccionHorario]:
         """Verificar si existe una restricción similar para el docente en el horario dado"""
-        return self.session.query(RestriccionHorario).filter(
-            RestriccionHorario.docente_id == docente_id,
-            RestriccionHorario.dia_semana == dia_semana,
-            RestriccionHorario.hora_inicio <= hora_fin,
-            RestriccionHorario.hora_fin >= hora_inicio
-        ).all()
+        return (
+            self.session.query(RestriccionHorario)
+            .filter(
+                RestriccionHorario.docente_id == docente_id,
+                RestriccionHorario.dia_semana == dia_semana,
+                RestriccionHorario.hora_inicio <= hora_fin,
+                RestriccionHorario.hora_fin >= hora_inicio,
+            )
+            .all()
+        )
 
-    def get_disponibilidad_docente(self, docente_id: int, dia_semana: int = None) -> List[RestriccionHorario]:
+    def get_disponibilidad_docente(
+        self, docente_id: int, dia_semana: int = None
+    ) -> List[RestriccionHorario]:
         """Obtener disponibilidad de un docente (solo restricciones marcadas como disponibles)"""
         query = self.session.query(RestriccionHorario).filter(
-            RestriccionHorario.docente_id == docente_id,
-            RestriccionHorario.disponible == True
+            RestriccionHorario.docente_id == docente_id, RestriccionHorario.disponible == True
         )
         if dia_semana is not None:
             query = query.filter(RestriccionHorario.dia_semana == dia_semana)

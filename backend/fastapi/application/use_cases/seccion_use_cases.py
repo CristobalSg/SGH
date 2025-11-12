@@ -1,8 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import HTTPException, status
-from domain.entities import SeccionCreate, Seccion
+
+from domain.entities import Seccion, SeccionCreate
 from domain.schemas import SeccionSecureCreate, SeccionSecurePatch
 from infrastructure.repositories.seccion_repository import SeccionRepository
+
 
 class SeccionUseCases:
     def __init__(self, seccion_repository: SeccionRepository):
@@ -17,8 +20,7 @@ class SeccionUseCases:
         seccion = self.seccion_repository.get_by_id(seccion_id)
         if not seccion:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sección no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Sección no encontrada"
             )
         return seccion
 
@@ -29,9 +31,9 @@ class SeccionUseCases:
         if existing_seccion:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ya existe una sección con ese código"
+                detail="Ya existe una sección con ese código",
             )
-        
+
         # Convertir schema seguro a entidad
         seccion_create = SeccionCreate(**seccion_data.model_dump())
         return self.seccion_repository.create(seccion_create)
@@ -42,24 +44,23 @@ class SeccionUseCases:
         existing_seccion = self.seccion_repository.get_by_id(seccion_id)
         if not existing_seccion:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sección no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Sección no encontrada"
             )
-        
+
         # Convertir schema seguro a diccionario y filtrar valores None
         update_data = {k: v for k, v in seccion_data.model_dump().items() if v is not None}
-        
+
         if not update_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se proporcionaron campos para actualizar"
+                detail="No se proporcionaron campos para actualizar",
             )
-        
+
         updated_seccion = self.seccion_repository.update(seccion_id, update_data)
         if not updated_seccion:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al actualizar la sección"
+                detail="Error al actualizar la sección",
             )
         return updated_seccion
 
@@ -69,22 +70,21 @@ class SeccionUseCases:
         existing_seccion = self.seccion_repository.get_by_id(seccion_id)
         if not existing_seccion:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sección no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Sección no encontrada"
             )
-        
+
         # Verificar si tiene clases asociadas
         if self.seccion_repository.tiene_clases(seccion_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede eliminar la sección porque tiene clases asociadas"
+                detail="No se puede eliminar la sección porque tiene clases asociadas",
             )
-        
+
         success = self.seccion_repository.delete(seccion_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al eliminar la sección"
+                detail="Error al eliminar la sección",
             )
         return success
 

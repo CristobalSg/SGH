@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Asignatura
+
 from domain.entities import AsignaturaCreate
+from domain.models import Asignatura
+
 
 class AsignaturaRepository:
     def __init__(self, session: Session):
@@ -29,11 +32,11 @@ class AsignaturaRepository:
 
     def search_by_nombre(self, nombre: str) -> List[Asignatura]:
         """Buscar asignaturas por nombre"""
-        return self.session.query(Asignatura).filter(
-            Asignatura.nombre.ilike(f"%{nombre}%")
-        ).all()
+        return self.session.query(Asignatura).filter(Asignatura.nombre.ilike(f"%{nombre}%")).all()
 
-    def get_by_creditos(self, creditos_min: int = None, creditos_max: int = None) -> List[Asignatura]:
+    def get_by_creditos(
+        self, creditos_min: int = None, creditos_max: int = None
+    ) -> List[Asignatura]:
         """Obtener asignaturas por rango de créditos"""
         query = self.session.query(Asignatura)
         if creditos_min is not None:
@@ -64,5 +67,6 @@ class AsignaturaRepository:
     def has_secciones(self, asignatura_id: int) -> bool:
         """Verificar si una asignatura tiene secciones"""
         from domain.models import Seccion
+
         count = self.session.query(Seccion).filter(Seccion.asignatura_id == asignatura_id).count()
         return count > 0

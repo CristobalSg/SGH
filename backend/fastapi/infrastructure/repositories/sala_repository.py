@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Sala
+
 from domain.entities import SalaCreate
+from domain.models import Sala
+
 
 class SalaRepository:
     def __init__(self, session: Session):
@@ -15,7 +18,7 @@ class SalaRepository:
             capacidad=sala.capacidad,
             tipo=sala.tipo,
             disponible=sala.disponible,
-            equipamiento=sala.equipamiento
+            equipamiento=sala.equipamiento,
         )
         self.session.add(db_sala)
         self.session.commit()
@@ -50,6 +53,7 @@ class SalaRepository:
     def get_salas_disponibles(self, bloque_id: int = None) -> List[Sala]:
         """Obtener salas disponibles y opcionalmente que no tienen clases en un bloque específico"""
         from domain.models import Clase
+
         query = self.session.query(Sala).filter(Sala.disponible == True)
         if bloque_id:
             query = query.outerjoin(Clase).filter(
@@ -63,10 +67,11 @@ class SalaRepository:
 
     def search_by_codigo_or_tipo(self, search_term: str) -> List[Sala]:
         """Buscar salas por código o tipo"""
-        return self.session.query(Sala).filter(
-            (Sala.codigo.ilike(f"%{search_term}%")) |
-            (Sala.tipo.ilike(f"%{search_term}%"))
-        ).all()
+        return (
+            self.session.query(Sala)
+            .filter((Sala.codigo.ilike(f"%{search_term}%")) | (Sala.tipo.ilike(f"%{search_term}%")))
+            .all()
+        )
 
     def update(self, sala_id: int, sala_data: dict) -> Optional[Sala]:
         """Actualizar una sala"""
@@ -90,5 +95,6 @@ class SalaRepository:
     def has_clases_assigned(self, sala_id: int) -> bool:
         """Verificar si una sala tiene clases asignadas"""
         from domain.models import Clase
+
         count = self.session.query(Clase).filter(Clase.sala_id == sala_id).count()
         return count > 0

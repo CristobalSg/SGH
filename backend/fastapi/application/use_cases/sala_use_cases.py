@@ -1,9 +1,12 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import HTTPException, status
-from domain.entities import SalaCreate, Sala
+
+from domain.entities import Sala, SalaCreate
 from domain.schemas import SalaSecureCreate, SalaSecurePatch
-from infrastructure.repositories.sala_repository import SalaRepository
 from infrastructure.repositories.edificio_repository import SQLEdificioRepository
+from infrastructure.repositories.sala_repository import SalaRepository
+
 
 class SalaUseCases:
     def __init__(self, sala_repository: SalaRepository, edificio_repository: SQLEdificioRepository):
@@ -18,20 +21,14 @@ class SalaUseCases:
         """Obtener sala por ID"""
         sala = self.sala_repository.get_by_id(sala_id)
         if not sala:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sala no encontrada"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sala no encontrada")
         return sala
 
     def get_by_codigo(self, codigo: str) -> Sala:
         """Obtener sala por código"""
         sala = self.sala_repository.get_by_codigo(codigo)
         if not sala:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sala no encontrada"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sala no encontrada")
         return sala
 
     def create(self, sala_data: SalaSecureCreate) -> Sala:
@@ -41,17 +38,16 @@ class SalaUseCases:
         if not edificio:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Edificio con id {sala_data.edificio_id} no encontrado"
+                detail=f"Edificio con id {sala_data.edificio_id} no encontrado",
             )
-        
+
         # Verificar si el código ya existe
         existing_sala = self.sala_repository.get_by_codigo(sala_data.codigo)
         if existing_sala:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El código de sala ya existe"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="El código de sala ya existe"
             )
-        
+
         # Convertir schema seguro a entidad
         sala_create = SalaCreate(**sala_data.model_dump())
         return self.sala_repository.create(sala_create)
@@ -63,14 +59,14 @@ class SalaUseCases:
         if not edificio:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Edificio con id {edificio_id} no encontrado"
+                detail=f"Edificio con id {edificio_id} no encontrado",
             )
-        
+
         salas = self.sala_repository.get_by_edificio(edificio_id)
         if not salas:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No hay salas en el edificio {edificio_id}"
+                detail=f"No hay salas en el edificio {edificio_id}",
             )
         return salas
 
@@ -79,34 +75,31 @@ class SalaUseCases:
         # Verificar que la sala existe
         existing_sala = self.sala_repository.get_by_id(sala_id)
         if not existing_sala:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sala no encontrada"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sala no encontrada")
+
         # Convertir schema seguro a diccionario y filtrar valores None
         update_data = {k: v for k, v in sala_data.model_dump().items() if v is not None}
-        
+
         if not update_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se proporcionaron campos para actualizar"
+                detail="No se proporcionaron campos para actualizar",
             )
-        
+
         # Si se actualiza el código, verificar que no exista otra sala con ese código
-        if 'codigo' in update_data:
-            sala_with_codigo = self.sala_repository.get_by_codigo(update_data['codigo'])
+        if "codigo" in update_data:
+            sala_with_codigo = self.sala_repository.get_by_codigo(update_data["codigo"])
             if sala_with_codigo and sala_with_codigo.id != sala_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="El código ya está registrado por otra sala"
+                    detail="El código ya está registrado por otra sala",
                 )
-        
+
         updated_sala = self.sala_repository.update(sala_id, update_data)
         if not updated_sala:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al actualizar la sala"
+                detail="Error al actualizar la sala",
             )
         return updated_sala
 
@@ -115,23 +108,20 @@ class SalaUseCases:
         # Verificar que la sala existe
         existing_sala = self.sala_repository.get_by_id(sala_id)
         if not existing_sala:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sala no encontrada"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sala no encontrada")
+
         # Verificar si tiene clases asociadas
         if self.sala_repository.tiene_clases_activas(sala_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede eliminar la sala porque tiene clases activas"
+                detail="No se puede eliminar la sala porque tiene clases activas",
             )
-        
+
         success = self.sala_repository.delete(sala_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al eliminar la sala"
+                detail="Error al eliminar la sala",
             )
         return success
 

@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Bloque
+
 from domain.entities import BloqueCreate
+from domain.models import Bloque
+
 
 class BloqueRepository:
     def __init__(self, session: Session):
@@ -39,6 +42,7 @@ class BloqueRepository:
     def get_bloques_disponibles(self, dia_semana: int = None) -> List[Bloque]:
         """Obtener bloques que no tienen clases asignadas"""
         from domain.models import Clase
+
         query = self.session.query(Bloque).outerjoin(Clase).filter(Clase.bloque_id == None)
         if dia_semana:
             query = query.filter(Bloque.dia_semana == dia_semana)
@@ -66,33 +70,41 @@ class BloqueRepository:
     def has_clases_assigned(self, bloque_id: int) -> bool:
         """Verificar si un bloque tiene clases asignadas"""
         from domain.models import Clase
+
         count = self.session.query(Clase).filter(Clase.bloque_id == bloque_id).count()
         return count > 0
 
     def get_by_numero_and_dia(self, numero: int, dia_semana: int) -> Optional[Bloque]:
         """Obtener bloque por número y día de la semana"""
-        return self.session.query(Bloque).filter(
-            Bloque.numero == numero, 
-            Bloque.dia_semana == dia_semana
-        ).first()
+        return (
+            self.session.query(Bloque)
+            .filter(Bloque.numero == numero, Bloque.dia_semana == dia_semana)
+            .first()
+        )
 
     def get_conflictos_horario(self, dia_semana: int, hora_inicio, hora_fin) -> List[Bloque]:
         """Obtener bloques que tienen conflictos de horario"""
-        return self.session.query(Bloque).filter(
-            Bloque.dia_semana == dia_semana,
-            # Verificar solapamiento de horarios
-            ((Bloque.hora_inicio <= hora_inicio) & (Bloque.hora_fin > hora_inicio)) |
-            ((Bloque.hora_inicio < hora_fin) & (Bloque.hora_fin >= hora_fin)) |
-            ((Bloque.hora_inicio >= hora_inicio) & (Bloque.hora_fin <= hora_fin))
-        ).all()
+        return (
+            self.session.query(Bloque)
+            .filter(
+                Bloque.dia_semana == dia_semana,
+                # Verificar solapamiento de horarios
+                ((Bloque.hora_inicio <= hora_inicio) & (Bloque.hora_fin > hora_inicio))
+                | ((Bloque.hora_inicio < hora_fin) & (Bloque.hora_fin >= hora_fin))
+                | ((Bloque.hora_inicio >= hora_inicio) & (Bloque.hora_fin <= hora_fin)),
+            )
+            .all()
+        )
 
     def tiene_clases_activas(self, bloque_id: int) -> bool:
         """Verificar si un bloque tiene clases activas"""
         from domain.models import Clase
-        count = self.session.query(Clase).filter(
-            Clase.bloque_id == bloque_id,
-            Clase.estado.in_(['programada', 'en_curso'])
-        ).count()
+
+        count = (
+            self.session.query(Clase)
+            .filter(Clase.bloque_id == bloque_id, Clase.estado.in_(["programada", "en_curso"]))
+            .count()
+        )
         return count > 0
 
     def get_bloques_libres(self, dia_semana: int = None) -> List[Bloque]:

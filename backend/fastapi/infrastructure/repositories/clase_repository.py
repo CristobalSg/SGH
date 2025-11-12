@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Clase
+
 from domain.entities import ClaseCreate
+from domain.models import Clase
+
 
 class ClaseRepository:
     def __init__(self, session: Session):
@@ -14,7 +17,7 @@ class ClaseRepository:
             docente_id=clase.docente_id,
             sala_id=clase.sala_id,
             bloque_id=clase.bloque_id,
-            estado=clase.estado
+            estado=clase.estado,
         )
         self.session.add(db_clase)
         self.session.commit()
@@ -52,6 +55,7 @@ class ClaseRepository:
     def get_horario_docente(self, docente_id: int, dia_semana: int = None) -> List[Clase]:
         """Obtener horario completo de un docente, opcionalmente filtrado por día"""
         from domain.models import Bloque
+
         query = self.session.query(Clase).join(Bloque).filter(Clase.docente_id == docente_id)
         if dia_semana is not None:
             query = query.filter(Bloque.dia_semana == dia_semana)
@@ -60,12 +64,15 @@ class ClaseRepository:
     def get_horario_sala(self, sala_id: int, dia_semana: int = None) -> List[Clase]:
         """Obtener horario de ocupación de una sala"""
         from domain.models import Bloque
+
         query = self.session.query(Clase).join(Bloque).filter(Clase.sala_id == sala_id)
         if dia_semana is not None:
             query = query.filter(Bloque.dia_semana == dia_semana)
         return query.order_by(Bloque.dia_semana, Bloque.hora_inicio).all()
 
-    def check_conflict(self, docente_id: int = None, sala_id: int = None, bloque_id: int = None) -> List[Clase]:
+    def check_conflict(
+        self, docente_id: int = None, sala_id: int = None, bloque_id: int = None
+    ) -> List[Clase]:
         """Verificar conflictos de horario para docente o sala en un bloque específico"""
         query = self.session.query(Clase).filter(Clase.bloque_id == bloque_id)
         if docente_id:
@@ -96,24 +103,28 @@ class ClaseRepository:
     def get_clases_by_periodo(self, anio: int, semestre: int) -> List[Clase]:
         """Obtener todas las clases de un período específico"""
         from domain.models import Seccion
-        return self.session.query(Clase).join(Seccion).filter(
-            Seccion.anio == anio,
-            Seccion.semestre == semestre
-        ).all()
+
+        return (
+            self.session.query(Clase)
+            .join(Seccion)
+            .filter(Seccion.anio == anio, Seccion.semestre == semestre)
+            .all()
+        )
 
     def get_by_sala_bloque_fecha(self, sala_id: int, bloque_id: int, fecha: str) -> Optional[Clase]:
         """Obtener clase por sala, bloque y fecha específica"""
-        return self.session.query(Clase).filter(
-            Clase.sala_id == sala_id,
-            Clase.bloque_id == bloque_id,
-            Clase.fecha == fecha
-        ).first()
+        return (
+            self.session.query(Clase)
+            .filter(Clase.sala_id == sala_id, Clase.bloque_id == bloque_id, Clase.fecha == fecha)
+            .first()
+        )
 
-    def get_conflictos_docente(self, docente_id: int, bloque_id: int, fecha: str = None) -> List[Clase]:
+    def get_conflictos_docente(
+        self, docente_id: int, bloque_id: int, fecha: str = None
+    ) -> List[Clase]:
         """Obtener conflictos de horario para un docente en un bloque y fecha específicos"""
         query = self.session.query(Clase).filter(
-            Clase.docente_id == docente_id,
-            Clase.bloque_id == bloque_id
+            Clase.docente_id == docente_id, Clase.bloque_id == bloque_id
         )
         if fecha:
             query = query.filter(Clase.fecha == fecha)
@@ -122,8 +133,7 @@ class ClaseRepository:
     def get_conflictos_sala(self, sala_id: int, bloque_id: int, fecha: str = None) -> List[Clase]:
         """Obtener conflictos de horario para una sala en un bloque y fecha específicos"""
         query = self.session.query(Clase).filter(
-            Clase.sala_id == sala_id,
-            Clase.bloque_id == bloque_id
+            Clase.sala_id == sala_id, Clase.bloque_id == bloque_id
         )
         if fecha:
             query = query.filter(Clase.fecha == fecha)

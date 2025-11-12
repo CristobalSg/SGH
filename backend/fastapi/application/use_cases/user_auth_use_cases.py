@@ -1,23 +1,33 @@
 from datetime import timedelta
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import HTTPException, status
+
 from domain.entities import (
-    UserCreate, User, UserLogin, Token, TokenResponse, RefreshTokenRequest,
-    DocenteCreate, EstudianteCreate, AdministradorCreate
+    AdministradorCreate,
+    DocenteCreate,
+    EstudianteCreate,
+    RefreshTokenRequest,
+    Token,
+    TokenResponse,
+    User,
+    UserCreate,
+    UserLogin,
 )
-from infrastructure.repositories.user_repository import SQLUserRepository
+from infrastructure.auth import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, AuthService
+from infrastructure.repositories.administrador_repository import SQLAdministradorRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.estudiante_repository import SQLEstudianteRepository
-from infrastructure.repositories.administrador_repository import SQLAdministradorRepository
-from infrastructure.auth import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+from infrastructure.repositories.user_repository import SQLUserRepository
+
 
 class UserAuthUseCase:
     def __init__(
-        self, 
+        self,
         user_repository: SQLUserRepository,
         docente_repository: Optional[DocenteRepository] = None,
         estudiante_repository: Optional[SQLEstudianteRepository] = None,
-        administrador_repository: Optional[SQLAdministradorRepository] = None
+        administrador_repository: Optional[SQLAdministradorRepository] = None,
     ):
         self.user_repository = user_repository
         self.docente_repository = docente_repository
@@ -27,7 +37,7 @@ class UserAuthUseCase:
     def register_user(self, user_data: UserCreate) -> User:
         """
         Registrar un nuevo usuario y crear automáticamente su perfil según el rol.
-        
+
         Esta función garantiza que:
         1. Se crea el usuario en la tabla users
         2. Se crea automáticamente el perfil correspondiente según el rol:
@@ -39,54 +49,52 @@ class UserAuthUseCase:
         existing_user = self.user_repository.get_by_email(user_data.email)
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El email ya está registrado"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="El email ya está registrado"
             )
-        
+
         # Crear el usuario
         new_user = self.user_repository.create(user_data)
-        
+
         # Crear perfil específico según el rol
         try:
             if new_user.rol == "docente":
                 if not self.docente_repository:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Repositorio de docentes no configurado"
+                        detail="Repositorio de docentes no configurado",
                     )
                 # Crear perfil de docente con valores por defecto
                 docente_data = DocenteCreate(
                     user_id=new_user.id,
-                    departamento=getattr(user_data, 'departamento', 'SIN_ASIGNAR')
+                    departamento=getattr(user_data, "departamento", "SIN_ASIGNAR"),
                 )
                 self.docente_repository.create(docente_data)
-                
+
             elif new_user.rol == "estudiante":
                 if not self.estudiante_repository:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Repositorio de estudiantes no configurado"
+                        detail="Repositorio de estudiantes no configurado",
                     )
                 # Crear perfil de estudiante con valores por defecto
                 estudiante_data = EstudianteCreate(
                     user_id=new_user.id,
-                    matricula=getattr(user_data, 'matricula', f"EST{new_user.id:06d}")
+                    matricula=getattr(user_data, "matricula", f"EST{new_user.id:06d}"),
                 )
                 self.estudiante_repository.create(estudiante_data)
-                
+
             elif new_user.rol == "administrador":
                 if not self.administrador_repository:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Repositorio de administradores no configurado"
+                        detail="Repositorio de administradores no configurado",
                     )
                 # Crear perfil de administrador con permisos por defecto
                 administrador_data = AdministradorCreate(
-                    user_id=new_user.id,
-                    permisos=getattr(user_data, 'permisos', 'ALL')
+                    user_id=new_user.id, permisos=getattr(user_data, "permisos", "ALL")
                 )
                 self.administrador_repository.create(administrador_data)
-                
+
         except HTTPException:
             # Si falla la creación del perfil, eliminar el usuario creado
             # para mantener consistencia
@@ -97,9 +105,9 @@ class UserAuthUseCase:
             self.user_repository.delete(new_user.id)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error al crear el perfil de {new_user.rol}: {str(e)}"
+                detail=f"Error al crear el perfil de {new_user.rol}: {str(e)}",
             )
-        
+
         return new_user
 
     def login_user(self, login_data: UserLogin) -> Token:
@@ -112,40 +120,33 @@ class UserAuthUseCase:
                 detail="Email o contraseña incorrectos",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         # Verificar si el usuario está activo
         if not self.user_repository.is_active(user):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Usuario inactivo"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo")
+
         # Crear tokens de acceso y refresh
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-        
+
         # Incluir información del usuario en el token
-        token_data = {
-            "sub": user.email,
-            "user_id": user.id,
-            "rol": user.rol
-        }
-        
+        token_data = {"sub": user.email, "user_id": user.id, "rol": user.rol}
+
         access_token = AuthService.create_access_token(
             data=token_data, expires_delta=access_token_expires
         )
-        
+
         refresh_token = AuthService.create_refresh_token(
             data=token_data, expires_delta=refresh_token_expires
         )
-        
+
         return Token(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # En segundos
             user=user,
-            rol=user.rol
+            rol=user.rol,
         )
 
     def login_user_token_only(self, login_data: UserLogin) -> TokenResponse:
@@ -158,45 +159,38 @@ class UserAuthUseCase:
                 detail="Email o contraseña incorrectos",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         # Verificar si el usuario está activo
         if not self.user_repository.is_active(user):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Usuario inactivo"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo")
+
         # Crear tokens de acceso y refresh
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-        
+
         # Incluir información del usuario en el token
-        token_data = {
-            "sub": user.email,
-            "user_id": user.id,
-            "rol": user.rol
-        }
-        
+        token_data = {"sub": user.email, "user_id": user.id, "rol": user.rol}
+
         access_token = AuthService.create_access_token(
             data=token_data, expires_delta=access_token_expires
         )
-        
+
         refresh_token = AuthService.create_refresh_token(
             data=token_data, expires_delta=refresh_token_expires
         )
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # En segundos
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # En segundos
         )
 
     def get_current_user(self, token: str) -> User:
         """Obtener usuario actual desde token"""
         # Verificar token
         token_data = AuthService.verify_token(token)
-        
+
         # Buscar usuario
         user = self.user_repository.get_by_email(token_data.email)
         if user is None:
@@ -205,17 +199,14 @@ class UserAuthUseCase:
                 detail="No se pudieron validar las credenciales",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         return user
 
     def get_current_active_user(self, token: str) -> User:
         """Obtener usuario actual activo"""
         current_user = self.get_current_user(token)
         if not self.user_repository.is_active(current_user):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Usuario inactivo"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo")
         return current_user
 
     def refresh_access_token(self, refresh_token_request: RefreshTokenRequest) -> Token:
@@ -223,7 +214,7 @@ class UserAuthUseCase:
         try:
             # Verificar refresh token
             token_data = AuthService.verify_refresh_token(refresh_token_request.refresh_token)
-            
+
             # Buscar usuario
             user = self.user_repository.get_by_email(token_data.email)
             if user is None:
@@ -232,42 +223,37 @@ class UserAuthUseCase:
                     detail="Usuario no encontrado",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-            
+
             # Verificar si el usuario está activo
             if not self.user_repository.is_active(user):
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Usuario inactivo"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo"
                 )
-            
+
             # Crear nuevos tokens
             access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
             refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-            
+
             # Incluir información del usuario en los nuevos tokens
-            token_data = {
-                "sub": user.email,
-                "user_id": user.id,
-                "rol": user.rol
-            }
-            
+            token_data = {"sub": user.email, "user_id": user.id, "rol": user.rol}
+
             new_access_token = AuthService.create_access_token(
                 data=token_data, expires_delta=access_token_expires
             )
-            
+
             new_refresh_token = AuthService.create_refresh_token(
                 data=token_data, expires_delta=refresh_token_expires
             )
-            
+
             return Token(
                 access_token=new_access_token,
                 refresh_token=new_refresh_token,
                 token_type="bearer",
                 expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
                 user=user,
-                rol=user.rol
+                rol=user.rol,
             )
-            
+
         except HTTPException:
             raise
         except Exception:
@@ -277,12 +263,14 @@ class UserAuthUseCase:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    def refresh_access_token_only(self, refresh_token_request: RefreshTokenRequest) -> TokenResponse:
+    def refresh_access_token_only(
+        self, refresh_token_request: RefreshTokenRequest
+    ) -> TokenResponse:
         """Generar nuevo access token usando refresh token sin información del usuario"""
         try:
             # Verificar refresh token
             token_data = AuthService.verify_refresh_token(refresh_token_request.refresh_token)
-            
+
             # Buscar usuario
             user = self.user_repository.get_by_email(token_data.email)
             if user is None:
@@ -291,40 +279,35 @@ class UserAuthUseCase:
                     detail="Usuario no encontrado",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-            
+
             # Verificar si el usuario está activo
             if not self.user_repository.is_active(user):
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Usuario inactivo"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo"
                 )
-            
+
             # Crear nuevos tokens
             access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
             refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-            
+
             # Incluir información del usuario en los nuevos tokens
-            token_data = {
-                "sub": user.email,
-                "user_id": user.id,
-                "rol": user.rol
-            }
-            
+            token_data = {"sub": user.email, "user_id": user.id, "rol": user.rol}
+
             new_access_token = AuthService.create_access_token(
                 data=token_data, expires_delta=access_token_expires
             )
-            
+
             new_refresh_token = AuthService.create_refresh_token(
                 data=token_data, expires_delta=refresh_token_expires
             )
-            
+
             return TokenResponse(
                 access_token=new_access_token,
                 refresh_token=new_refresh_token,
                 token_type="bearer",
-                expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+                expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             )
-            
+
         except HTTPException:
             raise
         except Exception:
@@ -339,7 +322,7 @@ class UserAuthUseCase:
         if user.rol not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Acceso denegado. Se requiere uno de los siguientes roles: {', '.join(required_roles)}"
+                detail=f"Acceso denegado. Se requiere uno de los siguientes roles: {', '.join(required_roles)}",
             )
         return True
 
@@ -366,24 +349,24 @@ class UserAuthUseCase:
             "email": user.email,
             "nombre": user.nombre,
             "rol": user.rol,
-            "activo": user.activo
+            "activo": user.activo,
         }
-        
+
         # Agregar datos específicos según el rol
         if user.rol == "docente" and user.docente:
             result["docente_info"] = {
                 "id": user.docente.id,
-                "departamento": user.docente.departamento
+                "departamento": user.docente.departamento,
             }
         elif user.rol == "estudiante" and user.estudiante:
             result["estudiante_info"] = {
                 "id": user.estudiante.id,
-                "matricula": user.estudiante.matricula
+                "matricula": user.estudiante.matricula,
             }
         elif user.rol == "administrador" and user.administrador:
             result["administrador_info"] = {
                 "id": user.administrador.id,
-                "permisos": user.administrador.permisos
+                "permisos": user.administrador.permisos,
             }
-        
+
         return result
