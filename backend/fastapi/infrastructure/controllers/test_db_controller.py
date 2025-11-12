@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from infrastructure.database.config import get_db
+
 from domain.models import Docente
+from infrastructure.database.config import get_db
 
 router = APIRouter(tags=["test"])
+
 
 @router.get("/test-db", summary="Probar conexión a la base de datos")
 async def test_database(db: Session = Depends(get_db)):
@@ -15,11 +17,19 @@ async def test_database(db: Session = Depends(get_db)):
             "message": "Conexión a la base de datos exitosa",
             "data": {
                 "primera_consulta": docente.__dict__ if docente else None,
-                "tablas_disponibles": ["docente", "asignatura", "seccion", "sala", "bloque", "clase", "restriccion"]
-            }
+                "tablas_disponibles": [
+                    "docente",
+                    "asignatura",
+                    "seccion",
+                    "sala",
+                    "bloque",
+                    "clase",
+                    "restriccion",
+                ],
+            },
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error de conexión a la base de datos: {str(e)}"
+            detail=f"Error de conexión a la base de datos: {str(e)}",
         )

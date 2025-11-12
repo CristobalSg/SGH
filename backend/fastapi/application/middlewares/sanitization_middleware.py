@@ -1,14 +1,16 @@
 """
 Middleware de sanitización de entrada para prevenir inyecciones y ataques XSS.
 """
-import re
+
 import json
+import logging
+import re
 from typing import Any, Dict
+
+from fastapi import status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response, JSONResponse
-from fastapi import status
-import logging
+from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 class SanitizationMiddleware(BaseHTTPMiddleware):
     """
     Middleware que sanitiza los datos de entrada para prevenir ataques de inyección.
-    
+
     Características:
     - Detecta patrones de SQL injection
     - Detecta patrones de XSS
@@ -24,7 +26,7 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
     - Valida tipos de contenido
     - Limita tamaño de payload
     """
-    
+
     # Patrones sospechosos para SQL Injection
     SQL_INJECTION_PATTERNS = [
         r"(\bunion\b.*\bselect\b)",
@@ -39,7 +41,7 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
         r"(\bexec\b.*\()",
         r"(\bexecute\b.*\()",
     ]
-    
+
     # Patrones sospechosos para XSS
     XSS_PATTERNS = [
         r"<script[^>]*>.*?</script>",
@@ -51,7 +53,7 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
         r"<object[^>]*>",
         r"<embed[^>]*>",
     ]
-    
+
     # Patrones de path traversal
     PATH_TRAVERSAL_PATTERNS = [
         r"\.\./",
@@ -59,17 +61,22 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
         r"%2e%2e",
         r"%252e%252e",
     ]
-    
+
     # Tamaño máximo de payload (5MB)
     MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
-    
-    def __init__(self, app, enable_sql_check: bool = True, enable_xss_check: bool = True, 
-                 enable_path_check: bool = True):
+
+    def __init__(
+        self,
+        app,
+        enable_sql_check: bool = True,
+        enable_xss_check: bool = True,
+        enable_path_check: bool = True,
+    ):
         super().__init__(app)
         self.enable_sql_check = enable_sql_check
         self.enable_xss_check = enable_xss_check
         self.enable_path_check = enable_path_check
-        
+
     async def dispatch(self, request: Request, call_next) -> Response:
         """
         Procesa cada solicitud y aplica sanitización.
@@ -84,9 +91,9 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
                     )
                     return JSONResponse(
                         status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                        content={"detail": "Content-Type no soportado"}
+                        content={"detail": "Content-Type no soportado"},
                     )
-            
+
             # 2. Validar tamaño del payload
             content_length = request.headers.get("content-length")
             if content_length and int(content_length) > self.MAX_PAYLOAD_SIZE:
@@ -95,66 +102,66 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
                 )
                 return JSONResponse(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    content={"detail": "Payload demasiado grande"}
+                    content={"detail": "Payload demasiado grande"},
                 )
-            
+
             # 3. Sanitizar query parameters
             if request.query_params:
                 if not self._sanitize_dict(dict(request.query_params), request):
                     return JSONResponse(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        content={"detail": "Parámetros de consulta contienen datos sospechosos"}
+                        content={"detail": "Parámetros de consulta contienen datos sospechosos"},
                     )
-            
+
             # 4. Sanitizar path parameters
             if not self._sanitize_string(request.url.path, request, "URL path"):
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"detail": "URL contiene patrones sospechosos"}
+                    content={"detail": "URL contiene patrones sospechosos"},
                 )
-            
+
             # 5. Sanitizar body (si existe)
             if request.method in ["POST", "PUT", "PATCH"]:
                 content_type = request.headers.get("content-type", "")
-                
+
                 if "application/json" in content_type:
                     try:
                         body = await request.body()
                         if body:
                             body_str = body.decode("utf-8")
                             body_json = json.loads(body_str)
-                            
+
                             if not self._sanitize_dict(body_json, request):
                                 return JSONResponse(
                                     status_code=status.HTTP_400_BAD_REQUEST,
-                                    content={"detail": "Body contiene datos sospechosos"}
+                                    content={"detail": "Body contiene datos sospechosos"},
                                 )
-                            
+
                             # Reconstruir el request con el body validado
                             async def receive():
                                 return {"type": "http.request", "body": body}
-                            
+
                             request._receive = receive
                     except json.JSONDecodeError:
                         logger.warning(f"JSON inválido desde {request.client.host}")
                         return JSONResponse(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            content={"detail": "JSON inválido"}
+                            content={"detail": "JSON inválido"},
                         )
                     except Exception as e:
                         logger.error(f"Error sanitizando body: {str(e)}")
-            
+
             # Continuar con la solicitud
             response = await call_next(request)
             return response
-            
+
         except Exception as e:
             logger.error(f"Error en SanitizationMiddleware: {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"detail": "Error interno del servidor"}
+                content={"detail": "Error interno del servidor"},
             )
-    
+
     def _is_valid_content_type(self, content_type: str) -> bool:
         """Valida que el Content-Type sea permitido."""
         allowed_types = [
@@ -163,7 +170,7 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
             "multipart/form-data",
         ]
         return any(allowed in content_type.lower() for allowed in allowed_types)
-    
+
     def _sanitize_dict(self, data: Dict[str, Any], request: Request) -> bool:
         """
         Sanitiza recursivamente un diccionario.
@@ -185,14 +192,14 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
                         if not self._sanitize_dict(item, request):
                             return False
         return True
-    
+
     def _sanitize_string(self, value: str, request: Request, field_name: str = "campo") -> bool:
         """
         Verifica si una cadena contiene patrones sospechosos.
         Retorna False si se detectan patrones sospechosos.
         """
         value_lower = value.lower()
-        
+
         # Check SQL Injection
         if self.enable_sql_check:
             for pattern in self.SQL_INJECTION_PATTERNS:
@@ -202,7 +209,7 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
                         f"patrón '{pattern}' desde {request.client.host}"
                     )
                     return False
-        
+
         # Check XSS
         if self.enable_xss_check:
             for pattern in self.XSS_PATTERNS:
@@ -212,7 +219,7 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
                         f"patrón '{pattern}' desde {request.client.host}"
                     )
                     return False
-        
+
         # Check Path Traversal
         if self.enable_path_check:
             for pattern in self.PATH_TRAVERSAL_PATTERNS:
@@ -222,5 +229,5 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
                         f"patrón '{pattern}' desde {request.client.host}"
                     )
                     return False
-        
+
         return True

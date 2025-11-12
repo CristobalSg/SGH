@@ -1,8 +1,9 @@
 """
 Middlewares de seguridad transversal para el backend.
 """
-from .sanitization_middleware import SanitizationMiddleware
+
 from .rate_limit_middleware import RateLimitMiddleware
+from .sanitization_middleware import SanitizationMiddleware
 from .security_logging_middleware import SecurityLoggingMiddleware
 
 __all__ = [

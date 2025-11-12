@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Seccion
+
 from domain.entities import SeccionCreate
+from domain.models import Seccion
+
 
 class SeccionRepository:
     def __init__(self, session: Session):
@@ -33,18 +36,25 @@ class SeccionRepository:
 
     def get_by_periodo(self, anio: int, semestre: int) -> List[Seccion]:
         """Obtener secciones por año y semestre"""
-        return self.session.query(Seccion).filter(
-            Seccion.anio == anio,
-            Seccion.semestre == semestre
-        ).all()
+        return (
+            self.session.query(Seccion)
+            .filter(Seccion.anio == anio, Seccion.semestre == semestre)
+            .all()
+        )
 
-    def get_by_asignatura_and_periodo(self, asignatura_id: int, anio: int, semestre: int) -> List[Seccion]:
+    def get_by_asignatura_and_periodo(
+        self, asignatura_id: int, anio: int, semestre: int
+    ) -> List[Seccion]:
         """Obtener secciones de una asignatura en un período específico"""
-        return self.session.query(Seccion).filter(
-            Seccion.asignatura_id == asignatura_id,
-            Seccion.anio == anio,
-            Seccion.semestre == semestre
-        ).all()
+        return (
+            self.session.query(Seccion)
+            .filter(
+                Seccion.asignatura_id == asignatura_id,
+                Seccion.anio == anio,
+                Seccion.semestre == semestre,
+            )
+            .all()
+        )
 
     def get_secciones_con_cupos(self, cupos_min: int = 1) -> List[Seccion]:
         """Obtener secciones que tienen cupos disponibles"""
@@ -72,6 +82,7 @@ class SeccionRepository:
     def has_clases(self, seccion_id: int) -> bool:
         """Verificar si una sección tiene clases programadas"""
         from domain.models import Clase
+
         count = self.session.query(Clase).filter(Clase.seccion_id == seccion_id).count()
         return count > 0
 

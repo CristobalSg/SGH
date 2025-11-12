@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Edificio
+
 from domain.entities import EdificioCreate
+from domain.models import Edificio
+
 
 class SQLEdificioRepository:
     def __init__(self, session: Session):
@@ -10,9 +13,7 @@ class SQLEdificioRepository:
     def create(self, edificio: EdificioCreate) -> Edificio:
         """Crear un nuevo edificio"""
         db_edificio = Edificio(
-            campus_id=edificio.campus_id,
-            nombre=edificio.nombre,
-            pisos=edificio.pisos
+            campus_id=edificio.campus_id, nombre=edificio.nombre, pisos=edificio.pisos
         )
         self.session.add(db_edificio)
         self.session.commit()
