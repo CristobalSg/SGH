@@ -1,10 +1,11 @@
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { DIAS, HORAS } from "../../types/schedule";
+import { DIAS, DIA_LABELS, HORAS, type ScheduleEventDetailsMap } from "../../types/schedule";
 import type { Events } from "../../types/schedule";
 
 interface Props {
   events: Events;
+  details?: ScheduleEventDetailsMap;
   onCellClick: (day: string, hour: string) => void;
 }
 
@@ -13,29 +14,37 @@ interface RowData {
   hora: string;
 }
 
-export default function ScheduleGridDesktop({ events, onCellClick }: Props) {
+export default function ScheduleGridDesktop({ events, details = {}, onCellClick }: Props) {
+  const HOUR_COL_WIDTH = 5;
+
   const columns: ColumnsType<RowData> = [
     {
       title: "Hora",
       dataIndex: "hora",
       key: "hora",
       align: "center",
-      width: 90,
+      width: HOUR_COL_WIDTH,
       fixed: "left",
+      onHeaderCell: () => ({
+        style: { width: HOUR_COL_WIDTH, maxWidth: HOUR_COL_WIDTH },
+      }),
+      onCell: () => ({
+        style: { width: HOUR_COL_WIDTH, maxWidth: HOUR_COL_WIDTH },
+      }),
     },
     ...DIAS.map((day) => ({
-      title: day.charAt(0).toUpperCase() + day.slice(1),
+      title: DIA_LABELS[day],
       key: day,
       align: "center" as const,
       render: (_: any, record: RowData) => {
         const evts = events[day]?.[record.hora];
         return (
           <button
-            className={`w-full text-left p-2 rounded focus:outline-none focus:ring
+            className={`w-full text-left rounded p-2 focus:outline-none focus:ring whitespace-normal break-words
               ${evts?.length ? "bg-pink-100" : "bg-white hover:bg-gray-50"}`}
             onClick={() => onCellClick(day, record.hora)}
           >
-            {evts?.length ? evts.join(", ") : (
+            {evts?.length ? evts.map((evtId) => details[evtId]?.code ?? evtId).join(", ") : (
               <span className="text-gray-400 text-sm">—</span>
             )}
           </button>
@@ -55,6 +64,7 @@ export default function ScheduleGridDesktop({ events, onCellClick }: Props) {
         dataSource={data}
         bordered
         scroll={{ x: 700 }}
+        tableLayout="fixed"
         className="[&_.ant-table]:rounded-lg"
       />
     </div>
