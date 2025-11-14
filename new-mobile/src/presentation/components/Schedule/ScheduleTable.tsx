@@ -3,10 +3,12 @@ import ScheduleListMobile from "./ScheduleListMobile";
 import { useScheduleEvents } from "../../hooks/useScheduleEvents";
 
 export default function ScheduleTable() {
-  const { events, allEventsCount } = useScheduleEvents();
+  const { events, allEventsCount, details } = useScheduleEvents();
 
   return (
-    <div className="rounded-3xl border border-[#004F9F1A] bg-white p-5 shadow-lg">
+    <div>
+
+    <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-[#004F9F]">
           <span className="grid place-items-center rounded-full bg-[#004F9F1A] p-2">
@@ -17,7 +19,8 @@ export default function ScheduleTable() {
         <span className="text-sm font-medium text-[#FDB813]">{allEventsCount} clases</span>
       </div>
 
-      <ScheduleListMobile events={events} />
+      </div>
+      <ScheduleListMobile events={events} details={details} />
     </div>
   );
 }
