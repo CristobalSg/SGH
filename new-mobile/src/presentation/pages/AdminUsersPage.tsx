@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Spin, Input, Select } from "antd";
 import AppLayout from "../components/layout/AppLayout";
 import { useAdminUsers, type AdminUserView } from "../hooks/useAdminUsers";
@@ -62,6 +62,14 @@ export default function AdminUsersPage() {
   const [filterRole, setFilterRole] = useState<string>("todos");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 20;
+
+  // Reset página cuando cambian filtros/búsqueda
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterRole]);
 
   // Ordenar usuarios alfabéticamente
   const sortedUsers = useMemo(
@@ -72,20 +80,34 @@ export default function AdminUsersPage() {
     [users]
   );
 
-  // Aplicar búsqueda y filtro por tipo
+  // Aplicar búsqueda y filtro por rol
   const filteredUsers = useMemo(() => {
     return sortedUsers.filter((user) => {
       const matchesRole =
         filterRole === "todos" || user.role?.toLowerCase() === filterRole;
+      const term = searchTerm.toLowerCase();
       const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        user.name.toLowerCase().includes(term) ||
+        user.email.toLowerCase().includes(term);
       return matchesRole && matchesSearch;
     });
   }, [sortedUsers, searchTerm, filterRole]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+
+  // Datos paginados
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredUsers.slice(start, start + PAGE_SIZE);
+  }, [filteredUsers, page]);
+
   const handleSelectUser = (user: AdminUserView) => {
     setSelectedUserId(user.id);
+  };
+
+  const goToPage = (p: number) => {
+    if (p < 1 || p > totalPages) return;
+    setPage(p);
   };
 
   return (
@@ -93,10 +115,8 @@ export default function AdminUsersPage() {
       <div className="space-y-6 pb-6">
         {/* Filtros y búsqueda */}
         <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-900 mb-3">
-            Filtros de búsqueda
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <h2 className="mb-3 text-base font-semibold text-gray-900">Filtros de búsqueda</h2>
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Input
               placeholder="Buscar por nombre o correo..."
               value={searchTerm}
@@ -106,7 +126,7 @@ export default function AdminUsersPage() {
             />
             <Select
               value={filterRole}
-              onChange={setFilterRole}
+              onChange={(v) => setFilterRole(v)}
               className="sm:w-1/3"
             >
               <Option value="todos">Todos</Option>
@@ -139,6 +159,10 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
+          <div className="mb-2 text-xs text-gray-500">
+            {filteredUsers.length} usuario(s) · Página {page} de {totalPages}
+          </div>
+
           {error && (
             <Alert
               type="error"
@@ -166,16 +190,75 @@ export default function AdminUsersPage() {
               No se encontraron usuarios.
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredUsers.map((user) => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  selected={selectedUserId === user.id}
-                  onSelect={handleSelectUser}
-                />
-              ))}
-            </div>
+            <>
+              <div className="space-y-2">
+                {paginatedUsers.map((user) => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    selected={selectedUserId === user.id}
+                    onSelect={handleSelectUser}
+                  />
+                ))}
+              </div>
+
+              {/* Paginación */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => goToPage(page - 1)}
+                  disabled={page === 1}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-gray-50"
+                >
+                  ← Anterior
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => {
+                    // Mostrar primeras, últimas y ventana alrededor de la actual
+                    const window = 2;
+                    if (p === 1 || p === totalPages) return true;
+                    if (Math.abs(p - page) <= window) return true;
+                    return false;
+                  })
+                  .map((p, idx, arr) => {
+                    // Insertar puntos suspensivos donde se salta rango
+                    const prev = arr[idx - 1];
+                    if (prev && p - prev > 1) {
+                      return (
+                        <span
+                          key={`gap-${prev}-${p}`}
+                          className="px-2 text-xs text-gray-400 select-none"
+                        >
+                          …
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => goToPage(p)}
+                        className={[
+                          "rounded-md px-3 py-1 text-xs font-medium transition",
+                          p === page
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50",
+                        ].join(" ")}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                <button
+                  type="button"
+                  onClick={() => goToPage(page + 1)}
+                  disabled={page === totalPages}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-gray-50"
+                >
+                  Siguiente →
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
