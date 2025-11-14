@@ -12,66 +12,102 @@ const roleLabels: Record<string, string> = {
   admin: "Administrador",
 };
 
-// 🟢 Tarjeta de usuario
+// Tarjeta de usuario con acciones
 const UserRow = ({
   user,
   selected,
   onSelect,
+  onEdit,
+  onDelete,
 }: {
   user: AdminUserView;
   selected: boolean;
   onSelect: (user: AdminUserView) => void;
+  onEdit: (user: AdminUserView) => void;
+  onDelete: (user: AdminUserView) => void;
 }) => {
   const roleLabel = roleLabels[user.role] ?? user.role;
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(user)}
+    <div
       className={[
-        "w-full rounded-2xl border px-4 py-3 text-left transition",
+        "w-full rounded-2xl border px-4 py-3 transition",
         selected
           ? "border-indigo-500 bg-indigo-50 shadow-sm"
           : "border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/60",
       ].join(" ")}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div>
+      <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => onSelect(user)}
+          className="flex-1 text-left"
+          title="Seleccionar"
+        >
           <p className="text-sm font-semibold text-gray-900">{user.name}</p>
           <p className="text-xs text-gray-500">{user.email}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="text-xs font-medium text-indigo-600">{roleLabel}</span>
-          {user.docenteId && (
-            <span className="text-[11px] text-gray-500">
-              ID Docente: {user.docenteId}
-              {user.department ? ` · ${user.department}` : ""}
-            </span>
-          )}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-indigo-600">{roleLabel}</span>
+            {user.docenteId && (
+              <span className="text-[11px] text-gray-500">
+                ID Docente: {user.docenteId}
+                {user.department ? ` · ${user.department}` : ""}
+              </span>
+            )}
+          </div>
+        </button>
+
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(user)}
+            className="rounded-md bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+            title="Editar"
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(user)}
+            className="rounded-md bg-red-600 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-700"
+            title="Eliminar"
+          >
+            Eliminar
+          </button>
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 
-// 🟣 Página principal de administración de usuarios (solo usuarios)
 export default function AdminUsersPage() {
-  const { users, loading, error, refresh } = useAdminUsers();
+  const { users, loading, error, refresh, updateUser, deleteUser } = useAdminUsers();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("todos");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [page, setPage] = useState(1);
 
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUserView | null>(null);
+
+  // Banner superior (éxito/error)
+  const [banner, setBanner] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+
+  // Confirmación de eliminación
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    user: AdminUserView | null;
+    loading: boolean;
+  }>({ open: false, user: null, loading: false });
+
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  // Reset página cuando cambian filtros/búsqueda
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterRole]);
 
-  // Ordenar usuarios alfabéticamente
   const sortedUsers = useMemo(
     () =>
       users
@@ -80,7 +116,6 @@ export default function AdminUsersPage() {
     [users]
   );
 
-  // Aplicar búsqueda y filtro por rol
   const filteredUsers = useMemo(() => {
     return sortedUsers.filter((user) => {
       const matchesRole =
@@ -95,14 +130,53 @@ export default function AdminUsersPage() {
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
 
-  // Datos paginados
   const paginatedUsers = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filteredUsers.slice(start, start + PAGE_SIZE);
   }, [filteredUsers, page]);
 
-  const handleSelectUser = (user: AdminUserView) => {
-    setSelectedUserId(user.id);
+  const handleSelectUser = (user: AdminUserView) => setSelectedUserId(user.id);
+
+  const handleEdit = (user: AdminUserView) => {
+    setEditingUser(user);
+    setShowEditModal(true);
+  };
+
+  // Abrir modal de confirmación (no usar window.confirm)
+  const requestDelete = (user: AdminUserView) => {
+    setConfirmState({ open: true, user, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmState.user) return;
+    try {
+      setConfirmState((s) => ({ ...s, loading: true }));
+      await deleteUser(confirmState.user.id);
+      await refresh();
+      setBanner({ type: "success", text: `Usuario "${confirmState.user.name}" eliminado.` });
+    } catch (e: any) {
+      setBanner({ type: "error", text: e?.message || "No se pudo eliminar el usuario." });
+    } finally {
+      setConfirmState({ open: false, user: null, loading: false });
+    }
+  };
+
+  const cancelDelete = () => setConfirmState({ open: false, user: null, loading: false });
+
+  const handleUpdateUser = async (
+    id: number,
+    data: { name: string; email: string; role: string; password?: string }
+  ) => {
+    try {
+      await updateUser(id, data);
+      setShowEditModal(false);
+      setEditingUser(null);
+      await refresh();
+      setBanner({ type: "success", text: "Usuario actualizado." });
+    } catch (e: any) {
+      setBanner({ type: "error", text: e?.message || "No se pudo actualizar el usuario." });
+      throw e; // permite que el modal de edición muestre errores por campo
+    }
   };
 
   const goToPage = (p: number) => {
@@ -159,6 +233,18 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
+          {/* Banner de estado (éxito/error) */}
+          {banner && (
+            <Alert
+              type={banner.type}
+              message={banner.text}
+              showIcon
+              closable
+              onClose={() => setBanner(null)}
+              className="mb-3"
+            />
+          )}
+
           <div className="mb-2 text-xs text-gray-500">
             {filteredUsers.length} usuario(s) · Página {page} de {totalPages}
           </div>
@@ -198,6 +284,8 @@ export default function AdminUsersPage() {
                     user={user}
                     selected={selectedUserId === user.id}
                     onSelect={handleSelectUser}
+                    onEdit={handleEdit}
+                    onDelete={requestDelete}
                   />
                 ))}
               </div>
@@ -214,21 +302,16 @@ export default function AdminUsersPage() {
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter((p) => {
-                    // Mostrar primeras, últimas y ventana alrededor de la actual
-                    const window = 2;
+                    const delta = 2;
                     if (p === 1 || p === totalPages) return true;
-                    if (Math.abs(p - page) <= window) return true;
+                    if (Math.abs(page - p) <= delta) return true;
                     return false;
                   })
                   .map((p, idx, arr) => {
-                    // Insertar puntos suspensivos donde se salta rango
                     const prev = arr[idx - 1];
                     if (prev && p - prev > 1) {
                       return (
-                        <span
-                          key={`gap-${prev}-${p}`}
-                          className="px-2 text-xs text-gray-400 select-none"
-                        >
+                        <span key={`gap-${prev}-${p}`} className="px-2 text-xs text-gray-400">
                           …
                         </span>
                       );
@@ -238,12 +321,11 @@ export default function AdminUsersPage() {
                         key={p}
                         type="button"
                         onClick={() => goToPage(p)}
-                        className={[
-                          "rounded-md px-3 py-1 text-xs font-medium transition",
+                        className={`rounded-md border px-3 py-1 text-xs font-medium ${
                           p === page
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50",
-                        ].join(" ")}
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
                       >
                         {p}
                       </button>
@@ -263,12 +345,97 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Modal para agregar usuario */}
+      {/* Modal crear */}
       <AddUserModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={refresh}
+        mode="create"
+      />
+
+      {/* Modal editar (reutiliza el formulario) */}
+      {editingUser && (
+        <AddUserModal
+          visible={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingUser(null);
+          }}
+          onSuccess={refresh}
+          mode="edit"
+          initialUser={editingUser}
+          onUpdate={handleUpdateUser}
+        />
+      )}
+
+      {/* Modal de confirmación eliminar */}
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Eliminar usuario"
+        description={
+          confirmState.user
+            ? `¿Seguro que deseas eliminar a "${confirmState.user.name}"? Esta acción no se puede deshacer.`
+            : ""
+        }
+        confirmText={confirmState.loading ? "Eliminando…" : "Eliminar"}
+        cancelText="Cancelar"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        loading={confirmState.loading}
       />
     </AppLayout>
+  );
+}
+
+// Modal de confirmación simple (sin dependencias)
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmText,
+  cancelText,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void | Promise<void>;
+  onCancel: () => void;
+  loading?: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[60]">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" aria-hidden="true" onClick={onCancel} />
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+          </div>
+          <div className="px-5 py-4 text-sm text-slate-600">{description}</div>
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-5 py-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {cancelText || "Cancelar"}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+            >
+              {confirmText || "Eliminar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
