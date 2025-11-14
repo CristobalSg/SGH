@@ -172,3 +172,68 @@ class Restriccion(Base):
     activa = Column(Boolean, default=True)
 
     docente = relationship("Docente", back_populates="restricciones")
+
+
+class PasswordResetToken(Base):
+    """
+    Modelo para tokens de recuperación de contraseña.
+    
+    Características de seguridad:
+    - Token hash almacenado (nunca el token en texto plano)
+    - Expiración automática después de 1 hora
+    - Un solo uso por token
+    - Registro de uso para auditoría
+    """
+    __tablename__ = "password_reset_token"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    
+    # Token hasheado (nunca almacenar el token real)
+    token_hash = Column(String(255), unique=True, nullable=False, index=True)
+    
+    # Control de expiración
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=func.current_timestamp(), nullable=False)
+    
+    # Control de uso
+    used = Column(Boolean, default=False, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    
+    # IP del solicitante (para auditoría)
+    request_ip = Column(String(45), nullable=True)  # IPv6 max length
+    
+    # Relación con usuario
+    user = relationship("User", backref="password_reset_tokens")
+
+
+class PasswordResetAttempt(Base):
+    """
+    Modelo para registrar intentos de recuperación de contraseña.
+    
+    Usado para:
+    - Auditoría de seguridad
+    - Detección de ataques de fuerza bruta
+    - Rate limiting por email/IP
+    """
+    __tablename__ = "password_reset_attempt"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # Email solicitado (puede no existir en el sistema)
+    email = Column(String(254), nullable=False, index=True)
+    
+    # IP del solicitante
+    ip_address = Column(String(45), nullable=False, index=True)
+    
+    # Timestamps
+    attempted_at = Column(DateTime, default=func.current_timestamp(), nullable=False, index=True)
+    
+    # Resultado del intento
+    success = Column(Boolean, default=False, nullable=False)
+    
+    # Razón de fallo (si aplica)
+    failure_reason = Column(String(100), nullable=True)
+    
+    # User agent para detección de bots
+    user_agent = Column(Text, nullable=True)

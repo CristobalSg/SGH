@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from application.services.authorization_service import AuthorizationService
 from application.use_cases.user_auth_use_cases import UserAuthUseCase
 from application.use_cases.user_management_use_cases import UserManagementUseCase
+from application.use_cases.password_reset_use_case import PasswordResetUseCase
 from domain.authorization import Permission, UserRole
 from domain.entities import User
 from infrastructure.database.config import get_db
@@ -35,16 +36,16 @@ def get_administrador_repository(db: Session = Depends(get_db)) -> SQLAdministra
     return SQLAdministradorRepository(db)
 
 
-def get_user_auth_use_case(
-    user_repository: SQLUserRepository = Depends(get_user_repository),
-    docente_repository: DocenteRepository = Depends(get_docente_repository),
-    estudiante_repository: SQLEstudianteRepository = Depends(get_estudiante_repository),
-    administrador_repository: SQLAdministradorRepository = Depends(get_administrador_repository),
-) -> UserAuthUseCase:
-    """Dependency para obtener el caso de uso de autenticación con repositorios de perfiles"""
-    return UserAuthUseCase(
-        user_repository, docente_repository, estudiante_repository, administrador_repository
-    )
+def get_user_auth_use_case(session: Session = Depends(get_db)) -> UserAuthUseCase:
+    """Dependencia para obtener el caso de uso de autenticación de usuarios"""
+    user_repository = SQLUserRepository(session)
+    return UserAuthUseCase(user_repository)
+
+
+def get_password_reset_use_case(session: Session = Depends(get_db)) -> PasswordResetUseCase:
+    """Dependencia para obtener el caso de uso de recuperación de contraseñas"""
+    user_repository = SQLUserRepository(session)
+    return PasswordResetUseCase(user_repository)
 
 
 def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
@@ -130,6 +131,13 @@ def get_user_management_use_case(
     user_repository: SQLUserRepository = Depends(get_user_repository),
 ) -> UserManagementUseCase:
     return UserManagementUseCase(user_repository)
+
+
+def get_password_reset_use_case(
+    user_repository: SQLUserRepository = Depends(get_user_repository),
+) -> PasswordResetUseCase:
+    """Dependency para obtener el caso de uso de recuperación de contraseñas"""
+    return PasswordResetUseCase(user_repository)
 
 
 # ============================================================================
