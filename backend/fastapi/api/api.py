@@ -6,7 +6,7 @@ Agrega todos los routers de los diferentes módulos.
 from fastapi import APIRouter
 
 from api.academic import asignatura_router, clase_router, seccion_router
-from api.auth import auth_router, user_router
+from api.auth import auth_router, user_router, password_reset_router
 from api.infrastructure import campus_router, edificio_router, sala_router
 from api.personnel import docente_router
 from api.restrictions import restriccion_horario_router, restriccion_router
@@ -19,6 +19,7 @@ api_router = APIRouter()
 # Autenticación y usuarios
 api_router.include_router(auth_router, prefix="/auth", tags=["authentication"])
 api_router.include_router(user_router, prefix="/users", tags=["Users"])
+api_router.include_router(password_reset_router, prefix="/auth", tags=["authentication"])
 
 # Gestión académica
 api_router.include_router(asignatura_router, prefix="/asignaturas", tags=["asignaturas"])

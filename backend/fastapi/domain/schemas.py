@@ -1215,6 +1215,170 @@ class SearchParams(BaseModel, BaseSecureValidator):
 # CONFIGURACIÓN DE MODELO BASE
 # ============================================================================
 
+# ============================================================================
+# SCHEMAS DE RECUPERACIÓN DE CONTRASEÑA - Con validaciones de seguridad
+# ============================================================================
+
+
+class PasswordResetRequestSchema(BaseModel, BaseSecureValidator):
+    """
+    Schema para solicitar recuperación de contraseña.
+    
+    Solo requiere el email del usuario.
+    """
+    email: EmailStr = Field(
+        ...,
+        description="Email del usuario que solicita recuperar su contraseña",
+        examples=["usuario@ejemplo.cl"]
+    )
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_secure(cls, v: str) -> str:
+        """Validación adicional del email contra inyección"""
+        # EmailStr ya valida formato, pero agregamos validación anti-inyección
+        cls.validate_no_injection(v, "email")
+
+        # Validar longitud máxima del email
+        if len(v) > 254:  # RFC 5321
+            raise ValueError("El email es demasiado largo (máximo 254 caracteres)")
+
+        # Validar dominio (parte después del @)
+        domain = v.split("@")[1]
+        if len(domain) > 253:
+            raise ValueError("El dominio del email es demasiado largo")
+
+        return v.lower()
+
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True
+    )
+
+
+class PasswordResetConfirmSchema(BaseModel, BaseSecureValidator):
+    """
+    Schema para confirmar recuperación de contraseña con nueva contraseña.
+    
+    Requiere:
+    - Token de recuperación
+    - Nueva contraseña segura
+    """
+    token: constr(strip_whitespace=True, min_length=32, max_length=256) = Field(
+        ...,
+        description="Token de recuperación recibido por email"
+    )
+
+    nueva_contrasena: constr(min_length=12, max_length=128) = Field(
+        ...,
+        description="Nueva contraseña segura"
+    )
+
+    @field_validator("token")
+    @classmethod
+    def validate_token(cls, v: str) -> str:
+        """Validar formato del token"""
+        # Validar contra inyección
+        cls.validate_no_injection(v, "token")
+        
+        # El token debe ser alfanumérico (base64url)
+        if not re.match(r"^[A-Za-z0-9_-]+$", v):
+            raise ValueError("Token inválido")
+        
+        return v
+
+    @field_validator("nueva_contrasena")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        """
+        Validación exhaustiva de fortaleza de contraseña.
+        Mismos requisitos que al crear usuario.
+        """
+        # Longitud mínima
+        if len(v) < 12:
+            raise ValueError("La contraseña debe tener al menos 12 caracteres")
+
+        # Longitud máxima (prevenir DoS)
+        if len(v) > 128:
+            raise ValueError("La contraseña es demasiado larga (máximo 128 caracteres)")
+
+        # Al menos una mayúscula
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+
+        # Al menos una minúscula
+        if not re.search(r"[a-z]", v):
+            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+
+        # Al menos un número
+        if not re.search(r"\d", v):
+            raise ValueError("La contraseña debe contener al menos un número")
+
+        # Al menos un carácter especial
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/~`]', v):
+            raise ValueError(
+                "La contraseña debe contener al menos un carácter especial "
+                '(!@#$%^&*(),.?":{}|<>_-+=[]\\;/~`)'
+            )
+
+        # Prevenir contraseñas con caracteres de control
+        if re.search(r"[\x00-\x1F\x7F]", v):
+            raise ValueError("La contraseña contiene caracteres no permitidos")
+
+        # Prevenir caracteres repetidos excesivos
+        if len(set(v)) < 6:
+            raise ValueError("La contraseña debe tener mayor variedad de caracteres")
+
+        return v
+
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True
+    )
+
+
+class PasswordResetResponseSchema(BaseModel):
+    """
+    Schema de respuesta para solicitud de recuperación.
+    
+    IMPORTANTE: Siempre retorna el mismo mensaje exitoso,
+    independientemente de si el email existe o no.
+    Esto previene enumeración de usuarios.
+    """
+    mensaje: str = Field(
+        ...,
+        description="Mensaje de confirmación"
+    )
+    
+    email: str = Field(
+        ...,
+        description="Email al que se envió el link (o donde se enviaría)"
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class PasswordResetSuccessSchema(BaseModel):
+    """
+    Schema de respuesta para recuperación exitosa.
+    """
+    mensaje: str = Field(
+        ...,
+        description="Mensaje de confirmación"
+    )
+    
+    email: Optional[str] = Field(
+        None,
+        description="Email del usuario (opcional)"
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
+# ============================================================================
+# CONFIGURACIÓN DE MODELO BASE
+# ============================================================================
+
 # Configurar todos los modelos para que no permitan campos extras
 for schema_class in [
     UserSecureBase,
