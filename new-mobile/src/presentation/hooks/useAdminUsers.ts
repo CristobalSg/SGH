@@ -1,12 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   UserRepositoryHttp,
-  type AdminUserView as RepoAdminUserView,
   type AdminUserUpdateInput,
 } from "../../infrastructure/repositories/UserRepositoryHttp";
 
 // Tipo expuesto a la UI
-export type AdminUserView = RepoAdminUserView;
+export type AdminUserView = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  docenteId?: number | null;
+};
+
+// Ejemplo de mapeo:
+const toView = (u: any): AdminUserView => ({
+  id: u.id,
+  name: u.name,
+  email: u.email,
+  role: (u.role ?? u.rol ?? "").toString().toLowerCase(),
+  docenteId: u.docenteId ?? u.docente_id ?? u.docente_info?.id ?? null,
+});
 
 export function useAdminUsers() {
   const repo = new UserRepositoryHttp();
@@ -19,7 +33,7 @@ export function useAdminUsers() {
     setError(null);
     try {
       const data = await repo.list();
-      setUsers(data);
+      setUsers(data.map(toView));
     } catch (e: any) {
       setError(e?.response?.data?.detail || e?.message || "Error al cargar usuarios");
     } finally {

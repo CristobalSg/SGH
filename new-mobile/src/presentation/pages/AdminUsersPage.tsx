@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
+import ImportUsersCsvModal from "../components/admin/ImportUsersCsvModal";
+import AddUserModal from "../components/admin/AddUserModal";
+import { useEffect, useMemo } from "react";
 import { Alert, Spin, Input, Select } from "antd";
 import AppLayout from "../components/layout/AppLayout";
 import { useAdminUsers, type AdminUserView } from "../hooks/useAdminUsers";
-import AddUserModal from "../components/admin/AddUserModal";
 
 const { Option } = Select;
 
@@ -104,6 +106,10 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
+  const [openCsv, setOpenCsv] = useState(false);
+
+  const [selectedUser, setSelectedUser] = useState<AdminUserView | null>(null);
+
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterRole]);
@@ -135,7 +141,13 @@ export default function AdminUsersPage() {
     return filteredUsers.slice(start, start + PAGE_SIZE);
   }, [filteredUsers, page]);
 
-  const handleSelectUser = (user: AdminUserView) => setSelectedUserId(user.id);
+  const handleSelectUser = (u: AdminUserView) => {
+    setSelectedUser(u);
+    setSelectedUserId(u.id);
+  };
+
+  // Usa el docenteId para cargar restricciones
+  const selectedDocenteId = selectedUser?.docenteId ?? null;
 
   const handleEdit = (user: AdminUserView) => {
     setEditingUser(user);
@@ -175,7 +187,7 @@ export default function AdminUsersPage() {
       setBanner({ type: "success", text: "Usuario actualizado." });
     } catch (e: any) {
       setBanner({ type: "error", text: e?.message || "No se pudo actualizar el usuario." });
-      throw e; // permite que el modal de edición muestre errores por campo
+      throw e;
     }
   };
 
@@ -186,7 +198,8 @@ export default function AdminUsersPage() {
 
   return (
     <AppLayout title="Usuarios" showBottomNav>
-      <div className="space-y-6 pb-6">
+      {/* Contenedor centrado: listado arriba, botones abajo */}
+      <div className="mx-auto max-w-2xl space-y-6 pb-24">
         {/* Filtros y búsqueda */}
         <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-base font-semibold text-gray-900">Filtros de búsqueda</h2>
@@ -213,27 +226,37 @@ export default function AdminUsersPage() {
 
         {/* Listado de usuarios */}
         <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">Listado</h2>
-            <div className="flex gap-2">
+          {/* Título + botones (debajo del título) */}
+          <div className="mb-3">
+            <h2 className="text-base font-semibold text-gray-900 text-center">Listado</h2>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <button
-                onClick={refresh}
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
                 type="button"
+                onClick={() => { refresh(); }}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Actualizar
               </button>
+
               <button
-                onClick={() => setShowAddModal(true)}
-                className="text-xs font-medium text-green-600 hover:text-green-700"
                 type="button"
+                onClick={() => setShowAddModal(true)}
+                className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Agregar usuario
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOpenCsv(true)}
+                className="rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+              >
+                Agregar usuarios por CSV
               </button>
             </div>
           </div>
 
-          {/* Banner de estado (éxito/error) */}
+          {/* Banner de estado */}
           {banner && (
             <Alert
               type={banner.type}
@@ -343,46 +366,45 @@ export default function AdminUsersPage() {
             </>
           )}
         </div>
-      </div>
 
-      {/* Modal crear */}
-      <AddUserModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={refresh}
-        mode="create"
-      />
-
-      {/* Modal editar (reutiliza el formulario) */}
-      {editingUser && (
+        {/* Modal crear */}
         <AddUserModal
-          visible={showEditModal}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingUser(null);
-          }}
+          visible={showAddModal}
+          onClose={() => setShowAddModal(false)}
           onSuccess={refresh}
-          mode="edit"
-          initialUser={editingUser}
-          onUpdate={handleUpdateUser}
+          mode="create"
         />
-      )}
-
-      {/* Modal de confirmación eliminar */}
-      <ConfirmDialog
-        open={confirmState.open}
-        title="Eliminar usuario"
-        description={
-          confirmState.user
-            ? `¿Seguro que deseas eliminar a "${confirmState.user.name}"? Esta acción no se puede deshacer.`
-            : ""
-        }
-        confirmText={confirmState.loading ? "Eliminando…" : "Eliminar"}
-        cancelText="Cancelar"
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-        loading={confirmState.loading}
-      />
+        {/* Modal editar */}
+        {editingUser && (
+          <AddUserModal
+            visible={showEditModal}
+            onClose={() => {
+              setShowEditModal(false);
+              setEditingUser(null);
+            }}
+            onSuccess={refresh}
+            mode="edit"
+            initialUser={editingUser}
+            onUpdate={handleUpdateUser}
+          />
+        )}
+        {/* Confirmación eliminar */}
+        <ConfirmDialog
+          open={confirmState.open}
+          title="Eliminar usuario"
+          description={
+            confirmState.user
+              ? `¿Seguro que deseas eliminar a "${confirmState.user.name}"? Esta acción no se puede deshacer.`
+              : ""
+          }
+          confirmText={confirmState.loading ? "Eliminando…" : "Eliminar"}
+          cancelText="Cancelar"
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          loading={confirmState.loading}
+        />
+        <ImportUsersCsvModal open={openCsv} onClose={() => setOpenCsv(false)} />
+      </div>
     </AppLayout>
   );
 }
