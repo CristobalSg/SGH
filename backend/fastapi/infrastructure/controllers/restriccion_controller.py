@@ -252,20 +252,20 @@ async def delete_restriccion(
 
 
 @router.get(
-    "/admin/docente/{docente_id}",
+    "/admin/docente/{user_id}",
     response_model=List[Restriccion],
     status_code=status.HTTP_200_OK,
     summary="[ADMIN] Obtener restricciones de un docente específico",
     tags=["admin-restricciones"],
 )
 async def admin_get_restricciones_by_docente(
-    docente_id: int,
+    user_id: int,
     current_user: User = Depends(require_permission(Permission.RESTRICCION_READ_ALL)),
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
 ):
-    """Obtener todas las restricciones de un docente específico - requiere RESTRICCION:READ:ALL (solo administradores)"""
+    """Obtener todas las restricciones de un docente específico usando user_id - requiere RESTRICCION:READ:ALL (solo administradores)"""
     try:
-        restricciones = use_cases.get_by_docente(docente_id)
+        restricciones = use_cases.get_by_user_id(user_id)
         return restricciones
     except Exception as e:
         raise HTTPException(
@@ -275,7 +275,7 @@ async def admin_get_restricciones_by_docente(
 
 
 @router.post(
-    "/admin/docente/{docente_id}",
+    "/admin/docente/{user_id}",
     response_model=Restriccion,
     status_code=status.HTTP_201_CREATED,
     summary="[ADMIN] Crear restricción para un docente específico",
@@ -283,15 +283,14 @@ async def admin_get_restricciones_by_docente(
 )
 async def create_restriccion_for_docente(
     restriccion_data: RestriccionSecureCreate,  # ✅ SCHEMA SEGURO
-    docente_id: int,
+    user_id: int,
     use_cases: RestriccionUseCases = Depends(get_restriccion_use_cases),
     current_user: User = Depends(require_permission(Permission.RESTRICCION_WRITE)),
 ):
-    """[ADMIN] Crear restricción para docente específico con validaciones anti-inyección (solo administradores) - requiere RESTRICCION:WRITE"""
-    """Crear una nueva restricción para un docente específico - requiere RESTRICCION:WRITE (solo administradores)"""
+    """[ADMIN] Crear restricción para docente específico usando user_id con validaciones anti-inyección (solo administradores) - requiere RESTRICCION:WRITE"""
     try:
-        # Forzar el docente_id al valor del parámetro
-        restriccion_data.docente_id = docente_id
+        # Forzar el user_id al valor del parámetro de ruta
+        restriccion_data.user_id = user_id
         nueva_restriccion = use_cases.create(restriccion_data)
         return nueva_restriccion
     except HTTPException:
