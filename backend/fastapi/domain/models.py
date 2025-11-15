@@ -15,6 +15,7 @@ class User(Base):
     activo = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.current_timestamp())
     updated_at = Column(DateTime, default=func.current_timestamp())
+    deleted_at = Column(DateTime, nullable=True, default=None)  # Soft delete timestamp
 
     # Relaciones inversas
     docente = relationship("Docente", back_populates="user", uselist=False)

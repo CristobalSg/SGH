@@ -31,31 +31,63 @@ class SQLUserRepository:
         self.session.refresh(db_user)
         return db_user
 
-    def get_by_id(self, user_id: int) -> Optional[User]:
-        """Obtener usuario por ID con las relaciones cargadas"""
-        return (
+    def get_by_id(self, user_id: int, include_deleted: bool = False) -> Optional[User]:
+        """
+        Obtener usuario por ID con las relaciones cargadas.
+        
+        Args:
+            user_id: ID del usuario
+            include_deleted: Si True, incluye usuarios eliminados (soft delete)
+        """
+        query = (
             self.session.query(User)
             .options(joinedload(User.docente))
             .options(joinedload(User.estudiante))
             .options(joinedload(User.administrador))
             .filter(User.id == user_id)
-            .first()
         )
+        
+        if not include_deleted:
+            query = query.filter(User.deleted_at.is_(None))
+        
+        return query.first()
 
-    def get_by_email(self, email: str) -> Optional[User]:
-        """Obtener usuario por email con las relaciones cargadas"""
-        return (
+    def get_by_email(self, email: str, include_deleted: bool = False) -> Optional[User]:
+        """
+        Obtener usuario por email con las relaciones cargadas.
+        
+        Args:
+            email: Email del usuario
+            include_deleted: Si True, incluye usuarios eliminados (soft delete)
+        """
+        query = (
             self.session.query(User)
             .options(joinedload(User.docente))
             .options(joinedload(User.estudiante))
             .options(joinedload(User.administrador))
             .filter(User.email == email)
-            .first()
         )
+        
+        if not include_deleted:
+            query = query.filter(User.deleted_at.is_(None))
+        
+        return query.first()
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[User]:
-        """Obtener todos los usuarios con paginación"""
-        return self.session.query(User).offset(skip).limit(limit).all()
+    def get_all(self, skip: int = 0, limit: int = 100, include_deleted: bool = False) -> List[User]:
+        """
+        Obtener todos los usuarios con paginación.
+        
+        Args:
+            skip: Número de registros a saltar
+            limit: Límite de registros
+            include_deleted: Si True, incluye usuarios eliminados (soft delete)
+        """
+        query = self.session.query(User)
+        
+        if not include_deleted:
+            query = query.filter(User.deleted_at.is_(None))
+        
+        return query.offset(skip).limit(limit).all()
 
     def update(self, user_id: int, user_data: UserUpdate) -> Optional[User]:
         """Actualizar un usuario"""
@@ -69,13 +101,56 @@ class SQLUserRepository:
         return db_user
 
     def delete(self, user_id: int) -> bool:
-        """Eliminar un usuario"""
-        db_user = self.get_by_id(user_id)
+        """
+        Eliminar permanentemente un usuario (hard delete).
+        
+        ADVERTENCIA: Esta operación es irreversible.
+        Se recomienda usar soft_delete() en su lugar.
+        """
+        db_user = self.get_by_id(user_id, include_deleted=True)
         if db_user:
             self.session.delete(db_user)
             self.session.commit()
             return True
         return False
+
+    def soft_delete(self, user_id: int) -> Optional[User]:
+        """
+        Soft delete: marcar usuario como eliminado sin borrarlo físicamente.
+        
+        Args:
+            user_id: ID del usuario a eliminar
+        
+        Returns:
+            Usuario eliminado o None si no existe
+        """
+        db_user = self.get_by_id(user_id, include_deleted=False)
+        if db_user:
+            db_user.deleted_at = datetime.now(timezone.utc)
+            db_user.activo = False  # También desactivar el usuario
+            self.session.commit()
+            self.session.refresh(db_user)
+            return db_user
+        return None
+
+    def restore(self, user_id: int) -> Optional[User]:
+        """
+        Restaurar un usuario eliminado (soft delete).
+        
+        Args:
+            user_id: ID del usuario a restaurar
+        
+        Returns:
+            Usuario restaurado o None si no existe
+        """
+        db_user = self.get_by_id(user_id, include_deleted=True)
+        if db_user and db_user.deleted_at is not None:
+            db_user.deleted_at = None
+            # No activamos automáticamente, el admin debe hacerlo explícitamente
+            self.session.commit()
+            self.session.refresh(db_user)
+            return db_user
+        return None
 
     def authenticate(self, email: str, password: str) -> Optional[User]:
         """Autenticar usuario con email y contraseña"""
@@ -88,9 +163,20 @@ class SQLUserRepository:
         """Verificar si el usuario está activo"""
         return user.activo
 
-    def get_by_rol(self, rol: str) -> List[User]:
-        """Obtener usuarios por rol"""
-        return self.session.query(User).filter(User.rol == rol).all()
+    def get_by_rol(self, rol: str, include_deleted: bool = False) -> List[User]:
+        """
+        Obtener usuarios por rol.
+        
+        Args:
+            rol: Rol a filtrar
+            include_deleted: Si True, incluye usuarios eliminados (soft delete)
+        """
+        query = self.session.query(User).filter(User.rol == rol)
+        
+        if not include_deleted:
+            query = query.filter(User.deleted_at.is_(None))
+        
+        return query.all()
 
     # ==================== RECUPERACIÓN DE CONTRASEÑA ====================
 
