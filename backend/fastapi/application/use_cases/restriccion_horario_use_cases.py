@@ -2,10 +2,11 @@ from typing import List, Optional
 
 from fastapi import HTTPException, status
 
-from domain.entities import RestriccionHorario, RestriccionHorarioCreate, User
+from domain.entities import DocenteCreate, RestriccionHorario, RestriccionHorarioCreate, User
 from domain.schemas import RestriccionHorarioSecureCreate, RestriccionHorarioSecurePatch
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
+from infrastructure.repositories.user_repository import SQLUserRepository
 
 
 class RestriccionHorarioUseCases:
@@ -13,9 +14,11 @@ class RestriccionHorarioUseCases:
         self,
         restriccion_horario_repository: RestriccionHorarioRepository,
         docente_repository: DocenteRepository = None,
+        user_repository: SQLUserRepository = None,
     ):
         self.restriccion_horario_repository = restriccion_horario_repository
         self.docente_repository = docente_repository
+        self.user_repository = user_repository
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[RestriccionHorario]:
         """Obtener todas las restricciones de horario con paginación"""
@@ -41,10 +44,28 @@ class RestriccionHorarioUseCases:
         
         docente = self.docente_repository.get_by_id(restriccion_data.docente_id)
         if not docente:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Docente con ID {restriccion_data.docente_id} no encontrado",
-            )
+            # Si no existe el docente, verificar si existe el usuario y crear el docente automáticamente
+            if self.user_repository:
+                user = self.user_repository.get_by_id(restriccion_data.docente_id)
+                if user and user.rol == "docente":
+                    # Crear automáticamente el registro de docente
+                    docente_data = DocenteCreate(
+                        user_id=user.id,
+                        departamento="SIN_ASIGNAR"
+                    )
+                    docente = self.docente_repository.create(docente_data)
+                    # Actualizar el docente_id en la restricción con el ID recién creado
+                    restriccion_data.docente_id = docente.id
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Usuario con ID {restriccion_data.docente_id} no encontrado o no tiene rol de docente",
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Docente con ID {restriccion_data.docente_id} no encontrado",
+                )
         
         # Verificar si ya existe una restricción similar para el mismo docente y horario
         restricciones_existentes = self.restriccion_horario_repository.get_by_docente_y_horario(

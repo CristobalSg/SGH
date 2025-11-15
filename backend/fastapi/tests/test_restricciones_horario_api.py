@@ -74,14 +74,14 @@ class TestRestriccionesHorarioAdminEndpoints:
     def test_admin_create_restriccion_horario_docente_inexistente(
         self, client: TestClient, auth_headers_admin
     ):
-        """Test creación con docente_id inexistente debe fallar"""
+        """Test creación con user_id inexistente debe fallar"""
         restriccion_data = {
-            "docente_id": 99999,  # Docente que no existe
+            "docente_id": 99999,  # User que no existe
             "dia_semana": 1,
             "hora_inicio": "08:00",
             "hora_fin": "12:00",
             "disponible": True,
-            "descripcion": "Restricción con docente inexistente",
+            "descripcion": "Restricción con usuario inexistente",
         }
 
         response = client.post(
@@ -89,7 +89,36 @@ class TestRestriccionesHorarioAdminEndpoints:
         )
         assert response.status_code == 404
         data = response.json()
-        assert "Docente con ID 99999 no encontrado" in data["detail"]
+        assert "no encontrado" in data["detail"].lower()
+
+    def test_admin_create_restriccion_horario_auto_crea_docente(
+        self, client: TestClient, auth_headers_admin, auth_headers_docente
+    ):
+        """Test que se crea automáticamente el registro de docente si se usa un user_id de un docente sin perfil"""
+        # Obtener el ID del usuario docente desde el token/fixture
+        # El fixture auth_headers_docente tiene un usuario docente
+        # Vamos a intentar usar directamente el user_id 2 que sabemos es un docente
+        
+        restriccion_data = {
+            "docente_id": 2,  # ID del usuario docente (no el docente_id de la tabla docente)
+            "dia_semana": 2,
+            "hora_inicio": "10:00",
+            "hora_fin": "12:00",
+            "disponible": True,
+            "descripcion": "Test auto-creación de docente si falta perfil",
+        }
+
+        response = client.post(
+            "/api/restricciones-horario/", json=restriccion_data, headers=auth_headers_admin
+        )
+        
+        # Debería crear exitosamente la restricción
+        # Si el docente no existe, lo crea automáticamente
+        # Si el docente ya existe, simplemente crea la restricción
+        assert response.status_code == 201
+        data = response.json()
+        assert data["descripcion"] == "Test auto-creación de docente si falta perfil"
+        assert "docente_id" in data
 
     def test_admin_get_restricciones_horario(
         self, client: TestClient, auth_headers_admin, docente_completo

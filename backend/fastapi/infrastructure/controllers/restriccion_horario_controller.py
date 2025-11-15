@@ -14,6 +14,7 @@ from infrastructure.database.config import get_db
 from infrastructure.dependencies import require_any_permission, require_permission
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.restriccion_horario_repository import RestriccionHorarioRepository
+from infrastructure.repositories.user_repository import SQLUserRepository
 
 router = APIRouter()
 
@@ -31,7 +32,8 @@ def get_restriccion_horario_use_cases(
 ) -> RestriccionHorarioUseCases:
     """Dependency para obtener los casos de uso de restricciones de horario"""
     docente_repo = DocenteRepository(db)
-    return RestriccionHorarioUseCases(repository, docente_repo)
+    user_repo = SQLUserRepository(db)
+    return RestriccionHorarioUseCases(repository, docente_repo, user_repo)
 
 
 @router.post(
