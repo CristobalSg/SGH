@@ -285,7 +285,7 @@ class DocenteCreate(DocenteBase):
 
 class Docente(DocenteBase):
     id: int
-    user_id: int
+    user_id: Optional[int] = Field(None, description="ID del usuario asociado (puede ser nulo)")
     user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
 
     model_config = ConfigDict(from_attributes=True)
@@ -301,7 +301,7 @@ class EstudianteCreate(EstudianteBase):
 
 class Estudiante(EstudianteBase):
     id: int
-    user_id: int
+    user_id: Optional[int] = Field(None, description="ID del usuario asociado (puede ser nulo)")
     user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
 
     model_config = ConfigDict(from_attributes=True)
@@ -317,7 +317,7 @@ class AdministradorCreate(AdministradorBase):
 
 class Administrador(AdministradorBase):
     id: int
-    user_id: int
+    user_id: Optional[int] = Field(None, description="ID del usuario asociado (puede ser nulo)")
     user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
 
     model_config = ConfigDict(from_attributes=True)
