@@ -34,42 +34,50 @@ class RestriccionHorarioUseCases:
         return restriccion
 
     def create(self, restriccion_data: RestriccionHorarioSecureCreate) -> RestriccionHorario:
-        """Crear una nueva restricción de horario"""
-        # Validar que el docente existe
+        """
+        Crear una nueva restricción de horario.
+        
+        NOTA: Recibe user_id y resuelve docente_id internamente para consistencia de API.
+        """
+        # Validar repositorios
         if not self.docente_repository:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Repositorio de docentes no configurado",
             )
+        if not self.user_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de usuarios no configurado",
+            )
         
-        docente = self.docente_repository.get_by_id(restriccion_data.docente_id)
+        # Resolver user_id → docente_id
+        user = self.user_repository.get_by_id(restriccion_data.user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuario con ID {restriccion_data.user_id} no encontrado",
+            )
+        
+        if user.rol != "docente":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"El usuario con ID {restriccion_data.user_id} no tiene rol de docente",
+            )
+        
+        # Buscar el docente por user_id
+        docente = self.docente_repository.get_by_user_id(user.id)
         if not docente:
-            # Si no existe el docente, verificar si existe el usuario y crear el docente automáticamente
-            if self.user_repository:
-                user = self.user_repository.get_by_id(restriccion_data.docente_id)
-                if user and user.rol == "docente":
-                    # Crear automáticamente el registro de docente
-                    docente_data = DocenteCreate(
-                        user_id=user.id,
-                        departamento="SIN_ASIGNAR"
-                    )
-                    docente = self.docente_repository.create(docente_data)
-                    # Actualizar el docente_id en la restricción con el ID recién creado
-                    restriccion_data.docente_id = docente.id
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Usuario con ID {restriccion_data.docente_id} no encontrado o no tiene rol de docente",
-                    )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Docente con ID {restriccion_data.docente_id} no encontrado",
-                )
+            # Crear automáticamente el registro de docente
+            docente_data = DocenteCreate(
+                user_id=user.id,
+                departamento="SIN_ASIGNAR"
+            )
+            docente = self.docente_repository.create(docente_data)
         
         # Verificar si ya existe una restricción similar para el mismo docente y horario
         restricciones_existentes = self.restriccion_horario_repository.get_by_docente_y_horario(
-            restriccion_data.docente_id,
+            docente.id,
             restriccion_data.dia_semana,
             restriccion_data.hora_inicio,
             restriccion_data.hora_fin,
@@ -81,8 +89,11 @@ class RestriccionHorarioUseCases:
                 detail="Ya existe una restricción de horario para el docente en ese período",
             )
 
-        # Convertir schema seguro a entidad
-        restriccion_create = RestriccionHorarioCreate(**restriccion_data.model_dump())
+        # Convertir schema a entidad, reemplazando user_id por docente_id
+        restriccion_dict = restriccion_data.model_dump()
+        restriccion_dict.pop('user_id')  # Remover user_id
+        restriccion_dict['docente_id'] = docente.id  # Agregar docente_id interno
+        restriccion_create = RestriccionHorarioCreate(**restriccion_dict)
         return self.restriccion_horario_repository.create(restriccion_create)
 
     def update(
@@ -133,8 +144,26 @@ class RestriccionHorarioUseCases:
         return success
 
     def get_by_docente(self, docente_id: int) -> List[RestriccionHorario]:
-        """Obtener restricciones de horario de un docente específico"""
+        """Obtener restricciones de horario de un docente específico (DEPRECATED: usar get_by_user_id)"""
         return self.restriccion_horario_repository.get_by_docente(docente_id)
+    
+    def get_by_user_id(self, user_id: int) -> List[RestriccionHorario]:
+        """Obtener restricciones de horario de un docente por user_id (API pública)"""
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        # Resolver user_id → docente_id
+        docente = self.docente_repository.get_by_user_id(user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontró un docente con user_id {user_id}",
+            )
+        
+        return self.restriccion_horario_repository.get_by_docente(docente.id)
 
     def get_by_dia_semana(self, dia_semana: int) -> List[RestriccionHorario]:
         """Obtener restricciones de horario por día de la semana"""
@@ -143,14 +172,54 @@ class RestriccionHorarioUseCases:
     def get_disponibilidad_docente(
         self, docente_id: int, dia_semana: int = None
     ) -> List[RestriccionHorario]:
-        """Obtener disponibilidad de un docente (solo restricciones marcadas como disponibles)"""
+        """Obtener disponibilidad de un docente (DEPRECATED: usar get_disponibilidad_by_user_id)"""
         return self.restriccion_horario_repository.get_disponibilidad_docente(
             docente_id, dia_semana
         )
+    
+    def get_disponibilidad_by_user_id(
+        self, user_id: int, dia_semana: int = None
+    ) -> List[RestriccionHorario]:
+        """Obtener disponibilidad de un docente por user_id (API pública)"""
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        # Resolver user_id → docente_id
+        docente = self.docente_repository.get_by_user_id(user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontró un docente con user_id {user_id}",
+            )
+        
+        return self.restriccion_horario_repository.get_disponibilidad_docente(
+            docente.id, dia_semana
+        )
 
     def delete_by_docente(self, docente_id: int) -> int:
-        """Eliminar todas las restricciones de horario de un docente"""
+        """Eliminar todas las restricciones de horario de un docente (DEPRECATED: usar delete_by_user_id)"""
         return self.restriccion_horario_repository.delete_by_docente(docente_id)
+    
+    def delete_by_user_id(self, user_id: int) -> int:
+        """Eliminar todas las restricciones de horario de un docente por user_id (API pública)"""
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        # Resolver user_id → docente_id
+        docente = self.docente_repository.get_by_user_id(user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontró un docente con user_id {user_id}",
+            )
+        
+        return self.restriccion_horario_repository.delete_by_docente(docente.id)
 
     # =====================================
     # MÉTODOS PARA DOCENTES AUTENTICADOS

@@ -774,27 +774,35 @@ class BloqueSecureCreate(BloqueSecureBase):
 
 
 class RestriccionSecureCreate(RestriccionSecureBase, IDPositivoMixin):
-    """Schema para creación de restricción"""
+    """
+    Schema para creación de restricción.
+    
+    IMPORTANTE: Usa user_id (no docente_id) para consistencia con API de docentes.
+    """
 
-    docente_id: conint(gt=0) = Field(..., description="ID del docente asociado")
+    user_id: conint(gt=0) = Field(..., description="ID del usuario docente (user_id, no docente_id)")
 
-    @field_validator("docente_id")
+    @field_validator("user_id")
     @classmethod
-    def validate_docente_id(cls, v: int) -> int:
-        """Validación de ID de docente"""
-        return cls.validate_id_field(v, "ID de docente")
+    def validate_user_id(cls, v: int) -> int:
+        """Validación de ID de usuario docente"""
+        return cls.validate_id_field(v, "ID de usuario docente")
 
 
 class RestriccionHorarioSecureCreate(RestriccionHorarioSecureBase, IDPositivoMixin):
-    """Schema para creación de restricción de horario"""
+    """
+    Schema para creación de restricción de horario.
+    
+    IMPORTANTE: Usa user_id (no docente_id) para consistencia con API de docentes.
+    """
 
-    docente_id: conint(gt=0) = Field(..., description="ID del docente asociado")
+    user_id: conint(gt=0) = Field(..., description="ID del usuario docente (user_id, no docente_id)")
 
-    @field_validator("docente_id")
+    @field_validator("user_id")
     @classmethod
-    def validate_docente_id(cls, v: int) -> int:
-        """Validación de ID de docente"""
-        return cls.validate_id_field(v, "ID de docente")
+    def validate_user_id(cls, v: int) -> int:
+        """Validación de ID de usuario docente"""
+        return cls.validate_id_field(v, "ID de usuario docente")
 
 
 class CampusSecureCreate(CampusSecureBase):

@@ -40,16 +40,28 @@ def get_restriccion_horario_use_cases(
     "/",
     response_model=RestriccionHorario,
     status_code=status.HTTP_201_CREATED,
-    tags=["admin-restricciones-horario"],
+    summary="Crear restricción de horario",
+    description="""
+    Crea una nueva restricción de horario para un docente.
+    
+    **IMPORTANTE**: Usa `user_id` (no `docente_id`) para consistencia con la API de docentes.
+    Ejemplo: Si GET /api/docentes/25 funciona, usa user_id=25 aquí.
+    
+    Requiere permisos de administrador o coordinador.
+    """,
 )
-async def crear_restriccion_horario(
-    restriccion_data: RestriccionHorarioSecureCreate,  # ✅ SCHEMA SEGURO
-    current_user: User = Depends(require_permission(Permission.RESTRICCION_HORARIO_WRITE)),
-    use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
+def create_restriccion_horario(
+    restriccion_data: RestriccionHorarioSecureCreate,
+    restriccion_horario_use_cases: RestriccionHorarioUseCases = Depends(
+        get_restriccion_horario_use_cases
+    ),
+    _: User = Depends(
+        require_any_permission(Permission.RESTRICCION_HORARIO_WRITE, Permission.RESTRICCION_HORARIO_WRITE_OWN)
+    ),
 ):
-    """Crear una nueva restricción de horario con validaciones anti-inyección (requiere permiso RESTRICCION_HORARIO:WRITE - solo administradores)"""
+    """Crear una nueva restricción de horario con validaciones anti-inyección"""
     try:
-        restriccion = use_cases.create(restriccion_data)
+        restriccion = restriccion_horario_use_cases.create(restriccion_data)
         return restriccion
     except HTTPException:
         raise
@@ -399,20 +411,27 @@ async def docente_get_mi_disponibilidad(
 
 
 @router.get(
-    "/docente/{docente_id}",
+    "/docente/{user_id}",
     response_model=List[RestriccionHorario],
     tags=["admin-restricciones-horario"],
 )
 async def obtener_restricciones_por_docente(
-    docente_id: int,
+    user_id: int = Path(..., gt=0, description="ID del usuario docente (user_id, no docente_id)"),
     current_user: User = Depends(
         require_permission(Permission.RESTRICCION_HORARIO_READ_ALL)
     ),  # ✅ MIGRADO (solo admin)
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
 ):
-    """Obtener todas las restricciones de horario de un docente específico (requiere permiso RESTRICCION_HORARIO:LIST - solo administradores)"""
+    """
+    Obtener todas las restricciones de horario de un docente específico.
+    
+    **IMPORTANTE**: Usa user_id (no docente_id) para consistencia con la API de docentes.
+    Ejemplo: Si GET /api/docentes/25 funciona, usa user_id=25 aquí.
+    
+    (requiere permiso RESTRICCION_HORARIO:LIST - solo administradores)
+    """
     try:
-        restricciones = use_cases.get_by_docente(docente_id)
+        restricciones = use_cases.get_by_user_id(user_id)
         return restricciones
     except Exception as e:
         raise HTTPException(
@@ -445,21 +464,28 @@ async def obtener_restricciones_por_dia(
 
 
 @router.get(
-    "/disponibilidad/{docente_id}",
+    "/disponibilidad/{user_id}",
     response_model=List[RestriccionHorario],
     tags=["admin-restricciones-horario"],
 )
 async def obtener_disponibilidad_docente(
-    docente_id: int,
+    user_id: int = Path(..., gt=0, description="ID del usuario docente (user_id, no docente_id)"),
     dia_semana: Optional[int] = Query(None, ge=0, le=6, description="Día de la semana (opcional)"),
     current_user: User = Depends(
         require_permission(Permission.RESTRICCION_HORARIO_READ)
     ),  # ✅ MIGRADO (solo admin)
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
 ):
-    """Obtener la disponibilidad de un docente (solo restricciones marcadas como disponibles) - requiere RESTRICCION_HORARIO:READ - Solo administradores"""
+    """
+    Obtener la disponibilidad de un docente (solo restricciones marcadas como disponibles).
+    
+    **IMPORTANTE**: Usa user_id (no docente_id) para consistencia con la API de docentes.
+    Ejemplo: Si GET /api/docentes/25 funciona, usa user_id=25 aquí.
+    
+    (requiere RESTRICCION_HORARIO:READ - Solo administradores)
+    """
     try:
-        disponibilidad = use_cases.get_disponibilidad_docente(docente_id, dia_semana)
+        disponibilidad = use_cases.get_disponibilidad_by_user_id(user_id, dia_semana)
         return disponibilidad
     except Exception as e:
         raise HTTPException(
@@ -469,20 +495,27 @@ async def obtener_disponibilidad_docente(
 
 
 @router.delete(
-    "/docente/{docente_id}", status_code=status.HTTP_200_OK, tags=["admin-restricciones-horario"]
+    "/docente/{user_id}", status_code=status.HTTP_200_OK, tags=["admin-restricciones-horario"]
 )
 async def eliminar_restricciones_por_docente(
-    docente_id: int,
+    user_id: int = Path(..., gt=0, description="ID del usuario docente (user_id, no docente_id)"),
     current_user: User = Depends(
         require_permission(Permission.RESTRICCION_HORARIO_DELETE)
     ),  # ✅ MIGRADO (solo admin)
     use_cases: RestriccionHorarioUseCases = Depends(get_restriccion_horario_use_cases),
 ):
-    """Eliminar todas las restricciones de horario de un docente (requiere permiso RESTRICCION_HORARIO:DELETE - solo administradores)"""
+    """
+    Eliminar todas las restricciones de horario de un docente.
+    
+    **IMPORTANTE**: Usa user_id (no docente_id) para consistencia con la API de docentes.
+    Ejemplo: Si GET /api/docentes/25 funciona, usa user_id=25 aquí.
+    
+    (requiere permiso RESTRICCION_HORARIO:DELETE - solo administradores)
+    """
     try:
-        count = use_cases.delete_by_docente(docente_id)
+        count = use_cases.delete_by_user_id(user_id)
         return {
-            "mensaje": f"Se eliminaron {count} restricciones de horario del docente {docente_id}",
+            "mensaje": f"Se eliminaron {count} restricciones de horario del docente con user_id {user_id}",
             "eliminadas": count,
         }
     except Exception as e:

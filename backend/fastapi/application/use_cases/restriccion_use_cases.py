@@ -31,9 +31,32 @@ class RestriccionUseCases:
         return restriccion
 
     def create(self, restriccion_data: RestriccionSecureCreate) -> Restriccion:
-        """Crear una nueva restricción"""
+        """
+        Crear una nueva restricción.
+        
+        NOTA: Recibe user_id y resuelve docente_id internamente para consistencia de API.
+        """
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        # Resolver user_id → docente_id
+        docente = self.docente_repository.get_by_user_id(restriccion_data.user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Docente con user_id {restriccion_data.user_id} no encontrado",
+            )
+        
+        # Preparar datos con docente_id
+        data_dict = restriccion_data.model_dump()
+        data_dict.pop('user_id', None)  # Remover user_id
+        data_dict['docente_id'] = docente.id  # Agregar docente_id
+        
         # Convertir schema seguro a entidad
-        restriccion_create = RestriccionCreate(**restriccion_data.model_dump())
+        restriccion_create = RestriccionCreate(**data_dict)
         return self.restriccion_repository.create(restriccion_create)
 
     def update(self, restriccion_id: int, restriccion_data: RestriccionSecurePatch) -> Restriccion:
@@ -80,8 +103,25 @@ class RestriccionUseCases:
         return success
 
     def get_by_docente(self, docente_id: int) -> List[Restriccion]:
-        """Obtener restricciones de un docente específico"""
+        """Obtener restricciones de un docente específico (interno, usa docente_id)"""
         return self.restriccion_repository.get_by_docente(docente_id)
+
+    def get_by_user_id(self, user_id: int) -> List[Restriccion]:
+        """Obtener restricciones de un docente específico usando user_id (público)"""
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        docente = self.docente_repository.get_by_user_id(user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Docente con user_id {user_id} no encontrado",
+            )
+        
+        return self.restriccion_repository.get_by_docente(docente.id)
 
     def get_by_tipo(self, tipo: str) -> List[Restriccion]:
         """Obtener restricciones por tipo"""
@@ -94,8 +134,25 @@ class RestriccionUseCases:
         return self.restriccion_repository.get_by_prioridad(prioridad_min, prioridad_max)
 
     def delete_by_docente(self, docente_id: int) -> int:
-        """Eliminar todas las restricciones de un docente"""
+        """Eliminar todas las restricciones de un docente (interno, usa docente_id)"""
         return self.restriccion_repository.delete_by_docente(docente_id)
+
+    def delete_by_user_id(self, user_id: int) -> int:
+        """Eliminar todas las restricciones de un docente usando user_id (público)"""
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        docente = self.docente_repository.get_by_user_id(user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Docente con user_id {user_id} no encontrado",
+            )
+        
+        return self.restriccion_repository.delete_by_docente(docente.id)
 
     def _get_docente_id_from_user(self, user: User) -> int:
         """Obtener el docente_id a partir del usuario autenticado con validaciones robustas"""
@@ -164,38 +221,35 @@ class RestriccionUseCases:
 
         # Si el usuario es administrador, puede crear para cualquier docente
         if user.rol == "administrador":
-            # Validar que se especificó un docente_id
-            if not hasattr(restriccion_data, "docente_id") or not restriccion_data.docente_id:
+            # Validar que se especificó un user_id
+            if not hasattr(restriccion_data, "user_id") or not restriccion_data.user_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Debe especificar el ID del docente para crear la restricción",
+                    detail="Debe especificar el user_id del docente para crear la restricción",
                 )
-            docente_id = restriccion_data.docente_id
-
-            # Validar que el docente existe
-            docente = self.docente_repository.get_by_id(docente_id)
+            
+            # Resolver user_id → docente_id
+            docente = self.docente_repository.get_by_user_id(restriccion_data.user_id)
             if not docente:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Docente con id {docente_id} no encontrado",
+                    detail=f"Docente con user_id {restriccion_data.user_id} no encontrado",
                 )
+            docente_id = docente.id
         else:
             # Si es docente, obtener su propio docente_id
             docente_id = self._get_docente_id_from_user(user)
 
             # Validar que no se intente asignar la restricción a otro docente
             if (
-                hasattr(restriccion_data, "docente_id")
-                and restriccion_data.docente_id
-                and restriccion_data.docente_id != docente_id
+                hasattr(restriccion_data, "user_id")
+                and restriccion_data.user_id
+                and restriccion_data.user_id != user.id
             ):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="No puede crear restricciones para otros docentes",
                 )
-
-            # Asegurar que la restricción se asocie al docente autenticado
-            restriccion_data.docente_id = docente_id
 
         # Validar datos de la restricción
         if not restriccion_data.tipo or not restriccion_data.tipo.strip():
@@ -223,8 +277,12 @@ class RestriccionUseCases:
                     detail=f"Ya existe una restricción activa del tipo '{restriccion_data.tipo}' con valor '{restriccion_data.valor}'",
                 )
 
-        # Convertir schema seguro a entidad
-        restriccion_create = RestriccionCreate(**restriccion_data.model_dump())
+        # Convertir schema seguro a entidad, reemplazando user_id por docente_id
+        data_dict = restriccion_data.model_dump()
+        data_dict.pop('user_id', None)  # Remover user_id
+        data_dict['docente_id'] = docente_id  # Agregar docente_id
+        
+        restriccion_create = RestriccionCreate(**data_dict)
         return self.restriccion_repository.create(restriccion_create)
 
     def update_for_docente_user(
