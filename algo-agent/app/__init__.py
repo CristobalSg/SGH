@@ -9,9 +9,9 @@ def create_app() -> FastAPI:
     Build the FastAPI application with a single entry-point.
 
     The service only exposes /api/v1/fet/run which orchestrates:
-    1. Data collection for FET.
-    2. Input file generation.
-    3. Algorithm execution.
+    1. Validación y normalización del payload recibido.
+    2. Generación del archivo .fet esperado por FET.
+    3. Ejecución del binario de FET y entrega de un resumen.
     """
     settings = get_settings()
 
