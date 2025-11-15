@@ -1220,6 +1220,105 @@ class SearchParams(BaseModel, BaseSecureValidator):
 # ============================================================================
 
 
+class PasswordChangeSchema(BaseModel, BaseSecureValidator):
+    """
+    Schema para cambio de contraseña de usuario autenticado.
+    
+    Requiere:
+    - Contraseña actual (para verificación)
+    - Nueva contraseña segura
+    """
+    contrasena_actual: constr(min_length=8, max_length=128) = Field(
+        ...,
+        description="Contraseña actual del usuario"
+    )
+
+    contrasena_nueva: constr(min_length=12, max_length=128) = Field(
+        ...,
+        description="Nueva contraseña segura"
+    )
+
+    @field_validator("contrasena_actual")
+    @classmethod
+    def validate_current_password(cls, v: str) -> str:
+        """Validación básica de contraseña actual"""
+        # Prevenir caracteres de control
+        if re.search(r"[\x00-\x1F\x7F]", v):
+            raise ValueError("Contraseña inválida")
+        return v
+
+    @field_validator("contrasena_nueva")
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        """
+        Validación exhaustiva de fortaleza de contraseña.
+        Mismos requisitos que al crear usuario.
+        """
+        # Longitud mínima
+        if len(v) < 12:
+            raise ValueError("La contraseña debe tener al menos 12 caracteres")
+
+        # Longitud máxima (prevenir DoS)
+        if len(v) > 128:
+            raise ValueError("La contraseña es demasiado larga (máximo 128 caracteres)")
+
+        # Al menos una mayúscula
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+
+        # Al menos una minúscula
+        if not re.search(r"[a-z]", v):
+            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+
+        # Al menos un número
+        if not re.search(r"\d", v):
+            raise ValueError("La contraseña debe contener al menos un número")
+
+        # Al menos un carácter especial
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/~`]', v):
+            raise ValueError(
+                "La contraseña debe contener al menos un carácter especial "
+                '(!@#$%^&*(),.?":{}|<>_-+=[]\\;/~`)'
+            )
+
+        # Prevenir contraseñas con caracteres de control
+        if re.search(r"[\x00-\x1F\x7F]", v):
+            raise ValueError("La contraseña contiene caracteres no permitidos")
+
+        # Prevenir caracteres repetidos excesivos
+        if len(set(v)) < 6:
+            raise ValueError("La contraseña debe tener mayor variedad de caracteres")
+
+        return v
+
+    @model_validator(mode="after")
+    def validate_passwords_different(self):
+        """Validar que la nueva contraseña sea diferente de la actual"""
+        if self.contrasena_actual == self.contrasena_nueva:
+            raise ValueError("La nueva contraseña debe ser diferente a la actual")
+        return self
+
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True
+    )
+
+
+class PasswordChangeSuccessSchema(BaseModel):
+    """Schema de respuesta para cambio exitoso de contraseña"""
+    mensaje: str = Field(
+        ...,
+        description="Mensaje de confirmación"
+    )
+    
+    email: str = Field(
+        ...,
+        description="Email del usuario"
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class PasswordResetRequestSchema(BaseModel, BaseSecureValidator):
     """
     Schema para solicitar recuperación de contraseña.

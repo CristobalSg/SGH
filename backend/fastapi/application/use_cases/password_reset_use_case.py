@@ -22,9 +22,13 @@ from domain.schemas import (
     PasswordResetRequestSchema,
     PasswordResetConfirmSchema,
     PasswordResetResponseSchema,
-    PasswordResetSuccessSchema
+    PasswordResetSuccessSchema,
+    PasswordChangeSchema,
+    PasswordChangeSuccessSchema
 )
+from domain.models import User
 from infrastructure.repositories.user_repository import SQLUserRepository
+from infrastructure.auth import AuthService
 
 logger = logging.getLogger(__name__)
 
@@ -323,3 +327,69 @@ class PasswordResetUseCase:
         
         # Aquí iría la integración con servicio de email
         pass
+
+    def change_password(
+        self,
+        user: User,
+        change_data: PasswordChangeSchema,
+        client_ip: str
+    ) -> PasswordChangeSuccessSchema:
+        """
+        Cambiar contraseña de usuario autenticado.
+        
+        Args:
+            user: Usuario autenticado actual
+            change_data: Datos del cambio (contraseña actual y nueva)
+            client_ip: IP del cliente
+        
+        Returns:
+            Respuesta de éxito
+        
+        Raises:
+            HTTPException: Si la contraseña actual es incorrecta
+        """
+        # 1. Verificar que la contraseña actual sea correcta
+        if not AuthService.verify_password(change_data.contrasena_actual, user.pass_hash):
+            logger.warning(
+                f"Intento fallido de cambio de contraseña para {user.email} "
+                f"desde IP {client_ip} - Contraseña actual incorrecta"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La contraseña actual es incorrecta."
+            )
+        
+        # 2. Verificar que el usuario esté activo
+        if not user.activo:
+            logger.warning(f"Intento de cambio de contraseña para usuario inactivo: {user.email}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede cambiar la contraseña para este usuario."
+            )
+        
+        try:
+            # 3. Actualizar contraseña
+            self.user_repository.update_user_password(user.id, change_data.contrasena_nueva)
+            
+            # 4. Invalidar todos los tokens de recuperación (si existen)
+            self.user_repository.invalidate_user_password_reset_tokens(user.id)
+            
+            logger.info(
+                f"Contraseña cambiada exitosamente para usuario {user.email} "
+                f"desde IP {client_ip}"
+            )
+            
+            # TODO: Enviar email de notificación
+            # self._send_password_changed_notification(user.email, user.nombre)
+            
+            return PasswordChangeSuccessSchema(
+                mensaje="Contraseña cambiada exitosamente.",
+                email=user.email
+            )
+            
+        except Exception as e:
+            logger.error(f"Error al cambiar contraseña para {user.email}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al cambiar la contraseña. Por favor, intenta nuevamente."
+            )
