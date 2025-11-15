@@ -1,11 +1,8 @@
 from typing import Callable, Optional
 
 from fastapi import Depends, Header, HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.authorization import AuthorizationService, Permission, UserRole
-from app.database import get_db
-from app.repositories import SQLUserRepository
 from app.schemas import User
 from app.security import AuthService
 from app.settings import get_settings, AppSettings
@@ -38,28 +35,23 @@ def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
     return token
 
 
-def get_user_repository(db: Session = Depends(get_db)) -> SQLUserRepository:
-    return SQLUserRepository(db)
-
-
 def get_current_user(
     token: str = Depends(get_token_from_header),
-    repository: SQLUserRepository = Depends(get_user_repository),
 ) -> User:
     token_data = AuthService.verify_token(token)
-    user = repository.get_by_email(token_data.email) if token_data.email else None
-    if user is None:
+    if token_data.email is None or token_data.user_id is None or token_data.rol is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No se pudieron validar las credenciales",
+            detail="Token inválido",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not repository.is_active(user):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Usuario inactivo",
-        )
-    return User.model_validate(user)
+    nombre = token_data.email.split("@")[0] if token_data.email else "Usuario"
+    return User(
+        id=token_data.user_id,
+        nombre=nombre,
+        email=token_data.email,
+        rol=token_data.rol,
+    )
 
 
 def require_permission(permission: Permission) -> Callable:
@@ -142,7 +134,6 @@ def verify_service_token(
 
 __all__ = [
     "get_current_user",
-    "get_user_repository",
     "get_token_from_header",
     "require_permission",
     "require_any_permission",
