@@ -32,6 +32,20 @@ class RestriccionHorarioUseCases:
 
     def create(self, restriccion_data: RestriccionHorarioSecureCreate) -> RestriccionHorario:
         """Crear una nueva restricción de horario"""
+        # Validar que el docente existe
+        if not self.docente_repository:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Repositorio de docentes no configurado",
+            )
+        
+        docente = self.docente_repository.get_by_id(restriccion_data.docente_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Docente con ID {restriccion_data.docente_id} no encontrado",
+            )
+        
         # Verificar si ya existe una restricción similar para el mismo docente y horario
         restricciones_existentes = self.restriccion_horario_repository.get_by_docente_y_horario(
             restriccion_data.docente_id,
