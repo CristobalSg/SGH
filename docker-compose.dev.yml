@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:${POSTGRES_VERSION}
     container_name: sgh-postgres
-    restart: no 
+    restart: "no"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -25,7 +25,9 @@ services:
       context: ./algo-agent
       dockerfile: Dockerfile.dev
     container_name: sgh-agent
-    restart: no
+    restart: "no"
+    ports:
+      - "${AGENT_PORT}:8200"
     volumes:
       - ./algo-agent:/app
     networks:
@@ -41,6 +43,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
+      SERVICE_AUTH_TOKEN: ${SERVICE_AUTH_TOKEN}
       PYTHONPATH: ${PYTHONPATH}
       PYTHONDONTWRITEBYTECODE: ${PYTHONDONTWRITEBYTECODE}
       PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
@@ -58,7 +61,7 @@ services:
       context: ./backend/fastapi
       dockerfile: Dockerfile.dev
     container_name: sgh-backend
-    restart: no
+    restart: "no"
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:
@@ -101,7 +104,7 @@ services:
       context: ./new-mobile
       dockerfile: Dockerfile.dev
     container_name: sgh-new-mobile
-    restart: no 
+    restart: "no"
     ports:
       - "${MOBILE_PORT}:8100"
     volumes:
