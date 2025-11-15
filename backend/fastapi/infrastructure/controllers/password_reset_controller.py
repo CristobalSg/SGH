@@ -196,7 +196,7 @@ async def confirm_password_reset(
     
     **Permisos:**
     Cualquier usuario autenticado puede cambiar su propia contraseña.
-    Requiere permiso USER_UPDATE (que todos los usuarios tienen sobre sí mismos).
+    Requiere permiso USER_WRITE (que todos los usuarios tienen sobre sí mismos).
     
     **Casos de uso:**
     - Cambio preventivo de contraseña por seguridad
