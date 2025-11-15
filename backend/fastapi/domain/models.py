@@ -26,7 +26,7 @@ class Docente(Base):
     __tablename__ = "docente"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, unique=True)
     departamento = Column(Text)
 
     user = relationship("User", back_populates="docente")
@@ -39,8 +39,8 @@ class Estudiante(Base):
     __tablename__ = "estudiante"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("user.id"))
-    matricula = Column(Text)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, unique=True)
+    matricula = Column(Text, nullable=False, unique=True)  # Generada automáticamente
 
     user = relationship("User", back_populates="estudiante")
 
@@ -49,7 +49,7 @@ class Administrador(Base):
     __tablename__ = "administrador"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, unique=True)
     permisos = Column(Text)
 
     user = relationship("User", back_populates="administrador")

@@ -55,7 +55,7 @@ class UserAuthUseCase:
         # Crear el usuario
         new_user = self.user_repository.create(user_data)
 
-        # Crear perfil específico según el rol
+        # Crear perfil específico según el rol de forma atómica
         try:
             if new_user.rol == "docente":
                 if not self.docente_repository:
@@ -63,10 +63,10 @@ class UserAuthUseCase:
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Repositorio de docentes no configurado",
                     )
-                # Crear perfil de docente con valores por defecto
+                # El departamento ahora es OBLIGATORIO y viene validado del schema
                 docente_data = DocenteCreate(
                     user_id=new_user.id,
-                    departamento=getattr(user_data, "departamento", "SIN_ASIGNAR"),
+                    departamento=user_data.departamento,  # Ya validado como obligatorio
                 )
                 self.docente_repository.create(docente_data)
 
@@ -76,10 +76,14 @@ class UserAuthUseCase:
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Repositorio de estudiantes no configurado",
                     )
-                # Crear perfil de estudiante con valores por defecto
+                # Generar matrícula automáticamente basada en el año actual y user_id
+                from datetime import datetime
+                current_year = datetime.now().year
+                matricula = f"{current_year}{new_user.id:06d}"  # Ej: 2025000002
+                
                 estudiante_data = EstudianteCreate(
                     user_id=new_user.id,
-                    matricula=getattr(user_data, "matricula", f"EST{new_user.id:06d}"),
+                    matricula=matricula
                 )
                 self.estudiante_repository.create(estudiante_data)
 
@@ -89,9 +93,11 @@ class UserAuthUseCase:
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Repositorio de administradores no configurado",
                     )
-                # Crear perfil de administrador con permisos por defecto
+                # Permisos por defecto si no se especifican
+                permisos = user_data.permisos if hasattr(user_data, "permisos") and user_data.permisos else "ALL"
                 administrador_data = AdministradorCreate(
-                    user_id=new_user.id, permisos=getattr(user_data, "permisos", "ALL")
+                    user_id=new_user.id,
+                    permisos=permisos
                 )
                 self.administrador_repository.create(administrador_data)
 

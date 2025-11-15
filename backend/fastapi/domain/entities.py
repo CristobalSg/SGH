@@ -284,15 +284,45 @@ class DocenteCreate(DocenteBase):
 
 
 class Docente(DocenteBase):
+    """
+    Schema de respuesta para docente (estructura interna con docente_id).
+    DEPRECATED: Usar DocenteResponse para APIs públicas.
+    """
     id: int
-    user_id: Optional[int] = Field(None, description="ID del usuario asociado (puede ser nulo)")
-    user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
+    user_id: int = Field(..., description="ID del usuario asociado (SIEMPRE requerido)")
+    user: Optional[UserSimple] = Field(None, description="Información del usuario asociado.")
 
     model_config = ConfigDict(from_attributes=True)
 
 
+class DocenteResponse(BaseModel):
+    """
+    Schema de respuesta limpio para APIs: usa user_id como ID principal.
+    No expone el ID interno de la tabla docente.
+    """
+    id: int = Field(..., description="ID del usuario (identificador principal)")
+    nombre: str = Field(..., description="Nombre completo del docente")
+    email: EmailStr = Field(..., description="Email del docente")
+    departamento: Optional[str] = Field(None, description="Departamento del docente")
+    activo: bool = Field(..., description="Estado del usuario")
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_docente(cls, docente: "Docente") -> "DocenteResponse":
+        """Crear DocenteResponse desde un objeto Docente"""
+        return cls(
+            id=docente.user_id,
+            nombre=docente.user.nombre if docente.user else "",
+            email=docente.user.email if docente.user else "",
+            departamento=docente.departamento,
+            activo=docente.user.activo if docente.user else False,
+        )
+
+
 class EstudianteBase(BaseModel):
-    matricula: Optional[str] = Field(None, description="Matrícula del estudiante")
+    """Base para estudiante - matrícula se genera automáticamente"""
+    matricula: str = Field(..., description="Matrícula del estudiante (generada automáticamente)")
 
 
 class EstudianteCreate(EstudianteBase):
@@ -300,11 +330,40 @@ class EstudianteCreate(EstudianteBase):
 
 
 class Estudiante(EstudianteBase):
+    """
+    Schema de respuesta para estudiante (estructura interna con estudiante_id).
+    DEPRECATED: Usar EstudianteResponse para APIs públicas.
+    """
     id: int
-    user_id: Optional[int] = Field(None, description="ID del usuario asociado (puede ser nulo)")
+    user_id: int = Field(..., description="ID del usuario asociado (SIEMPRE requerido)")
     user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class EstudianteResponse(BaseModel):
+    """
+    Schema de respuesta limpio para APIs: usa user_id como ID principal.
+    No expone el ID interno de la tabla estudiante.
+    """
+    id: int = Field(..., description="ID del usuario (identificador principal)")
+    nombre: str = Field(..., description="Nombre completo del estudiante")
+    email: EmailStr = Field(..., description="Email del estudiante")
+    matricula: str = Field(..., description="Matrícula del estudiante (generada automáticamente)")
+    activo: bool = Field(..., description="Estado del usuario")
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_estudiante(cls, estudiante: "Estudiante") -> "EstudianteResponse":
+        """Crear EstudianteResponse desde un objeto Estudiante"""
+        return cls(
+            id=estudiante.user_id,
+            nombre=estudiante.user.nombre if estudiante.user else "",
+            email=estudiante.user.email if estudiante.user else "",
+            matricula=estudiante.matricula,
+            activo=estudiante.user.activo if estudiante.user else False,
+        )
 
 
 class AdministradorBase(BaseModel):
@@ -316,9 +375,40 @@ class AdministradorCreate(AdministradorBase):
 
 
 class Administrador(AdministradorBase):
+    """
+    Schema de respuesta para administrador (estructura interna con administrador_id).
+    DEPRECATED: Usar AdministradorResponse para APIs públicas.
+    """
     id: int
-    user_id: Optional[int] = Field(None, description="ID del usuario asociado (puede ser nulo)")
+    user_id: int = Field(..., description="ID del usuario asociado (SIEMPRE requerido)")
     user: Optional[UserSimple] = Field(None, description="Información del usuario asociado")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdministradorResponse(BaseModel):
+    """
+    Schema de respuesta limpio para APIs: usa user_id como ID principal.
+    No expone el ID interno de la tabla administrador.
+    """
+    id: int = Field(..., description="ID del usuario (identificador principal)")
+    nombre: str = Field(..., description="Nombre completo del administrador")
+    email: EmailStr = Field(..., description="Email del administrador")
+    permisos: Optional[str] = Field(None, description="Permisos del administrador")
+    activo: bool = Field(..., description="Estado del usuario")
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_administrador(cls, administrador: "Administrador") -> "AdministradorResponse":
+        """Crear AdministradorResponse desde un objeto Administrador"""
+        return cls(
+            id=administrador.user_id,
+            nombre=administrador.user.nombre if administrador.user else "",
+            email=administrador.user.email if administrador.user else "",
+            permisos=administrador.permisos,
+            activo=administrador.user.activo if administrador.user else False,
+        )
 
     model_config = ConfigDict(from_attributes=True)
 

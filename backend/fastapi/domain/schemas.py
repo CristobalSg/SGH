@@ -332,12 +332,37 @@ class UserSecureBase(BaseModel, BaseSecureValidator):
 
 
 class UserSecureCreate(UserSecureBase):
-    """Schema para creación de usuario con validación de contraseña segura"""
+    """Schema para creación de usuario con validación de contraseña segura y datos específicos del rol"""
 
     contrasena: constr(min_length=12, max_length=128) = Field(
         ...,
         description="Contraseña segura (mín. 12 caracteres, mayúsculas, minúsculas, números y especiales)",
     )
+
+    # Campos específicos por rol (opcionales, pero se validan según el rol)
+    departamento: Optional[constr(strip_whitespace=True, min_length=1, max_length=100, to_upper=True)] = Field(
+        None, description="Departamento (OBLIGATORIO para docentes)"
+    )
+    
+    permisos: Optional[constr(strip_whitespace=True, min_length=1, max_length=500)] = Field(
+        None, description="Permisos (opcional para administradores)"
+    )
+
+    @model_validator(mode="after")
+    def validate_rol_specific_fields(self):
+        """Validar que los campos específicos del rol estén presentes según corresponda"""
+        if self.rol == RolEnum.DOCENTE:
+            if not self.departamento:
+                raise ValueError("El campo 'departamento' es obligatorio para usuarios con rol 'docente'")
+            # Validar departamento
+            BaseSecureValidator.validate_no_injection(self.departamento, "departamento")
+            BaseSecureValidator.validate_name(self.departamento, "departamento")
+        
+        if self.permisos:
+            # Validar permisos si se proporcionan
+            BaseSecureValidator.validate_no_injection(self.permisos, "permisos")
+        
+        return self
 
     @field_validator("contrasena")
     @classmethod
@@ -869,36 +894,18 @@ class DocenteSecureCreate(DocenteSecureBase, IDPositivoMixin):
 
 
 class EstudianteSecureBase(BaseModel, BaseSecureValidator):
-    """Schema base para estudiante con validaciones anti-inyección"""
-
-    matricula: Optional[
-        constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=50)
-    ] = Field(None, description="Matrícula del estudiante")
-
-    @field_validator("matricula")
-    @classmethod
-    def validate_matricula(cls, v: Optional[str]) -> Optional[str]:
-        """Validar matrícula contra inyecciones"""
-        if v is None:
-            return v
-
-        # Validar contra inyecciones
-        cls.validate_no_injection(v, "matrícula")
-
-        # Validar formato alfanumérico (puede contener letras, números, guiones)
-        if not v.replace("-", "").replace("_", "").isalnum():
-            raise ValueError(
-                "La matrícula solo puede contener letras, números, guiones y guiones bajos"
-            )
-
-        return v
-
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    """
+    Schema base para estudiante con validaciones anti-inyección.
+    La matrícula se genera automáticamente, no se requiere en la creación.
+    """
+    pass
 
 
 class EstudianteSecureCreate(EstudianteSecureBase, IDPositivoMixin):
-    """Schema para creación de estudiante con validaciones anti-inyección"""
-
+    """
+    Schema para creación de estudiante con validaciones anti-inyección.
+    La matrícula se genera automáticamente basada en el año y el user_id.
+    """
     user_id: conint(gt=0) = Field(..., description="ID del usuario asociado al estudiante")
 
     @field_validator("user_id")
@@ -1107,29 +1114,11 @@ class DocenteSecurePatch(BaseModel):
 
 
 class EstudianteSecurePatch(BaseModel):
-    """Schema para actualización parcial de estudiante"""
-
-    matricula: Optional[
-        constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=50)
-    ] = Field(None, description="Matrícula del estudiante")
-
-    @field_validator("matricula")
-    @classmethod
-    def validate_matricula(cls, v: Optional[str]) -> Optional[str]:
-        """Validar matrícula"""
-        if v is None:
-            return v
-
-        # Validar contra inyecciones
-        BaseSecureValidator.validate_no_injection(v, "matrícula")
-
-        # Validar formato alfanumérico
-        if not v.replace("-", "").replace("_", "").isalnum():
-            raise ValueError(
-                "La matrícula solo puede contener letras, números, guiones y guiones bajos"
-            )
-
-        return v
+    """
+    Schema para actualización parcial de estudiante.
+    La matrícula NO se puede modificar después de ser generada.
+    """
+    pass
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 

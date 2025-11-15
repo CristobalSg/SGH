@@ -18,11 +18,21 @@ class DocenteUseCases:
         return self.docente_repository.get_all(skip=skip, limit=limit)
 
     def get_by_id(self, docente_id: int) -> Docente:
-        """Obtener docente por ID"""
+        """Obtener docente por ID interno de la tabla docente (DEPRECATED)"""
         docente = self.docente_repository.get_by_id(docente_id)
         if not docente:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado"
+            )
+        return docente
+
+    def get_by_user_id(self, user_id: int) -> Docente:
+        """Obtener docente por user_id (RECOMENDADO)"""
+        docente = self.docente_repository.get_by_user_id(user_id)
+        if not docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"No se encontró un docente con user_id {user_id}"
             )
         return docente
 
@@ -65,7 +75,7 @@ class DocenteUseCases:
         return docentes
 
     def update(self, docente_id: int, docente_data: DocenteSecurePatch) -> Docente:
-        """Actualizar parcialmente un docente"""
+        """Actualizar parcialmente un docente por ID interno (DEPRECATED)"""
         # Verificar que el docente existe
         existing_docente = self.docente_repository.get_by_id(docente_id)
         if not existing_docente:
@@ -92,8 +102,37 @@ class DocenteUseCases:
 
         return updated_docente
 
+    def update_by_user_id(self, user_id: int, docente_data: DocenteSecurePatch) -> Docente:
+        """Actualizar parcialmente un docente por user_id (RECOMENDADO)"""
+        # Buscar docente por user_id
+        existing_docente = self.docente_repository.get_by_user_id(user_id)
+        if not existing_docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"No se encontró un docente con user_id {user_id}"
+            )
+
+        # Convertir schema seguro a diccionario y filtrar valores None
+        update_dict = {k: v for k, v in docente_data.model_dump().items() if v is not None}
+
+        if not update_dict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se proporcionaron campos para actualizar",
+            )
+
+        # Actualizar usando el ID interno
+        updated_docente = self.docente_repository.update(existing_docente.id, **update_dict)
+        if not updated_docente:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al actualizar el docente",
+            )
+
+        return updated_docente
+
     def delete(self, docente_id: int) -> bool:
-        """Eliminar un docente"""
+        """Eliminar un docente por ID interno (DEPRECATED)"""
         # Verificar que el docente existe
         existing_docente = self.docente_repository.get_by_id(docente_id)
         if not existing_docente:
@@ -102,6 +141,24 @@ class DocenteUseCases:
             )
 
         success = self.docente_repository.delete(docente_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al eliminar el docente",
+            )
+        return success
+
+    def delete_by_user_id(self, user_id: int) -> bool:
+        """Eliminar un docente por user_id (RECOMENDADO)"""
+        # Buscar docente por user_id
+        existing_docente = self.docente_repository.get_by_user_id(user_id)
+        if not existing_docente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"No se encontró un docente con user_id {user_id}"
+            )
+
+        success = self.docente_repository.delete(existing_docente.id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
