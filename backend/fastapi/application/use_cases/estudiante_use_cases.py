@@ -43,9 +43,9 @@ class EstudianteUseCase:
         estudiante_create = EstudianteCreate(**estudiante_data.model_dump())
         return self.estudiante_repository.create(estudiante_create)
 
-    def get_all_estudiantes(self) -> List[Estudiante]:
-        """Obtener todos los estudiantes"""
-        estudiantes = self.estudiante_repository.get_all()
+    def get_all_estudiantes(self, skip: int = 0, limit: int = 100) -> List[Estudiante]:
+        """Obtener todos los estudiantes con paginación"""
+        estudiantes = self.estudiante_repository.get_all(skip=skip, limit=limit)
         if not estudiantes:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="No hay estudiantes registrados"
@@ -123,3 +123,57 @@ class EstudianteUseCase:
             )
 
         return self.estudiante_repository.delete(estudiante_id)
+
+    # =========================================================================
+    # NUEVOS MÉTODOS QUE USAN user_id COMO IDENTIFICADOR (Arquitectura limpia)
+    # =========================================================================
+
+    def get_estudiante_by_user_id(self, user_id: int) -> Estudiante:
+        """
+        Obtener estudiante por user_id.
+        
+        Este es el método preferido para la API pública.
+        Usa user_id como identificador principal en lugar del ID interno.
+        """
+        estudiante = self.estudiante_repository.get_by_user_id(user_id)
+        if not estudiante:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Estudiante con user_id {user_id} no encontrado",
+            )
+        return estudiante
+
+    def update_estudiante_by_user_id(
+        self, user_id: int, estudiante_data: EstudianteSecurePatch
+    ) -> Estudiante:
+        """
+        Actualizar estudiante usando user_id como identificador.
+        
+        Este método es preferido para la API pública.
+        """
+        # Obtener el estudiante por user_id
+        estudiante = self.estudiante_repository.get_by_user_id(user_id)
+        if not estudiante:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Estudiante con user_id {user_id} no encontrado",
+            )
+
+        # Reutilizar la lógica de actualización existente
+        return self.update_estudiante(estudiante.id, estudiante_data)
+
+    def delete_estudiante_by_user_id(self, user_id: int) -> bool:
+        """
+        Eliminar estudiante usando user_id como identificador.
+        
+        Este método es preferido para la API pública.
+        NOTA: Solo elimina el registro de estudiante, no el usuario.
+        """
+        estudiante = self.estudiante_repository.get_by_user_id(user_id)
+        if not estudiante:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Estudiante con user_id {user_id} no encontrado",
+            )
+
+        return self.estudiante_repository.delete(estudiante.id)

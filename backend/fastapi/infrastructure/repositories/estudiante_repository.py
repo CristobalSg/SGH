@@ -55,6 +55,21 @@ class SQLEstudianteRepository:
             .all()
         )
 
+    def update(self, estudiante_id: int, **kwargs) -> Optional[Estudiante]:
+        """Actualizar un estudiante con campos específicos"""
+        db_estudiante = self.get_by_id(estudiante_id)
+        if not db_estudiante:
+            return None
+        
+        # Actualizar solo los campos proporcionados
+        for key, value in kwargs.items():
+            if hasattr(db_estudiante, key):
+                setattr(db_estudiante, key, value)
+        
+        self.session.commit()
+        self.session.refresh(db_estudiante)
+        return db_estudiante
+
     def delete(self, estudiante_id: int) -> bool:
         """Eliminar un estudiante"""
         db_estudiante = self.get_by_id(estudiante_id)
