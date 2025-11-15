@@ -71,6 +71,26 @@ class TestRestriccionesHorarioAdminEndpoints:
         )
         assert response.status_code == 422
 
+    def test_admin_create_restriccion_horario_docente_inexistente(
+        self, client: TestClient, auth_headers_admin
+    ):
+        """Test creación con docente_id inexistente debe fallar"""
+        restriccion_data = {
+            "docente_id": 99999,  # Docente que no existe
+            "dia_semana": 1,
+            "hora_inicio": "08:00",
+            "hora_fin": "12:00",
+            "disponible": True,
+            "descripcion": "Restricción con docente inexistente",
+        }
+
+        response = client.post(
+            "/api/restricciones-horario/", json=restriccion_data, headers=auth_headers_admin
+        )
+        assert response.status_code == 404
+        data = response.json()
+        assert "Docente con ID 99999 no encontrado" in data["detail"]
+
     def test_admin_get_restricciones_horario(
         self, client: TestClient, auth_headers_admin, docente_completo
     ):
