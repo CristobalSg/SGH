@@ -38,8 +38,21 @@ def get_administrador_repository(db: Session = Depends(get_db)) -> SQLAdministra
 
 def get_user_auth_use_case(session: Session = Depends(get_db)) -> UserAuthUseCase:
     """Dependencia para obtener el caso de uso de autenticación de usuarios"""
+    from infrastructure.repositories.docente_repository import DocenteRepository
+    from infrastructure.repositories.estudiante_repository import SQLEstudianteRepository
+    from infrastructure.repositories.administrador_repository import SQLAdministradorRepository
+    
     user_repository = SQLUserRepository(session)
-    return UserAuthUseCase(user_repository)
+    docente_repository = DocenteRepository(session)
+    estudiante_repository = SQLEstudianteRepository(session)
+    administrador_repository = SQLAdministradorRepository(session)
+    
+    return UserAuthUseCase(
+        user_repository,
+        docente_repository,
+        estudiante_repository,
+        administrador_repository
+    )
 
 
 def get_password_reset_use_case(session: Session = Depends(get_db)) -> PasswordResetUseCase:
