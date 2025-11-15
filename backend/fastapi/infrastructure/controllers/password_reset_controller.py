@@ -15,13 +15,17 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Request, status
 
 from application.use_cases.password_reset_use_case import PasswordResetUseCase
+from domain.authorization import Permission
+from domain.entities import User
 from domain.schemas import (
     PasswordResetRequestSchema,
     PasswordResetConfirmSchema,
     PasswordResetResponseSchema,
-    PasswordResetSuccessSchema
+    PasswordResetSuccessSchema,
+    PasswordChangeSchema,
+    PasswordChangeSuccessSchema
 )
-from infrastructure.dependencies import get_password_reset_use_case
+from infrastructure.dependencies import get_password_reset_use_case, require_permission
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -159,5 +163,76 @@ async def confirm_password_reset(
     
     return password_reset_use_case.confirm_password_reset(
         confirm_data=confirm_data,
+        client_ip=client_ip
+    )
+
+
+@router.post(
+    "/change-password",
+    response_model=PasswordChangeSuccessSchema,
+    status_code=status.HTTP_200_OK,
+    summary="Cambiar contraseña (Usuario Autenticado)",
+    description="""
+    Permite a un usuario autenticado cambiar su contraseña.
+    
+    **Características de seguridad:**
+    - Requiere autenticación (token JWT válido)
+    - Valida la contraseña actual antes de cambiar
+    - Aplica mismas validaciones de seguridad que registro
+    - Invalida tokens de recuperación existentes
+    - Registra el cambio en logs de auditoría
+    - Disponible para todos los roles (admin, docente, estudiante)
+    
+    **Requisitos:**
+    - Usuario debe estar autenticado
+    - Contraseña actual debe ser correcta
+    - Nueva contraseña debe cumplir requisitos de seguridad:
+      * Mínimo 12 caracteres
+      * Al menos una letra mayúscula
+      * Al menos una letra minúscula
+      * Al menos un número
+      * Al menos un carácter especial
+      * Diferente a la contraseña actual
+    
+    **Permisos:**
+    Cualquier usuario autenticado puede cambiar su propia contraseña.
+    Requiere permiso USER_UPDATE (que todos los usuarios tienen sobre sí mismos).
+    
+    **Casos de uso:**
+    - Cambio preventivo de contraseña por seguridad
+    - Después de acceso no autorizado sospechoso
+    - Como parte de política de rotación de contraseñas
+    - Usuario quiere una contraseña más segura
+    
+    **Errores comunes:**
+    - 400: Contraseña actual incorrecta
+    - 400: Nueva contraseña no cumple requisitos
+    - 400: Nueva contraseña igual a la actual
+    - 401: Usuario no autenticado
+    """,
+    tags=["Autenticación"],
+)
+async def change_password(
+    change_data: PasswordChangeSchema,
+    request: Request,
+    current_user: User = Depends(require_permission(Permission.USER_WRITE)),
+    password_reset_use_case: PasswordResetUseCase = Depends(get_password_reset_use_case),
+):
+    """
+    Cambiar contraseña de usuario autenticado.
+    
+    Requiere que el usuario proporcione su contraseña actual para confirmar
+    su identidad antes de establecer la nueva contraseña.
+    """
+    client_ip = get_client_ip(request)
+    
+    logger.info(
+        f"Solicitud de cambio de contraseña para {current_user.email} "
+        f"desde IP {client_ip}"
+    )
+    
+    return password_reset_use_case.change_password(
+        user=current_user,
+        change_data=change_data,
         client_ip=client_ip
     )
