@@ -8,6 +8,7 @@ from app.database import get_db
 from app.repositories import SQLUserRepository
 from app.schemas import User
 from app.security import AuthService
+from app.settings import get_settings, AppSettings
 
 
 def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
@@ -93,6 +94,52 @@ def require_any_role(*roles: UserRole) -> Callable:
     return dependency
 
 
+def verify_service_token(
+    authorization: Optional[str] = Header(None),
+    settings: AppSettings = Depends(get_settings),
+) -> bool:
+    """
+    Valida el token de servicio para comunicación backend <-> agent.
+    Usado para endpoints internos que no requieren autenticación de usuario.
+    """
+    if not settings.service_auth_token:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="SERVICE_AUTH_TOKEN no configurado en el agente",
+        )
+    
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de autorización requerido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        scheme, token = authorization.split()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Formato de autorización inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token debe ser de tipo Bearer",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if token != settings.service_auth_token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token de servicio inválido",
+        )
+
+    return True
+
+
 __all__ = [
     "get_current_user",
     "get_user_repository",
@@ -101,4 +148,5 @@ __all__ = [
     "require_any_permission",
     "require_role",
     "require_any_role",
+    "verify_service_token",
 ]

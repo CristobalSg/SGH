@@ -33,6 +33,12 @@ class AppSettings:
     fet_timeout_seconds: int = field(
         default_factory=lambda: int(os.getenv("FET_TIMEOUT_SECONDS", "120"))
     )
+    
+    # Service-to-Service Authentication
+    # Token compartido para validar peticiones del backend
+    service_auth_token: str = field(
+        default_factory=lambda: os.getenv("SERVICE_AUTH_TOKEN", "")
+    )
 
     def __post_init__(self) -> None:
         self.debug = self.environment == "development"

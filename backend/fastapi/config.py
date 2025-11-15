@@ -16,6 +16,14 @@ class Settings:
     # API Configuration
     environment: str = os.getenv("NODE_ENV", "development")
     debug: bool = environment == "development"
+    
+    # Agent API URL (para generación de horarios)
+    agent_api_url: str = os.getenv("AGENT_API_URL", "http://agent:8200")
+    
+    # Service-to-Service Authentication
+    # Token compartido entre backend y agent para comunicación interna
+    # DEBE estar definido en variables de entorno por seguridad
+    service_auth_token: str = os.getenv("SERVICE_AUTH_TOKEN")
 
     # CORS
     @property
