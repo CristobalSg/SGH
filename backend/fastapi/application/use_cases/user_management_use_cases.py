@@ -97,8 +97,35 @@ class UserManagementUseCase:
         return updated_user
 
     def delete_user(self, user_id: int) -> bool:
-        """Eliminar un usuario"""
+        """
+        Soft delete de un usuario.
+        
+        El usuario NO se elimina físicamente, solo se marca como deleted_at.
+        Para eliminación permanente, usar hard_delete_user().
+        """
         existing_user = self.user_repository.get_by_id(user_id)
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuario con id {user_id} no encontrado",
+            )
+
+        deleted_user = self.user_repository.soft_delete(user_id)
+        if not deleted_user:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al eliminar el usuario",
+            )
+        return True
+
+    def hard_delete_user(self, user_id: int) -> bool:
+        """
+        Eliminación permanente de un usuario (hard delete).
+        
+        ADVERTENCIA: Esta operación es irreversible.
+        Solo debe usarse en casos excepcionales (ej: GDPR, compliance).
+        """
+        existing_user = self.user_repository.get_by_id(user_id, include_deleted=True)
         if not existing_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -109,9 +136,27 @@ class UserManagementUseCase:
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al eliminar el usuario",
+                detail="Error al eliminar permanentemente el usuario",
             )
         return success
+
+    def restore_user(self, user_id: int) -> User:
+        """
+        Restaurar un usuario eliminado (soft delete).
+        
+        Args:
+            user_id: ID del usuario a restaurar
+        
+        Returns:
+            Usuario restaurado
+        """
+        restored_user = self.user_repository.restore(user_id)
+        if not restored_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuario con id {user_id} no encontrado o no está eliminado",
+            )
+        return restored_user
 
     def activate_user(self, user_id: int) -> User:
         """Activar un usuario"""

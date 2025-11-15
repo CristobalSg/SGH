@@ -115,13 +115,20 @@ async def update_user(
         )
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar usuario")
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar usuario (soft delete)")
 async def delete_user(
     user_id: int = Path(..., gt=0, description="ID del usuario"),
     user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
     current_user: User = Depends(require_permission(Permission.USER_DELETE)),  # ✅ MIGRADO
 ):
-    """Eliminar un usuario (requiere permiso USER:DELETE)"""
+    """
+    Soft delete de un usuario (requiere permiso USER:DELETE).
+    
+    El usuario NO se elimina físicamente, solo se marca con deleted_at timestamp.
+    Se puede restaurar posteriormente con POST /users/{user_id}/restore.
+    
+    Para eliminación permanente (irreversible), usar DELETE /users/{user_id}/hard.
+    """
     try:
         user_use_case.delete_user(user_id)
     except HTTPException:
@@ -170,6 +177,64 @@ async def deactivate_user(
     try:
         deactivated_user = user_use_case.deactivate_user(user_id)
         return deactivated_user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
+        )
+
+
+@router.post(
+    "/{user_id}/restore",
+    response_model=User,
+    status_code=status.HTTP_200_OK,
+    summary="Restaurar usuario eliminado",
+)
+async def restore_user(
+    user_id: int = Path(..., gt=0, description="ID del usuario"),
+    user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
+    current_user: User = Depends(require_permission(Permission.USER_DELETE)),
+):
+    """
+    Restaurar un usuario eliminado (soft delete).
+    
+    Requiere permiso USER:DELETE.
+    Solo funciona con usuarios eliminados mediante soft delete.
+    El usuario restaurado permanecerá inactivo hasta que se active explícitamente.
+    """
+    try:
+        restored_user = user_use_case.restore_user(user_id)
+        return restored_user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor"
+        )
+
+
+@router.delete(
+    "/{user_id}/hard",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar usuario permanentemente (hard delete)",
+)
+async def hard_delete_user(
+    user_id: int = Path(..., gt=0, description="ID del usuario"),
+    user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
+    current_user: User = Depends(require_permission(Permission.USER_DELETE)),
+):
+    """
+    Eliminación permanente de un usuario (hard delete).
+    
+    ⚠️ ADVERTENCIA: Esta operación es IRREVERSIBLE.
+    Solo debe usarse en casos excepcionales (ej: cumplimiento GDPR, compliance legal).
+    
+    Requiere permiso USER:DELETE.
+    Se recomienda usar soft delete (DELETE /users/{user_id}) en su lugar.
+    """
+    try:
+        user_use_case.hard_delete_user(user_id)
     except HTTPException:
         raise
     except Exception:

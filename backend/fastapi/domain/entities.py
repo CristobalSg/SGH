@@ -108,6 +108,7 @@ class UserCreate(UserBase):
             "uchile123!",
             "pucv123!",
             "utfsm123!",
+            "uct123!",
             # Patrones de teclado con requisitos
             "qwerty123!",
             "qwerty123@",
@@ -228,6 +229,7 @@ class User(BaseModel):
     activo: bool = Field(default=True, description="Estado activo del usuario")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+    deleted_at: Optional[datetime] = Field(None, description="Fecha de eliminación (soft delete)")
 
     model_config = ConfigDict(from_attributes=True)
 
