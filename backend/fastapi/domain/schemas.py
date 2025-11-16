@@ -958,6 +958,121 @@ class AdministradorSecureCreate(AdministradorSecureBase, IDPositivoMixin):
 
 
 # ============================================================================
+# SCHEMAS DE EVENTO - Validación de eventos de docentes
+# ============================================================================
+
+
+class EventoSecureBase(BaseModel, HorarioSecureMixin, BaseSecureValidator):
+    """Schema base de evento con validaciones de seguridad"""
+
+    nombre: constr(strip_whitespace=True, min_length=2, max_length=100) = Field(
+        ..., description="Nombre del evento", examples=["Reunión de Profesores", "Consejo de Departamento"]
+    )
+
+    descripcion: Optional[constr(max_length=500)] = Field(
+        None, description="Descripción del evento"
+    )
+
+    hora_inicio: time = Field(
+        ..., description="Hora de inicio del evento", examples=["09:00:00", "14:30:00"]
+    )
+
+    hora_cierre: time = Field(
+        ..., description="Hora de cierre del evento", examples=["11:00:00", "16:00:00"]
+    )
+
+    activo: bool = Field(default=True, description="Indica si el evento está activo")
+
+    @field_validator("nombre")
+    @classmethod
+    def validate_nombre_evento(cls, v: str) -> str:
+        """Validación del nombre del evento"""
+        return cls.validate_name(v, "nombre del evento")
+
+    @field_validator("descripcion")
+    @classmethod
+    def validate_descripcion_evento(cls, v: Optional[str]) -> Optional[str]:
+        """Validación de descripción"""
+        return cls.validate_description(v, "descripción")
+
+    @field_validator("hora_inicio", "hora_cierre")
+    @classmethod
+    def validate_business_hours(cls, v: time) -> time:
+        """Valida que las horas estén en horario razonable (8:00 - 21:00)"""
+        if not (time(8, 0) <= v <= time(21, 0)):
+            raise ValueError("Las horas deben estar entre 08:00 y 21:00")
+        return v
+
+    @model_validator(mode="after")
+    def validate_time_range(self):
+        """Valida que la hora de cierre sea posterior a la hora de inicio"""
+        if self.hora_cierre <= self.hora_inicio:
+            raise ValueError("La hora de cierre debe ser posterior a la hora de inicio")
+        return self
+
+
+class EventoSecureCreate(EventoSecureBase, IDPositivoMixin):
+    """
+    Schema para creación de evento.
+    
+    IMPORTANTE: Usa user_id (no docente_id) para consistencia con API de docentes.
+    """
+
+    user_id: conint(gt=0) = Field(..., description="ID del usuario docente (user_id, no docente_id)")
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_user_id(cls, v: int) -> int:
+        """Validación de ID de usuario docente"""
+        return cls.validate_id_field(v, "ID de usuario docente")
+
+
+class EventoSecurePatch(BaseModel):
+    """Schema para actualización parcial de evento"""
+
+    nombre: Optional[constr(strip_whitespace=True, min_length=2, max_length=100)] = None
+    descripcion: Optional[constr(max_length=500)] = None
+    hora_inicio: Optional[time] = None
+    hora_cierre: Optional[time] = None
+    activo: Optional[bool] = None
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("nombre")
+    @classmethod
+    def validate_nombre(cls, v: Optional[str]) -> Optional[str]:
+        """Validar nombre"""
+        if v is None:
+            return v
+        BaseSecureValidator.validate_name(v, "nombre del evento")
+        return v
+
+    @field_validator("descripcion")
+    @classmethod
+    def validate_descripcion(cls, v: Optional[str]) -> Optional[str]:
+        """Validar descripción"""
+        if v is None:
+            return v
+        return BaseSecureValidator.validate_description(v, "descripción")
+
+    @field_validator("hora_inicio", "hora_cierre")
+    @classmethod
+    def validate_hours(cls, v: Optional[time]) -> Optional[time]:
+        """Validar horas"""
+        if v is not None and not (time(8, 0) <= v <= time(21, 0)):
+            raise ValueError("Las horas deben estar entre 08:00 y 21:00")
+        return v
+
+    @model_validator(mode="after")
+    def validate_time_range(self):
+        """Validar rango de tiempo"""
+        if self.hora_cierre is not None and self.hora_inicio is not None:
+            if self.hora_cierre <= self.hora_inicio:
+                raise ValueError("La hora de cierre debe ser posterior a la hora de inicio")
+        return self
+
+
+# ============================================================================
 # SCHEMAS DE ACTUALIZACIÓN PARCIAL (PATCH) - Todos los campos opcionales
 # ============================================================================
 

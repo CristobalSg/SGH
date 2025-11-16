@@ -812,3 +812,117 @@ class DocentePatch(BaseModel):
 
     user_id: Optional[int] = Field(None, gt=0)
     departamento: Optional[str] = None
+
+
+# ============================================================================
+# EVENTO - Entidades para eventos de docentes
+# ============================================================================
+
+
+class EventoBase(BaseModel):
+    """DTO base para evento"""
+
+    nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del evento")
+    descripcion: Optional[str] = Field(None, max_length=500, description="Descripción del evento")
+    hora_inicio: time = Field(..., description="Hora de inicio del evento")
+    hora_cierre: time = Field(..., description="Hora de cierre del evento")
+    activo: bool = Field(default=True, description="Estado activo del evento")
+
+    @field_validator("nombre")
+    @classmethod
+    def validate_nombre(cls, v):
+        if not re.match(r"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,;:()\-_¿?¡!']+$", v.strip()):
+            raise ValueError(
+                "El nombre solo puede contener letras, números, espacios y puntuación básica"
+            )
+        return v.strip()
+
+    @field_validator("descripcion")
+    @classmethod
+    def validate_descripcion(cls, v):
+        if v is None or not v.strip():
+            return None
+        if not re.match(r"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,;:()\-_¿?¡!']+$", v.strip()):
+            raise ValueError(
+                "La descripción solo puede contener letras, números, espacios y puntuación básica"
+            )
+        return v.strip()
+
+    @model_validator(mode="after")
+    def validate_hours(self):
+        """Validar que la hora de cierre sea posterior a la hora de inicio"""
+        if self.hora_cierre <= self.hora_inicio:
+            raise ValueError("La hora de cierre debe ser posterior a la hora de inicio")
+        
+        # Validar horario razonable (8:00 - 21:00)
+        if not (time(8, 0) <= self.hora_inicio <= time(21, 0)):
+            raise ValueError("La hora de inicio debe estar entre 08:00 y 21:00")
+        if not (time(8, 0) <= self.hora_cierre <= time(21, 0)):
+            raise ValueError("La hora de cierre debe estar entre 08:00 y 21:00")
+        
+        return self
+
+
+class EventoCreate(EventoBase):
+    """DTO para creación de evento"""
+
+    docente_id: int = Field(..., gt=0, description="ID del docente (debe ser positivo)")
+
+
+class Evento(EventoBase):
+    """DTO de respuesta de evento"""
+
+    id: int
+    docente_id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EventoPatch(BaseModel):
+    """DTO para actualizaciones parciales de eventos"""
+
+    nombre: Optional[str] = Field(None, min_length=2, max_length=100)
+    descripcion: Optional[str] = Field(None, max_length=500)
+    hora_inicio: Optional[time] = None
+    hora_cierre: Optional[time] = None
+    activo: Optional[bool] = None
+
+    @field_validator("nombre")
+    @classmethod
+    def validate_nombre(cls, v):
+        if v is None:
+            return v
+        if not re.match(r"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,;:()\-_¿?¡!']+$", v.strip()):
+            raise ValueError(
+                "El nombre solo puede contener letras, números, espacios y puntuación básica"
+            )
+        return v.strip()
+
+    @field_validator("descripcion")
+    @classmethod
+    def validate_descripcion(cls, v):
+        if v is None or not v.strip():
+            return None
+        if not re.match(r"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,;:()\-_¿?¡!']+$", v.strip()):
+            raise ValueError(
+                "La descripción solo puede contener letras, números, espacios y puntuación básica"
+            )
+        return v.strip()
+
+    @model_validator(mode="after")
+    def validate_hours(self):
+        """Validar que la hora de cierre sea posterior a la hora de inicio"""
+        if self.hora_cierre is not None and self.hora_inicio is not None:
+            if self.hora_cierre <= self.hora_inicio:
+                raise ValueError("La hora de cierre debe ser posterior a la hora de inicio")
+            
+            # Validar horario razonable (8:00 - 21:00)
+            if not (time(8, 0) <= self.hora_inicio <= time(21, 0)):
+                raise ValueError("La hora de inicio debe estar entre 08:00 y 21:00")
+            if not (time(8, 0) <= self.hora_cierre <= time(21, 0)):
+                raise ValueError("La hora de cierre debe estar entre 08:00 y 21:00")
+        
+        return self
+

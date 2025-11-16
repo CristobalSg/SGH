@@ -175,6 +175,28 @@ class Restriccion(Base):
     docente = relationship("Docente", back_populates="restricciones")
 
 
+class Evento(Base):
+    """
+    Modelo para eventos del docente.
+    
+    Permite a los docentes crear y gestionar eventos personales
+    que pueden ser consultados por estudiantes y supervisados por administradores.
+    """
+    __tablename__ = "evento"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    docente_id = Column(Integer, ForeignKey("docente.id"), nullable=False)
+    nombre = Column(Text, nullable=False)
+    descripcion = Column(Text, nullable=True)
+    hora_inicio = Column(Time, nullable=False)
+    hora_cierre = Column(Time, nullable=False)
+    activo = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=func.current_timestamp())
+    updated_at = Column(DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+    docente = relationship("Docente", backref="eventos")
+
+
 class PasswordResetToken(Base):
     """
     Modelo para tokens de recuperación de contraseña.
