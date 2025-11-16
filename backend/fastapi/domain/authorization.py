@@ -131,6 +131,16 @@ class Permission(str, Enum):
     BLOQUE_WRITE = "bloque:write"
     BLOQUE_DELETE = "bloque:delete"
 
+    # Eventos
+    EVENTO_READ = "evento:read"
+    EVENTO_READ_OWN = "evento:read:own"
+    EVENTO_READ_ALL = "evento:read:all"
+    EVENTO_WRITE = "evento:write"
+    EVENTO_WRITE_OWN = "evento:write:own"
+    EVENTO_DELETE = "evento:delete"
+    EVENTO_DELETE_OWN = "evento:delete:own"
+    EVENTO_ACTIVATE = "evento:activate"
+
     # Sistema
     SYSTEM_CONFIG = "system:config"
     SYSTEM_LOGS = "system:logs"
@@ -195,6 +205,12 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.BLOQUE_READ,
         Permission.BLOQUE_WRITE,
         Permission.BLOQUE_DELETE,
+        # Eventos
+        Permission.EVENTO_READ,
+        Permission.EVENTO_READ_ALL,
+        Permission.EVENTO_WRITE,
+        Permission.EVENTO_DELETE,
+        Permission.EVENTO_ACTIVATE,
         # Sistema
         Permission.SYSTEM_CONFIG,
         Permission.SYSTEM_LOGS,
@@ -219,6 +235,10 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.RESTRICCION_HORARIO_READ_OWN,
         Permission.RESTRICCION_HORARIO_WRITE_OWN,
         Permission.RESTRICCION_HORARIO_DELETE_OWN,
+        # Gestión de eventos propios
+        Permission.EVENTO_READ_OWN,
+        Permission.EVENTO_WRITE_OWN,
+        Permission.EVENTO_DELETE_OWN,
     },
     # ESTUDIANTE: Solo lectura de información pública y sus propios datos
     UserRole.ESTUDIANTE: {
@@ -231,6 +251,8 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.EDIFICIO_READ,
         Permission.CLASE_READ,
         Permission.BLOQUE_READ,
+        # Consulta de eventos
+        Permission.EVENTO_READ,
     },
 }
 

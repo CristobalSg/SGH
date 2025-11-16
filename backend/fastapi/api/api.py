@@ -7,6 +7,7 @@ from fastapi import APIRouter
 
 from api.academic import asignatura_router, clase_router, seccion_router
 from api.auth import auth_router, user_router, password_reset_router
+from api.events import evento_router
 from api.infrastructure import campus_router, edificio_router, sala_router
 from api.personnel import docente_router, estudiante_router
 from api.restrictions import restriccion_horario_router, restriccion_router
@@ -44,6 +45,9 @@ api_router.include_router(restriccion_router, prefix="/restricciones", tags=["re
 api_router.include_router(
     restriccion_horario_router, prefix="/restricciones-horario", tags=["restricciones-horario"]
 )
+
+# Eventos
+api_router.include_router(evento_router, prefix="/eventos", tags=["eventos"])
 
 # Sistema
 api_router.include_router(test_db_router, prefix="/db", tags=["database"])
