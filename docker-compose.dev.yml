@@ -1,4 +1,19 @@
 services:
+  rooms-scheduler:
+    build:
+      context: ./rooms-scheduler
+      dockerfile: Dockerfile.dev
+    container_name: sgh-rooms-scheduler
+    volumes:
+      - ./rooms-scheduler:/app
+    networks:
+      - sgh-network
+    environment:
+      PORT: ${ROOMS_SCHEDULER_PORT}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
+
 # Base de datos PostgreSQL
   postgres:
     image: postgres:${POSTGRES_VERSION}
