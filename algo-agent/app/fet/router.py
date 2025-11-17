@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Depends, status
 
-from app.authorization import Permission
-from app.dependencies import require_permission
 from app.fet.schemas import FetRunRequest, FetRunSummary
 from app.fet.service import FetService
-from app.schemas import User
 from app.settings import AppSettings, get_settings
 
 router = APIRouter()
@@ -24,7 +21,6 @@ def get_fet_service(
 )
 async def run_fet(
     payload: FetRunRequest,
-    _: User = Depends(require_permission(Permission.HORARIO_WRITE)),
     service: FetService = Depends(get_fet_service),
 ) -> FetRunSummary:
     """
