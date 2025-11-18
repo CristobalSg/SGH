@@ -112,8 +112,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-
-# Frontend React + Vite + Tailwind
+#  Frontend React + Vite + Tailwind
   new-mobile:
     build:
       context: ./new-mobile
