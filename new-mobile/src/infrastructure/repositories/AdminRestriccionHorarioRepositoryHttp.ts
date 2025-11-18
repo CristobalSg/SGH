@@ -45,7 +45,7 @@ export class AdminRestriccionHorarioRepositoryHttp {
    * Lista todas las restricciones (admin). Soporta paginación opcional.
    */
   async list(params?: { page?: number; size?: number; docente_id?: number }) {
-    const response = await http.get(this.baseUrl, { params });
+    const response = await http.get(`${this.baseUrl}/`, { params });
     return extractArray(response.data).map(normalize) as AdminRestriccionHorarioDTO[];
   }
 

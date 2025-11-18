@@ -68,17 +68,6 @@ function normalizeUser(u: ApiUser): AdminUserView {
   };
 }
 
-async function tryPutThenPatch<T>(url: string, payload: any): Promise<T> {
-  try {
-    const res = await http.put<T>(url, payload);
-    return res as any as T;
-  } catch (e: any) {
-    // Fallback: PATCH
-    const res = await http.patch<T>(url, payload);
-    return res as any as T;
-  }
-}
-
 export class UserRepositoryHttp {
   private base = "/users/";
 
@@ -115,7 +104,7 @@ export class UserRepositoryHttp {
       body.departamento = (user.department ?? "").trim();
     }
     console.debug('[UserRepositoryHttp.update] body:', body);
-    return http.patch(`/users/${id}`, body);
+    return http.put(`/users/${id}`, body);
   }
 
   async delete(id: number): Promise<void> {
