@@ -92,8 +92,8 @@ class DocenteUseCases:
                 detail="No se proporcionaron campos para actualizar",
             )
 
-        # Actualizar usando el repositorio
-        updated_docente = self.docente_repository.update(docente_id, **update_dict)
+        # Actualizar usando el repositorio (usa user_id como identificador)
+        updated_docente = self.docente_repository.update(existing_docente.user_id, **update_dict)
         if not updated_docente:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -121,8 +121,8 @@ class DocenteUseCases:
                 detail="No se proporcionaron campos para actualizar",
             )
 
-        # Actualizar usando el ID interno
-        updated_docente = self.docente_repository.update(existing_docente.id, **update_dict)
+        # Actualizar usando user_id como identificador
+        updated_docente = self.docente_repository.update(existing_docente.user_id, **update_dict)
         if not updated_docente:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -140,7 +140,7 @@ class DocenteUseCases:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado"
             )
 
-        success = self.docente_repository.delete(docente_id)
+        success = self.docente_repository.delete(existing_docente.user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -158,7 +158,7 @@ class DocenteUseCases:
                 detail=f"No se encontró un docente con user_id {user_id}"
             )
 
-        success = self.docente_repository.delete(existing_docente.id)
+        success = self.docente_repository.delete(existing_docente.user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
