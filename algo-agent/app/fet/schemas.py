@@ -148,6 +148,19 @@ class FetRunRequest(BaseModel):
     space: SpaceData = Field(default_factory=SpaceData)
 
 
+class ActivityScheduleEntry(BaseModel):
+    id: Union[int, str]
+    subject: str
+    time_slots: List[int] = Field(default_factory=list)
+    students_count: int = 0
+
+
+class RoomSummary(BaseModel):
+    name: str
+    capacity: int = 0
+    building: str = ""
+
+
 class FetRunSummary(BaseModel):
     status: str = Field(default="success")
     semester: str
@@ -156,6 +169,8 @@ class FetRunSummary(BaseModel):
     output_directory: str
     stdout: str = ""
     stderr: str = ""
+    activities_schedule: List[ActivityScheduleEntry] = Field(default_factory=list)
+    rooms: List[RoomSummary] = Field(default_factory=list)
 
 
 __all__ = [
@@ -179,5 +194,7 @@ __all__ = [
     "SpaceConstraint",
     "ConstraintBasicCompulsorySpace",
     "FetRunRequest",
+    "ActivityScheduleEntry",
+    "RoomSummary",
     "FetRunSummary",
 ]
