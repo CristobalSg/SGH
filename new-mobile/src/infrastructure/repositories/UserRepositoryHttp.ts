@@ -35,6 +35,7 @@ export type AdminUserUpdateInput = {
   email: string;
   role: string;
   password?: string;
+  department?: string;
 };
 
 function extractArray<T = any>(payload: any): T[] {

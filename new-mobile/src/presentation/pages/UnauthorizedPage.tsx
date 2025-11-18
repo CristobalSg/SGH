@@ -1,4 +1,11 @@
+import { Link } from "react-router-dom";
+import { useAuth } from "../../app/providers/AuthProvider";
+import { getDefaultPathByRole } from "../routes/rolePaths";
+
 export default function UnauthorizedPage() {
+  const { role } = useAuth();
+  const backHref = role ? getDefaultPathByRole(role) : "/login";
+
   return (
     <div className="min-h-screen grid place-items-center bg-gray-50">
       <div className="max-w-md text-center">
@@ -6,7 +13,9 @@ export default function UnauthorizedPage() {
         <p className="text-gray-600 mb-4">
           No tienes permisos para acceder a esta sección.
         </p>
-        <a className="text-indigo-600 underline" href="/home">Volver al inicio</a>
+        <Link className="text-indigo-600 underline" to={backHref}>
+          Volver al inicio
+        </Link>
       </div>
     </div>
   );

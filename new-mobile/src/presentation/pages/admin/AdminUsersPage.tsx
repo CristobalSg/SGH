@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import ImportUsersCsvModal from "../components/admin/ImportUsersCsvModal";
-import AddUserModal from "../components/admin/AddUserModal";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import ImportUsersCsvModal from "../../components/admin/ImportUsersCsvModal";
+import AddUserModal from "../../components/admin/AddUserModal";
 import { Alert, Spin, Input, Select } from "antd";
-import AppLayout from "../components/layout/AppLayout";
-import { useAdminUsers, type AdminUserView } from "../hooks/useAdminUsers";
+import AppLayout from "../../components/layout/AppLayout";
+import { useAdminUsers, type AdminUserView } from "../../hooks/useAdminUsers";
 
 const { Option } = Select;
 
@@ -108,8 +107,6 @@ export default function AdminUsersPage() {
 
   const [openCsv, setOpenCsv] = useState(false);
 
-  const [selectedUser, setSelectedUser] = useState<AdminUserView | null>(null);
-
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterRole]);
@@ -142,12 +139,8 @@ export default function AdminUsersPage() {
   }, [filteredUsers, page]);
 
   const handleSelectUser = (u: AdminUserView) => {
-    setSelectedUser(u);
     setSelectedUserId(u.id);
   };
-
-  // Usa el docenteId para cargar restricciones
-  const selectedDocenteId = selectedUser?.docenteId ?? null;
 
   const handleEdit = (user: AdminUserView) => {
     setEditingUser(user);
@@ -177,7 +170,7 @@ export default function AdminUsersPage() {
 
   const handleUpdateUser = async (
     id: number,
-    data: { name: string; email: string; role: string; password?: string }
+    data: { name: string; email: string; role: string; password?: string; department?: string }
   ) => {
     try {
       await updateUser(id, data);

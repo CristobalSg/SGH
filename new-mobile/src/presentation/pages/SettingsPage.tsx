@@ -4,7 +4,7 @@ import AppLayout from "../components/layout/AppLayout";
 import { useAuth } from "../../app/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { Collapse, Button, Switch, Input } from "antd";
+import { Collapse, Button, Switch, Input, type CollapseProps } from "antd";
 import { message } from "antd";
 import { useChangePassword } from "../hooks/useChangePassword";
 

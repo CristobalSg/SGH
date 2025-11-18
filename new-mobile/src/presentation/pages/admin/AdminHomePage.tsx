@@ -1,5 +1,5 @@
-import AppLayout from "../components/layout/AppLayout";
-import StatsOverview from "../components/admin/StatsOverview";
+import AppLayout from "../../components/layout/AppLayout";
+import StatsOverview from "../../components/admin/StatsOverview";
 
 export default function AdminHomePage() {
   return (
