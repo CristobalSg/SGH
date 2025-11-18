@@ -88,24 +88,34 @@ export class UserRepositoryHttp {
     return arr.map(normalizeUser);
   }
 
-  async update(id: number, data: AdminUserUpdateInput): Promise<AdminUserView> {
-    const payload: any = {
-      nombre: data.name,
-      email: data.email,
-      rol: data.role,
+  create(user: { name: string; email: string; role: string; password?: string; department?: string }) {
+    const body: any = {
+      nombre: user.name,
+      email: user.email,
+      rol: user.role,
+      activo: true
     };
-    if (data.password) payload.password = data.password;
-
-    // Intentar con trailing slash y sin slash
-    const urlSlash = `${this.base}${id}/`;
-    const urlNoSlash = `${this.base}${id}`;
-    try {
-      const res = await tryPutThenPatch<ApiUser>(urlSlash, payload);
-      return normalizeUser((res as any).data ?? (res as any));
-    } catch {
-      const res = await tryPutThenPatch<ApiUser>(urlNoSlash, payload);
-      return normalizeUser((res as any).data ?? (res as any));
+    if (user.password) body.contrasena = user.password;
+    if (user.role === "docente") {
+      body.departamento = (user.department ?? "").trim(); // enviar siempre la clave
     }
+    console.debug('[UserRepositoryHttp.create] body:', body);
+    return http.post("/admin/users", body);
+  }
+
+  update(id: number, user: { name: string; email: string; role: string; password?: string; department?: string }) {
+    const body: any = {
+      nombre: user.name,
+      email: user.email,
+      rol: user.role,
+      activo: true
+    };
+    if (user.password) body.contrasena = user.password;
+    if (user.role === "docente") {
+      body.departamento = (user.department ?? "").trim();
+    }
+    console.debug('[UserRepositoryHttp.update] body:', body);
+    return http.patch(`/admin/users/${id}`, body);
   }
 
   async delete(id: number): Promise<void> {

@@ -1,25 +1,25 @@
 import { useState } from "react";
 import { AuthRegisterRepositoryHttp, type RegisterUserDto } from "../../infrastructure/repositories/AuthRegisterRepositoryHttp";
 
-const repository = new AuthRegisterRepositoryHttp();
-
 export function useRegisterUser() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const repo = new AuthRegisterRepositoryHttp();
 
-  const createUser = async (data: RegisterUserDto) => {
+  async function createUser(data: { name: string; email: string; role: string; password: string; department?: string }) {
     setLoading(true);
-    setError(null);
     try {
-      const result = await repository.registerUser(data);
-      return result;
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Error al registrar usuario");
-      throw err;
+      console.debug('[useRegisterUser.createUser] data:', data);
+      await repo.registerUser({
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        password: data.password,
+        department: data.department,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  return { createUser, loading, error };
+  return { createUser, loading };
 }

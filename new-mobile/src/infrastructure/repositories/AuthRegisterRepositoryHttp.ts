@@ -9,39 +9,33 @@ export type RegisterUserDto = {
 };
 
 export class AuthRegisterRepositoryHttp {
-  async registerUser(user: RegisterUserDto): Promise<any> {
-    const payload = {
+  async registerUser(user: {
+    name: string;
+    email: string;
+    role: string;
+    password: string;
+    department?: string;
+    active?: boolean;
+  }) {
+    if (user.role === 'docente' && !user.department?.trim()) {
+      throw new Error("El campo departamento es obligatorio para rol docente.");
+    }
+
+    const body: any = {
       nombre: user.name,
       email: user.email,
       rol: user.role,
-      activo: user.active ?? true,
       contrasena: user.password,
+      activo: user.active ?? true,
     };
 
-    try {
-      const { data } = await http.post("/auth/register", payload, {
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log("✅ Respuesta del servidor:", data);
-      return data;
-
-    } catch (error: any) {
-      // Si el servidor responde con error (por ejemplo 400 o 500)
-      if (error.response) {
-        console.error("❌ Error del servidor:", error.response.data);
-      } else if (error.request) {
-        // Si no hubo respuesta (problema de conexión, timeout, etc.)
-        console.error("⚠️ No hubo respuesta del servidor:", error.request);
-      } else {
-        // Error al preparar la solicitud
-        console.error("⚙️ Error en la configuración de la solicitud:", error.message);
-      }
-
-      throw error; // se relanza para manejarlo arriba si es necesario
+    if (user.role === 'docente') {
+      body.departamento = user.department!.trim(); // clave requerida por backend
     }
+
+    console.debug('[AuthRegisterRepositoryHttp.registerUser] body:', body);
+
+    const { data } = await http.post('/auth/register', body);
+    return data;
   }
 }

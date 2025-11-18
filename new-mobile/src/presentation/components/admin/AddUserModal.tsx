@@ -10,8 +10,7 @@ type Props = {
   onSuccess: () => void;
   mode?: "create" | "edit";
   initialUser?: AdminUserView | null;
-  // Para modo edición, la página pasa el actualizador
-  onUpdate?: (id: number, data: { name: string; email: string; role: string; password?: string }) => Promise<void>;
+  onUpdate?: (id: number, data: { name: string; email: string; role: string; password?: string; department?: string }) => Promise<void>;
 };
 
 const roles = [
@@ -39,6 +38,9 @@ export default function AddUserModal({
   const { createUser, loading } = useRegisterUser();
   const [submitting, setSubmitting] = useState(false);
 
+  // Agregar departamento en el estado del formulario
+  const [department, setDepartment] = useState(initialUser?.department || "");
+
   const isEdit = mode === "edit";
   const saving = loading || submitting;
 
@@ -56,6 +58,7 @@ export default function AddUserModal({
         role: initialUser.role ?? "docente",
       });
       setErrors({});
+      setDepartment(initialUser.department || ""); // Cargar departamento en edición
     }
   }, [visible, isEdit, initialUser]);
 
@@ -76,15 +79,12 @@ export default function AddUserModal({
   const canSubmit = useMemo(() => {
     const baseOk =
       form.name.trim().length >= 2 &&
-      emailOk &&
-      !!form.role &&
-      !saving;
-    if (isEdit) {
-      // En edición, la contraseña es opcional (si se envía, debe cumplir el mínimo)
-      return baseOk && (form.password.length === 0 || form.password.length >= MIN_PASSWORD);
-    }
-    return baseOk && form.password.length >= MIN_PASSWORD;
-  }, [form, emailOk, saving, isEdit]);
+      form.email.trim().length > 5 &&
+      form.role &&
+      (!isEdit ? form.password.length >= MIN_PASSWORD : (form.password.length === 0 || form.password.length >= MIN_PASSWORD));
+    const deptOk = form.role !== 'docente' || department.trim().length >= 2;
+    return baseOk && deptOk;
+  }, [form, isEdit, department]);
 
   const setField =
     (key: keyof typeof form) =>
@@ -144,52 +144,40 @@ export default function AddUserModal({
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-
-    // Validación cliente
-    const hasName = form.name.trim().length >= 2;
-    const mailErr = emailClientError(form.email);
-    const passErr =
-      isEdit
-        ? form.password.length > 0 && form.password.length < MIN_PASSWORD
-          ? `Si deseas cambiarla, usa al menos ${MIN_PASSWORD} caracteres.`
-          : null
-        : form.password.length < MIN_PASSWORD
-        ? `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`
-        : null;
-
-    const fe: FieldErrors = {};
-    if (!hasName) fe.name = "Ingresa un nombre válido.";
-    if (mailErr) fe.email = mailErr;
-    if (passErr) fe.password = passErr;
-    if (!form.role) fe.role = "Selecciona un rol.";
-    if (Object.keys(fe).length) {
-      setErrors(fe);
-      return;
-    }
+    if (!canSubmit) return;
 
     try {
-      if (isEdit && initialUser && onUpdate) {
-        setSubmitting(true);
-        const payload: { name: string; email: string; role: string; password?: string } = {
+      setSubmitting(true);
+
+      if (!isEdit) {
+        const payload = {
           name: form.name.trim(),
           email: form.email.trim(),
           role: form.role,
+          password: form.password.trim(),
+          department: form.role === 'docente' ? department.trim() : undefined,
         };
-        if (form.password.length >= MIN_PASSWORD) payload.password = form.password;
-        await onUpdate(initialUser.id, payload);
-      } else {
-        await createUser({
+        console.debug('[AddUserModal.onSubmit] payload registro:', payload);
+        await createUser(payload);
+      } else if (isEdit && initialUser && onUpdate) {
+        const upd: any = {
           name: form.name.trim(),
           email: form.email.trim(),
-          password: form.password,
           role: form.role,
-        });
+          department: form.role === 'docente' ? department.trim() : undefined,
+        };
+        if (form.password.trim().length >= MIN_PASSWORD) {
+          upd.password = form.password.trim();
+        }
+        console.debug('[AddUserModal.onSubmit] payload update:', upd);
+        await onUpdate(initialUser.id, upd);
       }
+
       onSuccess();
       onClose();
     } catch (err) {
-      setErrors(mapApiErrors(err));
+      console.error('[AddUserModal.onSubmit] error:', err);
+      setErrors({ general: 'Error al guardar usuario.' });
     } finally {
       setSubmitting(false);
     }
@@ -308,6 +296,23 @@ export default function AddUserModal({
               </select>
               <div id="role-error" className="mt-1 text-xs text-red-600">{errors.role}</div>
             </div>
+
+            {/* En el formulario visual: mostrar campo departamento solo si role === 'docente' */}
+            {form.role === "docente" && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-700">Departamento</label>
+                <input
+                  type="text"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="Ej: Ciencias Básicas"
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                />
+                {department.trim().length < 2 && (
+                  <p className="text-[11px] text-red-600">Ingresa al menos 2 caracteres.</p>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
               <button
