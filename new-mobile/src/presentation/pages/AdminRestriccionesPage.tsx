@@ -130,7 +130,6 @@ const UserRow = ({
           {user.docenteId && (
             <span className="text-[11px] text-gray-500">
               ID Docente: {user.docenteId}
-              {user.department ? ` · ${user.department}` : ""}
             </span>
           )}
         </div>
@@ -189,17 +188,14 @@ export default function AdminRestriccionesPage() {
     }
   }, [filteredUsers, selectedUserId]);
 
-  // Cargar restricciones
+  // Cargar restricciones usando user_id en lugar de docenteId
   useEffect(() => {
     if (!selectedUser) {
       clear();
       return;
     }
-    if (selectedUser.docenteId) {
-      fetchForDocente(selectedUser.docenteId);
-    } else {
-      clear();
-    }
+    // Usar user.id que es el user_id del backend
+    fetchForDocente(selectedUser.id);
   }, [selectedUser, fetchForDocente, clear]);
 
   // ✅ Acciones reales
@@ -208,7 +204,7 @@ export default function AdminRestriccionesPage() {
       setActionLoading(true);
       await aceptarRestriccion(id);
       message.success("Restricción aceptada");
-      if (selectedUser?.docenteId) await fetchForDocente(selectedUser.docenteId);
+      if (selectedUser?.id) await fetchForDocente(selectedUser.id);
     } catch (err) {
       console.error("Error al aceptar restricción:", err);
       message.error("Error al aceptar restricción");
@@ -222,7 +218,7 @@ export default function AdminRestriccionesPage() {
       setActionLoading(true);
       await rechazarRestriccion(id);
       message.info("Restricción rechazada");
-      if (selectedUser?.docenteId) await fetchForDocente(selectedUser.docenteId);
+      if (selectedUser?.id) await fetchForDocente(selectedUser.id);
     } catch (err) {
       console.error("Error al rechazar restricción:", err);
       message.error("Error al rechazar restricción");

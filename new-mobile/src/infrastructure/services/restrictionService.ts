@@ -7,7 +7,7 @@ export type RestriccionHorarioInput = {
   disponible: boolean;
   descripcion: string;
   activa: boolean;
-  docente_id: number;
+  user_id: number;
 };
 
 export type RestriccionHorarioView = RestriccionHorarioInput & { id: number };

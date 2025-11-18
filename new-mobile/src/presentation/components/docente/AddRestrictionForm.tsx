@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import dayjs from "dayjs";
 import { Modal, Form, Select, TimePicker, Input, Switch } from "antd";
 import type { RestriccionHorarioInput, RestriccionHorarioView } from "../../hooks/useDocenteHorarioRestrictions";
+import { useAuth } from "../../../app/providers/AuthProvider";
 
 const { RangePicker } = TimePicker;
 const { TextArea } = Input;
@@ -34,6 +35,7 @@ const AddRestrictionForm: React.FC<AddRestrictionFormProps> = ({
   initialValues = null,
 }) => {
   const [form] = Form.useForm();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!open) return;
@@ -59,14 +61,18 @@ const handleOk = async () => {
   const values = await form.validateFields();
   const [startTime, endTime] = values.horas;
 
-  const payload = {
-    dia_semana: Number(values.dia), // asegura que sea número
+  if (!user?.id) {
+    throw new Error("Usuario no autenticado");
+  }
+
+  const payload: RestriccionHorarioInput = {
+    dia_semana: Number(values.dia),
     hora_inicio: horaToBackendFormat(startTime),
     hora_fin: horaToBackendFormat(endTime),
     descripcion: values.descripcion?.trim() || "",
     disponible: !!values.disponible,
     activa: true,
-    docente_id: 1, // ⚠️ si tu usuario logeado tiene ID dinámico, reemplazalo por su valor
+    user_id: Number(user.id),
   };
   await onSubmit(payload, initialValues?.id);
   form.resetFields();

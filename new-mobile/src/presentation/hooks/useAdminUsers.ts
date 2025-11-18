@@ -45,13 +45,24 @@ export function useAdminUsers() {
     refresh();
   }, [refresh]);
 
-  const updateUser = useCallback(async (id: number, data: AdminUserUpdateInput) => {
-    try {
-      await repo.update(id, data);
-    } catch (e: any) {
-      throw new Error(e?.response?.data?.detail || e?.message || "No se pudo actualizar el usuario");
-    }
-  }, []);
+  const createUser = useCallback(
+    async (data: { name: string; email: string; role: string; password?: string; department?: string }) => {
+      await repo.create(data);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const updateUser = useCallback(
+    async (id: number, data: AdminUserUpdateInput) => {
+      try {
+        await repo.update(id, data);
+      } catch (e: any) {
+        throw new Error(e?.response?.data?.detail || e?.message || "No se pudo actualizar el usuario");
+      }
+    },
+    []
+  );
 
   const deleteUser = useCallback(async (id: number) => {
     try {
@@ -61,5 +72,5 @@ export function useAdminUsers() {
     }
   }, []);
 
-  return { users, loading, error, refresh, updateUser, deleteUser };
+  return { users, loading, error, refresh, createUser, updateUser, deleteUser };
 }

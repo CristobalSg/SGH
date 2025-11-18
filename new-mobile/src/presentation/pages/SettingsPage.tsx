@@ -3,14 +3,18 @@ import { BellIcon, ChevronLeftIcon, ArrowRightOnRectangleIcon } from "@heroicons
 import AppLayout from "../components/layout/AppLayout";
 import { useAuth } from "../../app/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { useMemo } from "react";
-import type { CollapseProps } from "antd";
-import { Collapse, Button, Switch } from "antd";
+import { useMemo, useState } from "react";
+import { Collapse, Button, Switch, Input } from "antd";
 import { message } from "antd";
+import { useChangePassword } from "../hooks/useChangePassword";
 
 const SettingsPage = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { changePassword, loading: changing } = useChangePassword();
+  const [pwdActual, setPwdActual] = useState("");
+  const [pwdNueva, setPwdNueva] = useState("");
+  const MIN_PASSWORD = 12;
 
   const handleLogout = async () => {
     await logout();
@@ -38,16 +42,51 @@ const SettingsPage = () => {
 
     const passwordChildren = (
       <div className="space-y-3 pt-2 text-sm text-gray-600">
-        <p>
-          Para actualizar tu contraseña te enviaremos un correo con un enlace de recuperación.
-          Presiona el botón para recibir las instrucciones en tu bandeja de entrada.
-        </p>
+        <div className="grid gap-3">
+          <div>
+            <p className="text-xs text-gray-500">Contraseña actual</p>
+            <Input.Password
+              value={pwdActual}
+              onChange={(e) => setPwdActual(e.target.value)}
+              placeholder="********"
+            />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Nueva contraseña</p>
+            <Input.Password
+              value={pwdNueva}
+              onChange={(e) => setPwdNueva(e.target.value)}
+              placeholder="Mínimo 12 caracteres"
+            />
+            {pwdNueva && pwdNueva.length < MIN_PASSWORD && (
+              <p className="text-xs text-red-500 mt-1">
+                La contraseña debe tener al menos {MIN_PASSWORD} caracteres.
+              </p>
+            )}
+          </div>
+        </div>
         <Button
           type="primary"
           size="middle"
-          onClick={() => message.info("Pronto recibirás un correo con el enlace para actualizar tu contraseña.")}
+          loading={changing}
+          disabled={!pwdActual || pwdNueva.length < MIN_PASSWORD}
+          onClick={async () => {
+            try {
+              await changePassword(pwdActual, pwdNueva);
+              message.success("Contraseña actualizada correctamente.");
+              setPwdActual("");
+              setPwdNueva("");
+            } catch (e: any) {
+              const apiMsg =
+                e?.response?.data?.detail?.[0]?.msg ||
+                e?.response?.data?.message ||
+                e?.message ||
+                "No se pudo cambiar la contraseña.";
+              message.error(apiMsg);
+            }
+          }}
         >
-          Enviar enlace de recuperación
+          Cambiar contraseña
         </Button>
       </div>
     );
@@ -74,7 +113,7 @@ const SettingsPage = () => {
       { key: "password", label: "Cambiar contraseña", children: passwordChildren },
       { key: "seguridad", label: "Seguridad", children: seguridadChildren },
     ];
-  }, [user]);
+  }, [user, pwdActual, pwdNueva, changing]);
 
   return (
     <AppLayout
