@@ -7,11 +7,15 @@ import { useMemo, useState } from "react";
 import { Collapse, Button, Switch, Input, type CollapseProps } from "antd";
 import { message } from "antd";
 import { useChangePassword } from "../hooks/useChangePassword";
+import AvatarSelector from "../components/AvatarSelector";
+import { defaultAvatarMale, defaultAvatarFemale } from "../../utils/avatars";
+import { useAvatarSelection } from "../hooks/useAvatarSelection";
 
 const SettingsPage = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { changePassword, loading: changing } = useChangePassword();
+  const { selectAvatar, updating: updatingAvatar } = useAvatarSelection();
   const [pwdActual, setPwdActual] = useState("");
   const [pwdNueva, setPwdNueva] = useState("");
   const MIN_PASSWORD = 12;
@@ -23,8 +27,42 @@ const SettingsPage = () => {
 
   // Ítems del Collapse para "Cuenta"
   const cuentaItems: CollapseProps["items"] = useMemo(() => {
+    const handleAvatarSelect = async (avatarType: 'male' | 'female') => {
+      try {
+        await selectAvatar(avatarType);
+        
+        // Actualizar el estado local del usuario
+        const newAvatarUrl = avatarType === 'male' ? defaultAvatarMale : defaultAvatarFemale;
+        
+        // TODO: Actualizar el estado del usuario en el contexto
+        // setUser({ ...user, avatar_url: newAvatarUrl, gender: avatarType });
+        
+        console.log('Avatar seleccionado:', avatarType);
+        console.log('URL del avatar:', newAvatarUrl);
+      } catch (error) {
+        // El error ya se muestra en el componente AvatarSelector
+        console.error('Error al seleccionar avatar:', error);
+      }
+    };
+
     const perfilChildren = (
-      <div className="space-y-3 pt-2">
+      <div className="space-y-4 pt-2">
+        {/* Foto de perfil */}
+        <div className="flex flex-col items-center py-2">
+          <AvatarSelector
+            currentAvatar={user?.avatar_url || null}
+            currentGender={user?.gender || 'male'}
+            userName={user?.name}
+            size={120}
+            onAvatarSelect={handleAvatarSelect}
+            loading={updatingAvatar}
+          />
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Haz clic en el ícono de la cámara para elegir tu avatar
+          </p>
+        </div>
+
+        {/* Información del usuario */}
         <div>
           <p className="text-xs text-gray-500">Nombre</p>
           <p className="text-sm font-medium">{user?.name ?? "—"}</p>
@@ -113,7 +151,7 @@ const SettingsPage = () => {
       { key: "password", label: "Cambiar contraseña", children: passwordChildren },
       { key: "seguridad", label: "Seguridad", children: seguridadChildren },
     ];
-  }, [user, pwdActual, pwdNueva, changing]);
+  }, [user, pwdActual, pwdNueva, changing, updatingAvatar, selectAvatar]);
 
   return (
     <AppLayout
