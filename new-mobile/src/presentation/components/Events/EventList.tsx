@@ -46,7 +46,12 @@ const EventList: React.FC<Props> = ({ events, onEdit, onDelete }) => {
           <List.Item.Meta
             title={
               <div className="flex items-center gap-2">
-                {item.time && <span className="inline-flex items-center px-2 py-0.5 text-xs rounded bg-gray-100">{item.time}</span>}
+                {(item.startTime || item.time) && (
+                  <span className="inline-flex items-center px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800">
+                    {item.startTime ? item.startTime.substring(0, 5) : item.time}
+                    {item.endTime && ` - ${item.endTime.substring(0, 5)}`}
+                  </span>
+                )}
                 <span className="font-medium">{item.title}</span>
               </div>
             }
