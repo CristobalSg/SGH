@@ -64,7 +64,7 @@ class EventoUseCases:
                 detail="Perfil de docente no encontrado. Contacte al administrador",
             )
 
-        return docente.id
+        return docente.user_id
 
     def get_by_docente_user(
         self, user: User, skip: int = 0, limit: int = 100
@@ -98,9 +98,9 @@ class EventoUseCases:
             )
 
         if activos_solo:
-            return self.evento_repository.get_active_by_docente(docente.id, skip, limit)
+            return self.evento_repository.get_active_by_docente(docente.user_id, skip, limit)
         else:
-            return self.evento_repository.get_by_docente(docente.id, skip, limit)
+            return self.evento_repository.get_by_docente(docente.user_id, skip, limit)
 
     def get_by_id_and_docente_user(self, evento_id: int, user: User) -> Evento:
         """Obtener evento por ID verificando que pertenezca al docente autenticado"""
@@ -146,7 +146,7 @@ class EventoUseCases:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Docente con user_id {evento_data.user_id} no encontrado",
                 )
-            docente_id = docente.id
+            docente_id = docente.user_id
         else:
             # Si es docente, obtener su propio docente_id
             docente_id = self._get_docente_id_from_user(user)

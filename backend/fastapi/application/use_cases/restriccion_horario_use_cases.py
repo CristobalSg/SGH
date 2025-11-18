@@ -77,7 +77,7 @@ class RestriccionHorarioUseCases:
         
         # Verificar si ya existe una restricción similar para el mismo docente y horario
         restricciones_existentes = self.restriccion_horario_repository.get_by_docente_y_horario(
-            docente.id,
+            docente.user_id,
             restriccion_data.dia_semana,
             restriccion_data.hora_inicio,
             restriccion_data.hora_fin,
@@ -92,7 +92,7 @@ class RestriccionHorarioUseCases:
         # Convertir schema a entidad, reemplazando user_id por docente_id
         restriccion_dict = restriccion_data.model_dump()
         restriccion_dict.pop('user_id')  # Remover user_id
-        restriccion_dict['docente_id'] = docente.id  # Agregar docente_id interno
+        restriccion_dict['docente_id'] = docente.user_id  # Agregar docente_id (que ahora es user_id)
         restriccion_create = RestriccionHorarioCreate(**restriccion_dict)
         return self.restriccion_horario_repository.create(restriccion_create)
 
@@ -163,7 +163,7 @@ class RestriccionHorarioUseCases:
                 detail=f"No se encontró un docente con user_id {user_id}",
             )
         
-        return self.restriccion_horario_repository.get_by_docente(docente.id)
+        return self.restriccion_horario_repository.get_by_docente(docente.user_id)
 
     def get_by_dia_semana(self, dia_semana: int) -> List[RestriccionHorario]:
         """Obtener restricciones de horario por día de la semana"""
@@ -196,7 +196,7 @@ class RestriccionHorarioUseCases:
             )
         
         return self.restriccion_horario_repository.get_disponibilidad_docente(
-            docente.id, dia_semana
+            docente.user_id, dia_semana
         )
 
     def delete_by_docente(self, docente_id: int) -> int:
@@ -219,7 +219,7 @@ class RestriccionHorarioUseCases:
                 detail=f"No se encontró un docente con user_id {user_id}",
             )
         
-        return self.restriccion_horario_repository.delete_by_docente(docente.id)
+        return self.restriccion_horario_repository.delete_by_docente(docente.user_id)
 
     # =====================================
     # MÉTODOS PARA DOCENTES AUTENTICADOS
@@ -255,7 +255,7 @@ class RestriccionHorarioUseCases:
                 detail="Perfil de docente no encontrado. Contacte al administrador para crear su perfil de docente",
             )
 
-        return docente.id
+        return docente.user_id
 
     def get_by_docente_user(
         self, user: User, skip: int = 0, limit: int = 100
