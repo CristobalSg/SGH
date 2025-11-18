@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
+from app.fet.results_parser import TimetableResultsParser
 from app.fet.schemas import FetRunRequest, FetRunSummary
 from app.fet.xml_builder import FetXmlBuilder
 from app.settings import AppSettings
@@ -26,15 +27,26 @@ class FetService:
     ejecuta FET y devuelve un resumen de la corrida.
     """
 
-    def __init__(self, settings: AppSettings, xml_builder: FetXmlBuilder | None = None):
+    def __init__(
+        self,
+        settings: AppSettings,
+        xml_builder: FetXmlBuilder | None = None,
+        results_parser: TimetableResultsParser | None = None,
+    ):
         self.settings = settings
         self.xml_builder = xml_builder or FetXmlBuilder()
+        self.results_parser = results_parser or TimetableResultsParser()
 
     def run(self, payload: FetRunRequest) -> FetRunSummary:
         fet_xml = self.xml_builder.build(payload)
         input_file = self._write_input_file(fet_xml)
         execution = self._execute_algorithm(input_file)
         metadata = payload.metadata
+        activities_schedule, rooms = self.results_parser.extract_summary(
+            payload=payload,
+            workdir=self.settings.fet_workdir,
+            input_file=input_file,
+        )
         return FetRunSummary(
             semester=metadata.semester,
             timetable_id=metadata.timetable_id,
@@ -42,6 +54,8 @@ class FetService:
             output_directory=execution.output_directory,
             stdout=execution.stdout,
             stderr=execution.stderr,
+            activities_schedule=activities_schedule,
+            rooms=rooms,
         )
 
     def _write_input_file(self, xml_payload: str) -> Path:
