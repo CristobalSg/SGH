@@ -56,8 +56,8 @@ export class RestriccionHorarioRepositoryHttp {
     return data.map(normalize);
   }
 
-  async listByDocente(docenteId: number): Promise<RestriccionHorario[]> {
-    const { data } = await http.get<ApiRestriction[]>(`/restricciones-horario/docente/${docenteId}`);
+  async listByDocente(userId: number): Promise<RestriccionHorario[]> {
+    const { data } = await http.get<ApiRestriction[]>(`/restricciones-horario/docente/${userId}`);
     return data.map(normalize);
   }
 
@@ -69,7 +69,7 @@ export class RestriccionHorarioRepositoryHttp {
       hora_fin: payload.hora_fin,
       disponible: payload.disponible,
       descripcion: payload.descripcion ?? null,
-      activa: payload.activa,
+      activa: payload.activa ?? true,
       user_id: (payload as any).user_id ?? (payload as any).docente_id
     };
 

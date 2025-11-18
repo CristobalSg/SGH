@@ -47,21 +47,21 @@ export function useAdminDocenteRestrictions() {
   }, []);
 
   /**
-   * Cargar restricciones de un docente
+   * Cargar restricciones de un docente por su user_id
    */
   const fetchForDocente = useCallback(
-    async (targetDocenteId: number | null) => {
-      if (!targetDocenteId) {
+    async (targetUserId: number | null) => {
+      if (!targetUserId) {
         clear();
         return;
       }
 
       setLoading(true);
       setError(null);
-      setDocenteId(targetDocenteId);
+      setDocenteId(targetUserId);
 
       try {
-        const data = await repo.listByDocente(targetDocenteId);
+        const data = await repo.listByDocente(targetUserId);
         const normalized = data.map((item) =>
           normalize({
             id: item.id,
