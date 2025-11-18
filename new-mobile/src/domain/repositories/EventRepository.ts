@@ -1,5 +1,5 @@
 // src/domain/repositories/EventRepository.ts
-import type { Event, CreateEventDTO, UpdateEventDTO } from "../events/event";
+import type { Event, CreateEventDTO, UpdateEventDTO, DetailedEvent } from "../events/event";
 
 export interface EventRepository {
   /**
@@ -26,4 +26,9 @@ export interface EventRepository {
    * Obtener un evento por ID
    */
   getById(id: number): Promise<Event>;
+
+  /**
+   * Obtener eventos con información enriquecida (asignatura, sección, sala, etc.)
+   */
+  getDetailed(): Promise<DetailedEvent[]>;
 }

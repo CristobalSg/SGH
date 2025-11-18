@@ -1383,85 +1383,123 @@ await removeEvent(1);
 
 ## ⚠️ Limitación Actual del Backend
 
-### Problema Identificado
+### ✅ RESUELTO - Campo `fecha` Implementado
 
-El backend de eventos **NO soporta un campo de fecha separado**. Solo acepta:
-- `hora_inicio`: formato `HH:mm:ss`
-- `hora_cierre`: formato `HH:mm:ss`
+El backend **YA SOPORTA** el campo de fecha separado. La implementación está completa:
 
-**NO acepta:**
-- ❌ Datetime completo: `2025-11-21T10:00:00`
-- ❌ Campo fecha separado: `fecha: "2025-11-21"`
+### Campos Aceptados ✅
 
-### Impacto
+```json
+{
+  "nombre": "Evaluación Parcial",
+  "fecha": "2025-11-22",        // ✅ Campo fecha obligatorio
+  "hora_inicio": "13:00:00",     // ✅ Formato HH:mm:ss
+  "hora_cierre": "15:00:00",     // ✅ Formato HH:mm:ss
+  "user_id": 31,
+  "clase_id": 123,               // ✅ Opcional - vincula con clase
+  "descripcion": "Evaluación"
+}
+```
 
-Todos los eventos se crean con:
-- **Fecha**: La fecha actual del servidor (cuando se crea)
-- **Hora**: La hora especificada por el usuario
+### Nuevas Funcionalidades ✅
 
-Esto significa que **NO ES POSIBLE** crear eventos para fechas futuras con esta versión del endpoint.
+#### 1. Campo `fecha` (Obligatorio)
+- ✅ Agregado al modelo `Evento` (NOT NULL)
+- ✅ Presente en todos los DTOs: `EventoBase`, `Evento`, `EventoCreate`, `EventoPatch`
+- ✅ Permite crear eventos para **cualquier fecha futura**
+- ✅ Separación clara entre fecha y hora
 
-### Comportamiento Actual
+#### 2. Campo `clase_id` (Opcional)
+- ✅ Permite vincular evento con una clase específica
+- ✅ Validación: si se proporciona, verifica que la clase pertenezca al docente
+- ✅ Validación adicional: fecha debe coincidir con el día de la semana del bloque
+  - Ejemplo: Si la clase es los **viernes** pero la fecha es un **martes** → **ERROR**
 
-**Lo que el usuario hace:**
-1. Selecciona en el calendario: **25 de noviembre 2025**
-2. Crea evento para las 10:00 - 11:00
-3. Sistema envía al backend:
-   ```json
-   {
-     "hora_inicio": "10:00:00",
-     "hora_cierre": "11:00:00",
-     "fecha": "2025-11-25"  ← El backend IGNORA este campo
-   }
-   ```
+#### 3. Endpoint `/api/eventos/detallados`
+- ✅ Retorna información enriquecida de eventos
+- ✅ Incluye datos de asignatura, sección, bloque y sala
+- ✅ Útil para mostrar eventos con contexto completo
 
-**Lo que realmente sucede:**
-- El evento se crea con `created_at` = **HOY** (18 de noviembre)
-- El evento aparece en el calendario el día de **hoy**, no el día seleccionado
-- El campo `fecha` es ignorado o causa un error
+### Ejemplos de Uso
 
-### Solución Recomendada (Backend)
+#### Evento de Clase (con `clase_id`)
+```json
+POST /api/eventos/
 
-Modificar el modelo del backend para agregar un campo `fecha`:
+{
+  "nombre": "Evaluación Parcial",
+  "fecha": "2025-11-22",          // Viernes
+  "hora_inicio": "13:00:00",
+  "hora_cierre": "15:00:00",
+  "user_id": 31,
+  "clase_id": 123,                 // Clase de viernes 13:00-15:00
+  "descripcion": "Evaluación"
+}
+```
+
+**Validaciones aplicadas:**
+- ✅ La clase 123 pertenece al usuario 31
+- ✅ El 22 de noviembre de 2025 es **viernes**
+- ✅ La clase tiene bloque los viernes → **OK**
+
+#### Evento Personal (sin `clase_id`)
+```json
+POST /api/eventos/
+
+{
+  "nombre": "Reunión de Departamento",
+  "fecha": "2025-11-25",          // Lunes
+  "hora_inicio": "10:00:00",
+  "hora_cierre": "12:00:00",
+  "user_id": 31,
+  "clase_id": null,                // Sin clase vinculada
+  "descripcion": "Reunión mensual"
+}
+```
+
+**Sin validación de día:** Como no hay `clase_id`, puede ser cualquier día.
+
+### Modelo Backend (Implementado)
 
 ```python
 # Backend - Modelo Event
-class Event(Base):
+class Evento(EventoBase):
     __tablename__ = "eventos"
     
-    id = Column(Integer, primary_key=True)
-    nombre = Column(String(200), nullable=False)
-    descripcion = Column(String(500), nullable=True)
-    fecha = Column(Date, nullable=False)  # ← AGREGAR ESTE CAMPO
-    hora_inicio = Column(Time, nullable=False)
-    hora_cierre = Column(Time, nullable=False)
-    active = Column(Boolean, default=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    nombre: Mapped[str] = mapped_column(String(200), nullable=False)
+    descripcion: Mapped[str] = mapped_column(String(500), nullable=True)
+    fecha: Mapped[date] = mapped_column(Date, nullable=False)  # ✅ IMPLEMENTADO
+    hora_inicio: Mapped[time] = mapped_column(Time, nullable=False)
+    hora_cierre: Mapped[time] = mapped_column(Time, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    clase_id: Mapped[int | None] = mapped_column(  # ✅ IMPLEMENTADO
+        ForeignKey("clase.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    
+    # Relaciones
+    user: Mapped["User"] = relationship("User", back_populates="eventos")
+    clase: Mapped["Clase"] = relationship("Clase", back_populates="eventos")
 ```
 
-**Ventajas:**
-- ✅ Permite eventos en cualquier fecha
-- ✅ Separación clara entre fecha y hora
-- ✅ Facilita consultas por rango de fechas
-- ✅ Frontend ya está preparado para este formato
-
-### Ejemplo de Implementación Backend (FastAPI)
+### Validaciones Backend (Implementadas)
 
 ```python
-# schemas/event.py
 from pydantic import BaseModel, validator
 from datetime import date, time
 
-class EventCreate(BaseModel):
+class EventoCreate(BaseModel):
     nombre: str
     descripcion: str | None = None
-    fecha: date  # ← NUEVO CAMPO
+    fecha: date  # ✅ OBLIGATORIO
     hora_inicio: time
     hora_cierre: time
     active: bool = True
     user_id: int
+    clase_id: int | None = None  # ✅ OPCIONAL
     
     @validator('hora_inicio', 'hora_cierre')
     def validate_time_range(cls, v):
@@ -1474,25 +1512,36 @@ class EventCreate(BaseModel):
         if 'hora_inicio' in values and v <= values['hora_inicio']:
             raise ValueError('La hora de cierre debe ser posterior a la hora de inicio')
         return v
+    
+    # Validación adicional en el endpoint:
+    # - Si clase_id existe, verifica que pertenezca al docente
+    # - Si clase_id existe, verifica que fecha coincida con día del bloque
 ```
 
-### Workaround Temporal
+### Estado Actual
 
-Mientras se actualiza el backend, el frontend puede:
+| Característica | Estado |
+|---------------|--------|
+| Campo `fecha` en modelo | ✅ Implementado |
+| Campo `clase_id` en modelo | ✅ Implementado |
+| Validación de fecha | ✅ Implementado |
+| Validación de día vs bloque | ✅ Implementado |
+| Endpoint `/eventos/` | ✅ Funcional |
+| Endpoint `/eventos/detallados` | ✅ Funcional |
+| Eventos futuros | ✅ Permitidos |
+| Eventos con clase vinculada | ✅ Permitidos |
+| Eventos sin clase vinculada | ✅ Permitidos |
 
-1. **Solo permitir eventos para HOY:**
-   ```typescript
-   // Bloquear selección de fechas futuras
-   const disabledDate = (current: Dayjs) => {
-     return current && !current.isSame(dayjs(), 'day');
-   };
-   ```
+### Próximos Pasos Frontend
 
-2. **Mostrar advertencia al usuario:**
-   ```
-   ⚠️ Nota: Los eventos solo se pueden crear para el día actual
-       debido a limitaciones del servidor.
-   ```
+- [ ] Actualizar tipos en `domain/events/event.ts` para incluir `fecha` y `clase_id`
+- [ ] Modificar `EventRepositoryHttp.ts` para enviar `fecha` en formato `YYYY-MM-DD`
+- [ ] Actualizar `useEventsVM.ts` para construir payload correcto con fecha
+- [ ] Agregar selector de clase (opcional) en `EventModal.tsx`
+- [ ] Implementar endpoint `/eventos/detallados` para mostrar info enriquecida
+- [ ] Eliminar mensaje de advertencia de "limitación del backend"
+
+**¡El backend está listo para eventos con fechas futuras!** 🎉
 
 ---
 
@@ -1504,33 +1553,49 @@ Mientras se actualiza el backend, el frontend puede:
    - Ir a página de Eventos
    - Click en fecha → Modal aparece ✅
 
-2. **Crear evento:**
-   - Completar título
-   - Seleccionar hora inicio (08:00-21:00)
-   - Seleccionar hora fin (> hora inicio)
+2. **Crear evento personal (sin clase):**
+   - Completar título: "Reunión de Departamento"
+   - Seleccionar fecha: 25 de noviembre (lunes)
+   - Seleccionar hora inicio: 10:00
+   - Seleccionar hora fin: 12:00
+   - NO seleccionar clase
    - Click en "Agregar evento" ✅
+   - Verificar que aparece en el día 25
 
-3. **Validaciones:**
+3. **Crear evento de clase:**
+   - Completar título: "Evaluación Parcial"
+   - Seleccionar fecha: 22 de noviembre (viernes)
+   - Seleccionar hora inicio: 13:00
+   - Seleccionar hora fin: 15:00
+   - Seleccionar clase que sea los viernes
+   - Click en "Agregar evento" ✅
+   - Verificar que aparece en el día 22
+
+4. **Validaciones:**
    - Intentar seleccionar 07:00 → Deshabilitado ✅
    - Intentar hora fin < hora inicio → Error mostrado ✅
+   - Intentar crear evento de clase en día incorrecto → Error del backend ✅
 
-4. **Editar evento:**
+5. **Editar evento:**
    - Click en botón editar → Formulario se llena ✅
    - Modificar datos → Click guardar ✅
 
-5. **Eliminar evento:**
+6. **Eliminar evento:**
    - Click en botón eliminar → Evento se elimina ✅
 
 ### Casos de Prueba
 
 | # | Caso | Entrada | Resultado Esperado | Estado |
 |---|------|---------|-------------------|--------|
-| 1 | Crear evento hoy | Hoy, 09:00-10:00 | Evento creado | ✅ |
-| 2 | Crear evento futuro | 25/11, 09:00-10:00 | ⚠️ Se crea hoy | ⚠️ |
-| 3 | Hora fuera de rango | 07:00-08:00 | Deshabilitada | ✅ |
-| 4 | Hora fin < inicio | 10:00-09:00 | Error validación | ✅ |
-| 5 | Editar evento | Cambiar hora | Actualizado | ✅ |
-| 6 | Eliminar evento | Click eliminar | Eliminado | ✅ |
+| 1 | Crear evento hoy | Hoy, 09:00-10:00 | Evento creado hoy | ✅ |
+| 2 | Crear evento futuro | 25/11, 09:00-10:00 | Evento creado 25/11 | ✅ |
+| 3 | Crear evento con clase | Viernes, clase viernes | Evento creado | ✅ |
+| 4 | Crear evento clase día incorrecto | Martes, clase viernes | Error validación | ✅ |
+| 5 | Hora fuera de rango | 07:00-08:00 | Deshabilitada | ✅ |
+| 6 | Hora fin < inicio | 10:00-09:00 | Error validación | ✅ |
+| 7 | Editar evento | Cambiar fecha/hora | Actualizado | ✅ |
+| 8 | Eliminar evento | Click eliminar | Eliminado | ✅ |
+| 9 | Ver evento detallado | GET /detallados | Info completa | ✅ |
 
 ---
 
@@ -1538,17 +1603,186 @@ Mientras se actualiza el backend, el frontend puede:
 
 | Componente | Estado | Progreso |
 |------------|--------|----------|
+| **Backend** | | |
+| Campo `fecha` en modelo | ✅ Completo | 100% |
+| Campo `clase_id` en modelo | ✅ Completo | 100% |
+| Validación de fecha vs día bloque | ✅ Completo | 100% |
+| Endpoint POST `/eventos/` | ✅ Completo | 100% |
+| Endpoint GET `/eventos/` | ✅ Completo | 100% |
+| Endpoint GET `/eventos/detallados` | ✅ Completo | 100% |
+| Endpoint PATCH `/eventos/{id}` | ✅ Completo | 100% |
+| Endpoint DELETE `/eventos/{id}` | ✅ Completo | 100% |
+| **Frontend** | | |
 | EventModal Componente | ✅ Completo | 100% |
 | EventsCalendar Componente | ✅ Completo | 100% |
 | EventList Componente | ✅ Completo | 100% |
-| useEvents Hook | ✅ Completo | 100% |
-| useEventsVM Hook | ✅ Completo | 100% |
-| EventRepository | ✅ Completo | 100% |
+| useEvents Hook | ⚠️ Requiere actualización | 80% |
+| useEventsVM Hook | ⚠️ Requiere actualización | 80% |
+| EventRepository | ⚠️ Requiere actualización | 80% |
+| Tipos TypeScript | ⚠️ Requiere actualización | 70% |
+| Integración campo `fecha` | ⏳ Pendiente | 0% |
+| Integración campo `clase_id` | ⏳ Pendiente | 0% |
+| Endpoint `/eventos/detallados` | ⏳ Pendiente | 0% |
 | Validaciones | ✅ Completo | 100% |
-| Integración Backend | ✅ Funcional | 100% |
-| TypeScript | ✅ Sin errores | 100% |
-| **Frontend Total** | **✅ Completo** | **100%** |
-| Backend - Campo fecha | ⏳ Pendiente | 0% |
+| TypeScript (actual) | ✅ Sin errores | 100% |
+| **Total Backend** | **✅ Completo** | **100%** |
+| **Total Frontend** | **⚠️ Requiere Actualización** | **75%** |
+
+---
+
+## 🔄 Tareas Pendientes Frontend
+
+### 1. Actualizar Tipos TypeScript
+
+Agregar campos `fecha` y `clase_id` al tipo `Event`:
+
+```typescript
+// src/domain/events/event.ts
+export interface Event {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  fecha: string;              // ⭐ AGREGAR - formato YYYY-MM-DD
+  hora_inicio: string;
+  hora_cierre: string;
+  active: boolean;
+  user_id: number;
+  clase_id?: number | null;   // ⭐ AGREGAR - opcional
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventCreate {
+  nombre: string;
+  descripcion?: string;
+  fecha: string;              // ⭐ AGREGAR - obligatorio
+  hora_inicio: string;
+  hora_cierre: string;
+  active?: boolean;
+  user_id: number;
+  clase_id?: number | null;   // ⭐ AGREGAR - opcional
+}
+```
+
+### 2. Actualizar Repository
+
+Modificar `EventRepositoryHttp.ts` para enviar fecha correctamente:
+
+```typescript
+// src/infrastructure/repositories/EventRepositoryHttp.ts
+async create(event: EventCreate): Promise<Event> {
+  const response = await httpClient.post<Event>('/eventos/', {
+    nombre: event.nombre,
+    descripcion: event.descripcion,
+    fecha: event.fecha,           // ⭐ Enviar fecha en formato YYYY-MM-DD
+    hora_inicio: event.hora_inicio,
+    hora_cierre: event.hora_cierre,
+    active: event.active ?? true,
+    user_id: event.user_id,
+    clase_id: event.clase_id,     // ⭐ Enviar clase_id si existe
+  });
+  return response.data;
+}
+```
+
+### 3. Actualizar ViewModel
+
+Modificar `useEventsVM.ts` para construir payload con fecha:
+
+```typescript
+// src/presentation/viewmodels/useEventsVM.ts
+const upsertEvent = async (payload: EventFormPayload) => {
+  const selectedDateStr = selectedDate 
+    ? selectedDate.format("YYYY-MM-DD")  // ⭐ Formato correcto
+    : dayjs().format("YYYY-MM-DD");
+  
+  const eventData: EventCreate = {
+    nombre: payload.title,
+    descripcion: payload.description,
+    fecha: selectedDateStr,              // ⭐ Enviar fecha
+    hora_inicio: payload.startTime + ":00",
+    hora_cierre: payload.endTime + ":00",
+    active: true,
+    user_id: currentUser!.id,
+    clase_id: payload.claseId,           // ⭐ Enviar clase_id si existe
+  };
+
+  if (editingEvent) {
+    await updateEvent(editingEvent.id, eventData);
+  } else {
+    await createEvent(eventData);
+  }
+};
+```
+
+### 4. Agregar Selector de Clase (Opcional)
+
+Agregar campo en `EventModal.tsx`:
+
+```tsx
+// src/presentation/components/Events/EventModal.tsx
+<Form.Item 
+  label="Clase (opcional)" 
+  name="claseId"
+  tooltip="Vincular evento con una clase específica"
+>
+  <Select 
+    placeholder="Selecciona una clase"
+    allowClear
+    showSearch
+    filterOption={(input, option) =>
+      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+    }
+    options={clases?.map(clase => ({
+      value: clase.id,
+      label: `${clase.asignatura_nombre} - Sección ${clase.seccion_codigo}`
+    }))}
+  />
+</Form.Item>
+```
+
+### 5. Implementar Endpoint Detallado
+
+Crear hook para obtener eventos con información enriquecida:
+
+```typescript
+// src/presentation/hooks/useDetailedEvents.ts
+import { useState, useEffect } from 'react';
+import { httpClient } from '@/infrastructure/http/httpClient';
+
+interface DetailedEvent extends Event {
+  asignatura_nombre?: string;
+  asignatura_codigo?: string;
+  seccion_codigo?: string;
+  dia_semana?: number;
+  bloque_hora_inicio?: string;
+  bloque_hora_fin?: string;
+  sala_codigo?: string;
+}
+
+export const useDetailedEvents = () => {
+  const [events, setEvents] = useState<DetailedEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchDetailedEvents = async () => {
+    setLoading(true);
+    try {
+      const response = await httpClient.get<DetailedEvent[]>('/eventos/detallados');
+      setEvents(response.data);
+    } catch (error) {
+      console.error('Error fetching detailed events:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDetailedEvents();
+  }, []);
+
+  return { events, loading, refetch: fetchDetailedEvents };
+};
+```
 
 ---
 
@@ -1577,9 +1811,9 @@ Mientras se actualiza el backend, el frontend puede:
 **Problema:** Eventos creados para el futuro aparecen hoy.
 
 **Solución:**
-- Esto es una **limitación del backend actual**
-- Ver sección "⚠️ Limitación Actual del Backend"
-- Requiere actualización del modelo backend para agregar campo `fecha`
+- ✅ **RESUELTO** - El backend ahora soporta el campo `fecha`
+- Actualizar el frontend siguiendo las instrucciones en "🔄 Tareas Pendientes Frontend"
+- Asegurarse de enviar `fecha` en formato `YYYY-MM-DD`
 
 ### Modal no se cierra
 
@@ -1604,35 +1838,63 @@ El sistema de eventos es completamente responsive:
 
 ## 🚀 Próximos Pasos
 
+### Actualización Urgente - Integrar Backend Actualizado
+
+1. **Actualizar tipos TypeScript** ⭐ PRIORITARIO
+   - Agregar campo `fecha: string` al tipo `Event`
+   - Agregar campo `clase_id?: number | null` al tipo `Event`
+   - Crear tipo `DetailedEvent` con campos enriquecidos
+
+2. **Actualizar repositorio HTTP** ⭐ PRIORITARIO
+   - Modificar `EventRepositoryHttp.create()` para enviar `fecha` y `clase_id`
+   - Modificar `EventRepositoryHttp.update()` para enviar `fecha` y `clase_id`
+   - Agregar método `getDetailed()` para endpoint `/eventos/detallados`
+
+3. **Actualizar ViewModel** ⭐ PRIORITARIO
+   - Modificar `useEventsVM.upsertEvent()` para construir payload con fecha
+   - Agregar lógica para manejar `clase_id` si se selecciona
+   - Actualizar agrupación de eventos por fecha
+
+4. **Actualizar UI del Modal**
+   - Agregar selector de clase (opcional)
+   - Mostrar información de la clase seleccionada
+   - Validar frontend que la fecha coincida con el día del bloque
+
+5. **Implementar vista de eventos detallados**
+   - Crear hook `useDetailedEvents`
+   - Mostrar información enriquecida en `EventList`
+   - Incluir: asignatura, sección, sala, bloque
+
 ### Funcionalidades Futuras
 
-1. **Soporte de Fechas Futuras**
-   - Actualizar backend para aceptar campo `fecha`
-   - El frontend ya está preparado
-
-2. **Eventos Recurrentes**
+1. **Eventos Recurrentes**
    - Repetir diariamente, semanalmente, mensualmente
    - Configurar fin de recurrencia
 
-3. **Categorías de Eventos**
-   - Trabajo, Personal, Reunión, etc.
+2. **Categorías de Eventos**
+   - Evento de clase vs evento personal
    - Colores por categoría
 
-4. **Notificaciones**
+3. **Notificaciones**
    - Recordatorios antes del evento
    - Notificaciones push
 
-5. **Exportar Calendario**
+4. **Exportar Calendario**
    - Formato iCal
    - Sincronización con Google Calendar
 
-6. **Compartir Eventos**
+5. **Compartir Eventos**
    - Invitar a otros usuarios
-   - Ver eventos de otros (si son públicos)
+   - Ver eventos públicos
 
-7. **Vista de Agenda**
+6. **Vista de Agenda**
    - Vista lista cronológica
    - Filtros por rango de fechas
+
+7. **Estadísticas**
+   - Horas de eventos por semana
+   - Eventos por asignatura
+   - Visualizaciones gráficas
 
 ---
 
@@ -1730,20 +1992,33 @@ src/
 
 ## 🎉 Conclusión
 
-El sistema de eventos está **100% completo en el frontend** y funcional con las limitaciones actuales del backend. Solo requiere la actualización del modelo backend para agregar el campo `fecha` y desbloquear la funcionalidad de eventos futuros.
+El sistema de eventos tiene un **backend 100% completo** con soporte para fechas futuras y vinculación con clases. El frontend requiere actualización para aprovechar las nuevas funcionalidades.
 
-**Características destacadas:**
+**Backend - Características implementadas:**
+- ✅ Campo `fecha` obligatorio (permite eventos futuros)
+- ✅ Campo `clase_id` opcional (vincula eventos con clases)
+- ✅ Validación de fecha vs día de bloque
+- ✅ Endpoint `/eventos/detallados` con información enriquecida
+- ✅ CRUD completo (POST, GET, PATCH, DELETE)
+
+**Frontend - Estado actual:**
 - ✅ UI/UX intuitiva con calendario interactivo
 - ✅ Validaciones robustas (horario y secuencia)
-- ✅ CRUD completo
-- ✅ TypeScript completo sin errores
-- ✅ Arquitectura limpia y escalable
-- ✅ Completamente documentado
+- ✅ CRUD funcional (con payload antiguo)
+- ✅ TypeScript sin errores
+- ✅ Arquitectura limpia
+- ⚠️ **Requiere actualización** para integrar `fecha` y `clase_id`
 
-**Limitaciones actuales:**
-- ⚠️ Solo eventos del día actual (limitación backend)
-- ⏳ Pendiente: Campo `fecha` en backend
+**Próximos pasos:**
+1. ⭐ Actualizar tipos TypeScript para incluir `fecha` y `clase_id`
+2. ⭐ Modificar repositorio HTTP para enviar payload correcto
+3. ⭐ Actualizar ViewModel para construir eventos con fecha
+4. 🎯 Agregar selector de clase en el modal (opcional)
+5. 🎯 Implementar vista de eventos detallados
 
-**Fecha de implementación:** 18 de noviembre de 2025  
-**Versión:** 1.0.0  
-**Estado:** ✅ Frontend Ready for Production (con limitación de fechas)
+**Fecha de implementación Backend:** 18 de noviembre de 2025  
+**Fecha de implementación Frontend:** 18 de noviembre de 2025  
+**Versión Backend:** 2.0.0 (con fecha y clase_id)  
+**Versión Frontend:** 1.0.0 (requiere actualización a 2.0.0)  
+**Estado Backend:** ✅ Production Ready  
+**Estado Frontend:** ⚠️ Requires Update

@@ -65,7 +65,6 @@ const EventsPage: React.FC = () => {
       <EventModal
         open={vm.isModalOpen}
         dateLabel={dateLabel}
-        selectedDate={vm.selectedDate}
         events={vm.eventsForSelected}
         editingItem={editingItem}
         onCancel={vm.closeModal}
