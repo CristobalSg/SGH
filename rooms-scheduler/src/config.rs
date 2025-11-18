@@ -1,5 +1,6 @@
 
 use std::sync::Arc;
+use lazy_static::lazy_static;
 
 pub struct Config {
     pub port: &'static str,
@@ -10,7 +11,11 @@ pub struct Config {
     pub jwt_refresh_expire_days: u32,
 }
 
-pub fn load_env() -> Arc<Config> {
+lazy_static! {
+    static ref CONFIG: Arc<Config> = build_config();
+}
+
+fn build_config() -> Arc<Config> {
     let port = std::env::var("ROOMS_SCHEDULER_PORT").unwrap_or_else(|_| "3000".to_string());
     let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "default_secret".to_string());
     let jwt_refresh_secret_key = std::env::var("JWT_REFRESH_SECRET_KEY").unwrap_or_else(|_| "default_refresh_secret".to_string());
@@ -26,4 +31,8 @@ pub fn load_env() -> Arc<Config> {
         jwt_expire_minutes,
         jwt_refresh_expire_days,
     })
+}
+
+pub fn load_env() -> Arc<Config> {
+    CONFIG.clone()
 }
