@@ -290,19 +290,13 @@ class RestriccionHorarioUseCases:
         """Crear una nueva restricción de horario para el docente autenticado"""
         docente_id = self._get_docente_id_from_user(user)
 
-        # Validar que no se intente asignar la restricción a otro docente
-        if (
-            hasattr(restriccion_data, "docente_id")
-            and restriccion_data.docente_id
-            and restriccion_data.docente_id != docente_id
-        ):
+        # Validar que el user_id del payload coincida con el usuario autenticado
+        # (el docente solo puede crear restricciones para sí mismo)
+        if restriccion_data.user_id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No puede crear restricciones de horario para otros docentes",
             )
-
-        # Asegurar que la restricción se asocie al docente autenticado
-        restriccion_data.docente_id = docente_id
 
         # Verificar si ya existe una restricción similar para el mismo docente y horario
         restricciones_existentes = self.restriccion_horario_repository.get_by_docente_y_horario(
@@ -318,8 +312,11 @@ class RestriccionHorarioUseCases:
                 detail="Ya existe una restricción de horario para este día y horario",
             )
 
-        # Convertir schema seguro a entidad
-        restriccion_create = RestriccionHorarioCreate(**restriccion_data.model_dump())
+        # Convertir schema a entidad, reemplazando user_id por docente_id
+        restriccion_dict = restriccion_data.model_dump()
+        restriccion_dict.pop('user_id')  # Remover user_id
+        restriccion_dict['docente_id'] = docente_id  # Agregar docente_id (que ahora es user_id)
+        restriccion_create = RestriccionHorarioCreate(**restriccion_dict)
         return self.restriccion_horario_repository.create(restriccion_create)
 
     def update_for_docente_user(
