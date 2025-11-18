@@ -67,7 +67,7 @@ fn pop_activity(activities: &mut Vec<Activity>) -> Result<Activity> {
 }
 
 
-pub fn run_scheduler(mut activities: Vec<Activity>, rooms: Vec<Room>) -> Result<Vec<Activity>> {
+pub fn run_scheduler(mut activities: Vec<Activity>, rooms: Vec<Room>) -> Result<(Vec<Activity>, Vec<Activity>)> {
     println!("Running the scheduling algorithm...");
 
     // Sort activities by number of students (asending)
@@ -96,6 +96,11 @@ pub fn run_scheduler(mut activities: Vec<Activity>, rooms: Vec<Room>) -> Result<
             .into_iter()
             .filter(|a| a.time_slots[0] == current_time_slot)
             .collect();
+
+        if activities_start_in_time_slot.is_empty() && started_activities.is_empty() {
+            current_time_slot += 1;
+            continue;
+        }
 
         for activity in started_activities.clone() {
             if !activity.time_slots.ends_with(&[current_time_slot - 1]) { // si la actividad no ha terminado
@@ -138,5 +143,5 @@ pub fn run_scheduler(mut activities: Vec<Activity>, rooms: Vec<Room>) -> Result<
         current_time_slot += 1;
     }
 
-    Ok(scheduled_activities)
+    Ok((scheduled_activities, unscheduled_activities))
 }
