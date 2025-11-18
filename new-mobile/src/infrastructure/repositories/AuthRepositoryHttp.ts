@@ -25,4 +25,10 @@ export class AuthRepositoryHttp implements AuthRepository {
       role: normalizeRole(data.role ?? data.rol),
     };
   }
+
+  async changePassword(body: { contrasena_actual: string; contrasena_nueva: string }) {
+    // NO agregar "api/" en la ruta. BaseURL ya lo incluye.
+    const { data } = await http.post("/auth/change-password", body);
+    return data;
+  }
 }

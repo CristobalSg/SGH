@@ -115,7 +115,7 @@ export class UserRepositoryHttp {
       body.departamento = (user.department ?? "").trim();
     }
     console.debug('[UserRepositoryHttp.update] body:', body);
-    return http.patch(`/admin/users/${id}`, body);
+    return http.patch(`/users/${id}`, body);
   }
 
   async delete(id: number): Promise<void> {
