@@ -31,23 +31,11 @@ export function useEventsVM() {
   const eventsMap: EventsMap = useMemo(() => {
     const map: EventsMap = {};
     apiEvents.forEach((event) => {
-      // Si hora_inicio es solo tiempo (HH:mm:ss), usar la fecha de hoy o created_at
-      let eventDate: string;
-      let eventTime: string;
+      // ✅ Ahora el backend siempre devuelve el campo 'fecha'
+      const eventDate = event.fecha || dayjs().format("YYYY-MM-DD");
       
-      // Intentar parsear como datetime completo primero
-      if (event.hora_inicio.includes('T') || event.hora_inicio.includes(' ')) {
-        const parsedDate = dayjs(event.hora_inicio);
-        eventDate = parsedDate.format("YYYY-MM-DD");
-        eventTime = parsedDate.format("HH:mm");
-      } else {
-        // Es solo tiempo (HH:mm:ss)
-        // Usar created_at si está disponible, sino usar fecha de hoy
-        eventDate = event.created_at 
-          ? dayjs(event.created_at).format("YYYY-MM-DD")
-          : dayjs().format("YYYY-MM-DD");
-        eventTime = event.hora_inicio.substring(0, 5); // "09:00:00" -> "09:00"
-      }
+      // Extraer solo HH:mm de hora_inicio para mostrar
+      const eventTime = event.hora_inicio.substring(0, 5); // "09:00:00" -> "09:00"
       
       const item: EventItem = {
         id: `api-${event.id}`,
@@ -59,6 +47,7 @@ export function useEventsVM() {
         endTime: event.hora_cierre,
         active: event.active,
       };
+      
       if (!map[eventDate]) map[eventDate] = [];
       map[eventDate].push(item);
     });
@@ -92,10 +81,12 @@ export function useEventsVM() {
     const title = payload.title.trim();
     if (!title) return;
 
-    // Obtener la fecha seleccionada para el campo fecha (si el backend lo soporta)
-    const selectedDateStr = selectedDate ? selectedDate.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD");
+    // ✅ Obtener la fecha seleccionada en formato YYYY-MM-DD (obligatorio)
+    const selectedDateStr = selectedDate 
+      ? selectedDate.format("YYYY-MM-DD") 
+      : dayjs().format("YYYY-MM-DD");
     
-    // El backend solo acepta tiempo en formato HH:mm:ss
+    // Construir horas en formato HH:mm:ss
     const startTimeStr = payload.startTime || "09:00";
     const endTimeStr = payload.endTime || "10:00";
     
@@ -109,9 +100,9 @@ export function useEventsVM() {
         await updateEvent(existing.apiId, {
           nombre: title,
           descripcion: payload.description?.trim(),
+          fecha: selectedDateStr, // ✅ Campo obligatorio
           hora_inicio: startTime,
           hora_cierre: endTime,
-          fecha: selectedDateStr, // Intentar enviar fecha separada
         });
       }
     } else {
@@ -119,9 +110,9 @@ export function useEventsVM() {
       await createEvent({
         nombre: title,
         descripcion: payload.description?.trim(),
+        fecha: selectedDateStr, // ✅ Campo obligatorio
         hora_inicio: startTime,
         hora_cierre: endTime,
-        fecha: selectedDateStr, // Intentar enviar fecha separada
       });
     }
     

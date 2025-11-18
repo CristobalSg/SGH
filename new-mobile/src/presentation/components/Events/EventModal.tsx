@@ -16,7 +16,6 @@ type FormValues = {
 type Props = {
   open: boolean;
   dateLabel: string;
-  selectedDate?: Dayjs | null;
   events: EventItem[];
   editingItem: EventItem | null;
   onCancel: () => void;
@@ -34,7 +33,6 @@ type Props = {
 const EventModal: React.FC<Props> = ({
   open,
   dateLabel,
-  selectedDate,
   events,
   editingItem,
   onCancel,
@@ -159,16 +157,6 @@ const EventModal: React.FC<Props> = ({
         <div className="text-xs text-gray-500 mt-2">
           ⏰ Horario permitido: 08:00 - 21:00
         </div>
-        
-        {selectedDate && !dayjs(selectedDate).isSame(dayjs(), 'day') && (
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-xs text-yellow-800">
-              ⚠️ <strong>Nota:</strong> Debido a limitaciones del servidor, el evento se creará 
-              con la fecha de hoy ({dayjs().format('DD/MM/YYYY')}). 
-              La fecha seleccionada ({dayjs(selectedDate).format('DD/MM/YYYY')}) no será guardada.
-            </p>
-          </div>
-        )}
       </Form>
 
       <EventList events={events} onEdit={onEdit} onDelete={onDelete} />
