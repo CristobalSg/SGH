@@ -48,13 +48,24 @@ const EventsPage: React.FC = () => {
           Selecciona una fecha para ver y gestionar tus eventos.
         </p>
 
-        <EventsCalendar value={vm.selectedDate} onSelect={vm.openForDate} />
+        {vm.loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <EventsCalendar 
+            value={vm.selectedDate} 
+            onSelect={vm.openForDate}
+            eventsMap={vm.eventsMap}
+          />
+        )}
       </main>
 
       {/* Modal */}
       <EventModal
         open={vm.isModalOpen}
         dateLabel={dateLabel}
+        selectedDate={vm.selectedDate}
         events={vm.eventsForSelected}
         editingItem={editingItem}
         onCancel={vm.closeModal}

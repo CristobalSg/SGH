@@ -6,15 +6,27 @@ import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import type { EventItem } from "../../viewmodels/useEventsVM";
 import EventList from "./EventList";
 
-type FormValues = { title: string; description?: string; time?: Dayjs | null };
+type FormValues = { 
+  title: string; 
+  description?: string; 
+  startTime?: Dayjs | null;
+  endTime?: Dayjs | null;
+};
 
 type Props = {
   open: boolean;
   dateLabel: string;
+  selectedDate?: Dayjs | null;
   events: EventItem[];
   editingItem: EventItem | null;
   onCancel: () => void;
-  onUpsert: (data: { id?: string; title: string; description?: string; time?: string }) => void;
+  onUpsert: (data: { 
+    id?: string; 
+    title: string; 
+    description?: string; 
+    startTime?: string; 
+    endTime?: string;
+  }) => void;
   onEdit: (item: EventItem) => void;
   onDelete: (id: string) => void;
 };
@@ -22,6 +34,7 @@ type Props = {
 const EventModal: React.FC<Props> = ({
   open,
   dateLabel,
+  selectedDate,
   events,
   editingItem,
   onCancel,
@@ -31,13 +44,22 @@ const EventModal: React.FC<Props> = ({
 }) => {
   const [form] = Form.useForm<FormValues>();
 
+  // Función para deshabilitar horas fuera del rango 08:00 - 21:00
+  const disabledHours = () => {
+    const hours = [];
+    for (let i = 0; i < 8; i++) hours.push(i);  // 00:00 - 07:59
+    for (let i = 22; i < 24; i++) hours.push(i); // 22:00 - 23:59
+    return hours;
+  };
+
   // Cargar datos al comenzar edición
   useEffect(() => {
     if (editingItem) {
       form.setFieldsValue({
         title: editingItem.title,
         description: editingItem.description,
-        time: editingItem.time ? dayjs(editingItem.time, "HH:mm") : null,
+        startTime: editingItem.startTime ? dayjs(editingItem.startTime, "HH:mm:ss") : null,
+        endTime: editingItem.endTime ? dayjs(editingItem.endTime, "HH:mm:ss") : null,
       });
     } else {
       form.resetFields();
@@ -50,7 +72,8 @@ const EventModal: React.FC<Props> = ({
       id: editingItem?.id,
       title: values.title,
       description: values.description,
-      time: values.time ? dayjs(values.time).format("HH:mm") : undefined,
+      startTime: values.startTime ? dayjs(values.startTime).format("HH:mm") : undefined,
+      endTime: values.endTime ? dayjs(values.endTime).format("HH:mm") : undefined,
     });
     form.resetFields();
   };
@@ -77,16 +100,75 @@ const EventModal: React.FC<Props> = ({
         </div>
       }
     >
-      <Form form={form} layout="vertical" className="mb-4" initialValues={{ title: "", description: "", time: null }}>
+      <Form form={form} layout="vertical" className="mb-4" initialValues={{ title: "", description: "", startTime: null, endTime: null }}>
         <Form.Item label="Título" name="title" rules={[{ required: true, message: "Ingresa un título" }]}>
           <Input placeholder="Ej. Reunión, Cumpleaños, Tarea..." />
         </Form.Item>
         <Form.Item label="Descripción" name="description">
           <Input.TextArea placeholder="Detalles opcionales" autoSize={{ minRows: 2, maxRows: 4 }} />
         </Form.Item>
-        <Form.Item label="Hora" name="time">
-          <TimePicker format="HH:mm" minuteStep={5} />
-        </Form.Item>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <Form.Item 
+            label="Hora de Inicio" 
+            name="startTime"
+            rules={[{ required: true, message: "Selecciona hora de inicio" }]}
+          >
+            <TimePicker 
+              format="HH:mm" 
+              minuteStep={5} 
+              placeholder="Inicio"
+              className="w-full"
+              disabledHours={disabledHours}
+              showNow={false}
+              defaultOpenValue={dayjs().hour(8).minute(0)}
+            />
+          </Form.Item>
+          
+          <Form.Item 
+            label="Hora de Fin" 
+            name="endTime"
+            rules={[
+              { required: true, message: "Selecciona hora de fin" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const startTime = getFieldValue('startTime');
+                  if (!value || !startTime) {
+                    return Promise.resolve();
+                  }
+                  if (value.isAfter(startTime)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('La hora de fin debe ser posterior a la hora de inicio'));
+                },
+              }),
+            ]}
+          >
+            <TimePicker 
+              format="HH:mm" 
+              minuteStep={5} 
+              placeholder="Fin"
+              className="w-full"
+              disabledHours={disabledHours}
+              showNow={false}
+              defaultOpenValue={dayjs().hour(9).minute(0)}
+            />
+          </Form.Item>
+        </div>
+        
+        <div className="text-xs text-gray-500 mt-2">
+          ⏰ Horario permitido: 08:00 - 21:00
+        </div>
+        
+        {selectedDate && !dayjs(selectedDate).isSame(dayjs(), 'day') && (
+          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              ⚠️ <strong>Nota:</strong> Debido a limitaciones del servidor, el evento se creará 
+              con la fecha de hoy ({dayjs().format('DD/MM/YYYY')}). 
+              La fecha seleccionada ({dayjs(selectedDate).format('DD/MM/YYYY')}) no será guardada.
+            </p>
+          </div>
+        )}
       </Form>
 
       <EventList events={events} onEdit={onEdit} onDelete={onDelete} />
