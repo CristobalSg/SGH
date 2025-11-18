@@ -26,9 +26,12 @@ class RestriccionRepository:
         """Obtener todas las restricciones con paginación"""
         return self.session.query(Restriccion).offset(skip).limit(limit).all()
 
-    def get_by_docente(self, docente_id: int) -> List[Restriccion]:
-        """Obtener restricciones de un docente específico"""
-        return self.session.query(Restriccion).filter(Restriccion.docente_id == docente_id).all()
+    def get_by_docente(self, user_id: int) -> List[Restriccion]:
+        """
+        Obtener restricciones de un docente específico.
+        NOTA: docente_id en la tabla ahora apunta a docente.user_id (PK).
+        """
+        return self.session.query(Restriccion).filter(Restriccion.docente_id == user_id).all()
 
     def get_by_tipo(self, tipo: str) -> List[Restriccion]:
         """Obtener restricciones por tipo"""
@@ -63,9 +66,12 @@ class RestriccionRepository:
             return True
         return False
 
-    def delete_by_docente(self, docente_id: int) -> int:
-        """Eliminar todas las restricciones de un docente"""
-        count = self.session.query(Restriccion).filter(Restriccion.docente_id == docente_id).count()
-        self.session.query(Restriccion).filter(Restriccion.docente_id == docente_id).delete()
+    def delete_by_docente(self, user_id: int) -> int:
+        """
+        Eliminar todas las restricciones de un docente.
+        NOTA: user_id es el ID del docente (user_id es la PK de docente).
+        """
+        count = self.session.query(Restriccion).filter(Restriccion.docente_id == user_id).count()
+        self.session.query(Restriccion).filter(Restriccion.docente_id == user_id).delete()
         self.session.commit()
         return count

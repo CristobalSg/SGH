@@ -26,8 +26,8 @@ class User(Base):
 class Docente(Base):
     __tablename__ = "docente"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, unique=True)
+    # user_id es ahora la clave primaria (sin id separado)
+    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True, nullable=False)
     departamento = Column(Text)
 
     user = relationship("User", back_populates="docente")
@@ -82,7 +82,7 @@ class RestriccionHorario(Base):
     __tablename__ = "restriccion_horario"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    docente_id = Column(Integer, ForeignKey("docente.id"))
+    docente_id = Column(Integer, ForeignKey("docente.user_id"), nullable=False)
     dia_semana = Column(Integer)
     hora_inicio = Column(Time)
     hora_fin = Column(Time)
@@ -90,7 +90,7 @@ class RestriccionHorario(Base):
     descripcion = Column(Text, nullable=True)
     activa = Column(Boolean, default=True)
 
-    docente = relationship("Docente", back_populates="restricciones_horario")
+    docente = relationship("Docente", back_populates="restricciones_horario", foreign_keys=[docente_id])
 
 
 class Asignatura(Base):
@@ -149,13 +149,13 @@ class Clase(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     seccion_id = Column(Integer, ForeignKey("seccion.id"))
-    docente_id = Column(Integer, ForeignKey("docente.id"))
+    docente_id = Column(Integer, ForeignKey("docente.user_id"), nullable=False)
     sala_id = Column(Integer, ForeignKey("sala.id"))
     bloque_id = Column(Integer, ForeignKey("bloque.id"))
     estado = Column(Text)
 
     seccion = relationship("Seccion", back_populates="clases")
-    docente = relationship("Docente", back_populates="clases")
+    docente = relationship("Docente", back_populates="clases", foreign_keys=[docente_id])
     sala = relationship("Sala", back_populates="clases")
     bloque = relationship("Bloque", back_populates="clases")
 
@@ -164,7 +164,7 @@ class Restriccion(Base):
     __tablename__ = "restriccion"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    docente_id = Column(Integer, ForeignKey("docente.id"))
+    docente_id = Column(Integer, ForeignKey("docente.user_id"), nullable=False)
     tipo = Column(Text)
     valor = Column(Text)
     prioridad = Column(Integer)
@@ -172,7 +172,7 @@ class Restriccion(Base):
     restriccion_dura = Column(Boolean, default=False)
     activa = Column(Boolean, default=True)
 
-    docente = relationship("Docente", back_populates="restricciones")
+    docente = relationship("Docente", back_populates="restricciones", foreign_keys=[docente_id])
 
 
 class Evento(Base):
@@ -185,7 +185,7 @@ class Evento(Base):
     __tablename__ = "evento"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    docente_id = Column(Integer, ForeignKey("docente.id"), nullable=False)
+    docente_id = Column(Integer, ForeignKey("docente.user_id"), nullable=False)
     nombre = Column(Text, nullable=False)
     descripcion = Column(Text, nullable=True)
     hora_inicio = Column(Time, nullable=False)
@@ -194,7 +194,7 @@ class Evento(Base):
     created_at = Column(DateTime, default=func.current_timestamp())
     updated_at = Column(DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp())
 
-    docente = relationship("Docente", backref="eventos")
+    docente = relationship("Docente", backref="eventos", foreign_keys=[docente_id])
 
 
 class PasswordResetToken(Base):
