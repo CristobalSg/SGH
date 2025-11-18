@@ -4,9 +4,10 @@ import { PlusIcon } from "@heroicons/react/24/solid";
 import AppLayout from "../components/layout/AppLayout";
 import RestrictionList from "../components/docente/RestrictionList";
 import AddRestrictionForm from "../components/docente/AddRestrictionForm";
+
 import {
   useDocenteHorarioRestrictions,
-  type RestriccionHorarioCreateInput,
+  type RestriccionHorarioInput,
   type RestriccionHorarioView,
 } from "../hooks/useDocenteHorarioRestrictions";
 
@@ -31,14 +32,14 @@ export default function DocenteRestrictionsPage() {
     deleteRestriction,
     refetch,
   } = useDocenteHorarioRestrictions();
-
+  
   const openCreateModal = () => setFormState({ open: true, mode: "create", target: null });
   const openEditModal = (item: RestriccionHorarioView) =>
     setFormState({ open: true, mode: "edit", target: item });
   const closeModal = () => setFormState({ ...initialFormState });
 
   const handleSubmitRestriction = async (
-    data: RestriccionHorarioCreateInput,
+    data: RestriccionHorarioInput,
     id?: number,
   ) => {
     try {
@@ -93,7 +94,7 @@ export default function DocenteRestrictionsPage() {
             </h2>
 
             <div className="space-y-4">
-              {!loading && error && restricciones.length === 0 && (
+              {error && (
                 <Alert
                   type="error"
                   message="No se pudieron cargar las restricciones"
@@ -113,6 +114,10 @@ export default function DocenteRestrictionsPage() {
               {loading ? (
                 <div className="py-12 text-center">
                   <Spin />
+                </div>
+              ) : restricciones.length === 0 ? (
+                <div className="py-6 text-center text-sm text-gray-500">
+                  No hay restricciones registradas.
                 </div>
               ) : (
                 <RestrictionList

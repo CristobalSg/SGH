@@ -5,7 +5,9 @@ from fastapi.testclient import TestClient
 class TestRestriccionesEndpoints:
     """Tests para los endpoints de restricciones"""
 
-    def test_create_restriccion_success_docente(self, client: TestClient, auth_headers_docente_completo, docente_completo):
+    def test_create_restriccion_success_docente(
+        self, client: TestClient, auth_headers_docente_completo, docente_completo
+    ):
         """Test creación exitosa de restricción por docente"""
         restriccion_data = {
             "tipo": "horario",
@@ -14,11 +16,13 @@ class TestRestriccionesEndpoints:
             "restriccion_blanda": True,
             "restriccion_dura": False,
             "activa": True,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo)
-        
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo
+        )
+
         assert response.status_code == 201
         data = response.json()
         assert data["tipo"] == "horario"
@@ -30,7 +34,9 @@ class TestRestriccionesEndpoints:
         assert "id" in data
         assert "docente_id" in data
 
-    def test_create_restriccion_success_admin(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_create_restriccion_success_admin(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test creación exitosa de restricción por administrador"""
         restriccion_data = {
             "tipo": "aula",
@@ -39,11 +45,13 @@ class TestRestriccionesEndpoints:
             "restriccion_blanda": False,
             "restriccion_dura": True,
             "activa": True,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
-        
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
+
         assert response.status_code == 201
         data = response.json()
         assert data["tipo"] == "aula"
@@ -58,13 +66,15 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
+
         response = client.post("/api/restricciones/", json=restriccion_data)
         assert response.status_code == 401
 
-    def test_create_restriccion_invalid_tipo(self, client: TestClient, auth_headers_docente_completo, docente_completo):
+    def test_create_restriccion_invalid_tipo(
+        self, client: TestClient, auth_headers_docente_completo, docente_completo
+    ):
         """Test creación de restricción con tipo inválido"""
         restriccion_data = {
             "tipo": "tipo_invalido",
@@ -72,13 +82,17 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo)
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo
+        )
         assert response.status_code == 422
 
-    def test_create_restriccion_invalid_prioridad(self, client: TestClient, auth_headers_docente_completo, docente_completo):
+    def test_create_restriccion_invalid_prioridad(
+        self, client: TestClient, auth_headers_docente_completo, docente_completo
+    ):
         """Test creación de restricción con prioridad inválida"""
         restriccion_data = {
             "tipo": "horario",
@@ -86,13 +100,17 @@ class TestRestriccionesEndpoints:
             "prioridad": 15,  # Fuera del rango 1-10
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo)
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo
+        )
         assert response.status_code == 422
 
-    def test_get_restricciones_admin(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_get_restricciones_admin(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test obtener todas las restricciones como administrador"""
         # Crear una restricción primero
         restriccion_data = {
@@ -101,13 +119,13 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
         client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
-        
+
         # Obtener restricciones
         response = client.get("/api/restricciones/", headers=auth_headers_admin)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -115,7 +133,9 @@ class TestRestriccionesEndpoints:
             assert "id" in data[0]
             assert "tipo" in data[0]
 
-    def test_get_restricciones_docente(self, client: TestClient, docente_completo, auth_headers_docente_completo):
+    def test_get_restricciones_docente(
+        self, client: TestClient, docente_completo, auth_headers_docente_completo
+    ):
         """Test obtener restricciones propias como docente"""
         # Crear una restricción primero
         restriccion_data = {
@@ -124,13 +144,15 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo)
-        
+        client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_docente_completo
+        )
+
         # Obtener restricciones
         response = client.get("/api/restricciones/", headers=auth_headers_docente_completo)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -140,7 +162,9 @@ class TestRestriccionesEndpoints:
         response = client.get("/api/restricciones/")
         assert response.status_code == 401
 
-    def test_get_restriccion_by_id_success(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_get_restriccion_by_id_success(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test obtener restricción específica por ID"""
         # Crear una restricción primero
         restriccion_data = {
@@ -149,14 +173,16 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        create_response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+        create_response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         # Obtener por ID
         response = client.get(f"/api/restricciones/{created_id}", headers=auth_headers_admin)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == created_id
@@ -167,7 +193,9 @@ class TestRestriccionesEndpoints:
         response = client.get("/api/restricciones/99999", headers=auth_headers_admin)
         assert response.status_code == 404
 
-    def test_update_restriccion_put_success(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_update_restriccion_put_success(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test actualización completa de restricción con PUT"""
         # Crear una restricción primero
         restriccion_data = {
@@ -176,11 +204,13 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        create_response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+        create_response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         # Actualizar con PUT
         updated_data = {
             "tipo": "aula",
@@ -188,17 +218,21 @@ class TestRestriccionesEndpoints:
             "prioridad": 8,
             "restriccion_blanda": False,
             "restriccion_dura": True,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        response = client.put(f"/api/restricciones/{created_id}", json=updated_data, headers=auth_headers_admin)
-        
+        response = client.put(
+            f"/api/restricciones/{created_id}", json=updated_data, headers=auth_headers_admin
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert data["tipo"] == "aula"
         assert data["valor"] == "actualizado"
         assert data["prioridad"] == 8
 
-    def test_update_restriccion_patch_success(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_update_restriccion_patch_success(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test actualización parcial de restricción con PATCH"""
         # Crear una restricción primero
         restriccion_data = {
@@ -207,25 +241,28 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        create_response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+        create_response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         # Actualizar solo algunos campos con PATCH
-        patch_data = {
-            "valor": "parcialmente actualizado",
-            "prioridad": 9
-        }
-        response = client.patch(f"/api/restricciones/{created_id}", json=patch_data, headers=auth_headers_admin)
-        
+        patch_data = {"valor": "parcialmente actualizado", "prioridad": 9}
+        response = client.patch(
+            f"/api/restricciones/{created_id}", json=patch_data, headers=auth_headers_admin
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert data["valor"] == "parcialmente actualizado"
         assert data["prioridad"] == 9
         assert data["tipo"] == "horario"  # Debe mantener el valor original
 
-    def test_update_restriccion_patch_empty_data(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_update_restriccion_patch_empty_data(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test PATCH con datos vacíos"""
         # Crear una restricción primero
         restriccion_data = {
@@ -234,16 +271,22 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        create_response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+        create_response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
-        # Intentar actualizar sin datos
-        response = client.patch(f"/api/restricciones/{created_id}", json={}, headers=auth_headers_admin)
-        assert response.status_code == 422
 
-    def test_delete_restriccion_success(self, client: TestClient, auth_headers_admin, docente_completo):
+        # Intentar actualizar sin datos
+        response = client.patch(
+            f"/api/restricciones/{created_id}", json={}, headers=auth_headers_admin
+        )
+        assert response.status_code == 400  # El backend valida que no se envíen datos vacíos
+
+    def test_delete_restriccion_success(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test eliminación exitosa de restricción"""
         # Crear una restricción primero
         restriccion_data = {
@@ -252,16 +295,18 @@ class TestRestriccionesEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        create_response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+        create_response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         # Eliminar
         response = client.delete(f"/api/restricciones/{created_id}", headers=auth_headers_admin)
-        
+
         assert response.status_code == 204
-        
+
         # Verificar que ya no existe
         get_response = client.get(f"/api/restricciones/{created_id}", headers=auth_headers_admin)
         assert get_response.status_code == 404
@@ -284,13 +329,13 @@ class TestRestriccionesAdminEndpoints:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": 2
+            "docente_id": 2,
         }
         client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
-        
+
         # Obtener restricciones del docente 2
         response = client.get("/api/restricciones/admin/docente/2", headers=auth_headers_admin)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -303,11 +348,13 @@ class TestRestriccionesAdminEndpoints:
             "prioridad": 7,
             "restriccion_blanda": False,
             "restriccion_dura": True,
-            "docente_id": 3  # Este se sobrescribirá por el parámetro de la URL
+            "docente_id": 3,  # Este se sobrescribirá por el parámetro de la URL
         }
-        
-        response = client.post("/api/restricciones/admin/docente/5", json=restriccion_data, headers=auth_headers_admin)
-        
+
+        response = client.post(
+            "/api/restricciones/admin/docente/5", json=restriccion_data, headers=auth_headers_admin
+        )
+
         assert response.status_code == 201
         data = response.json()
         assert data["docente_id"] == 5  # Debe usar el ID de la URL
@@ -318,7 +365,9 @@ class TestRestriccionesAdminEndpoints:
         response = client.get("/api/restricciones/admin/docente/1", headers=auth_headers_docente)
         assert response.status_code == 403
 
-    def test_admin_endpoints_unauthorized_estudiante(self, client: TestClient, auth_headers_estudiante):
+    def test_admin_endpoints_unauthorized_estudiante(
+        self, client: TestClient, auth_headers_estudiante
+    ):
         """Test que los endpoints de admin no son accesibles para estudiantes"""
         response = client.get("/api/restricciones/admin/docente/1", headers=auth_headers_estudiante)
         assert response.status_code == 403
@@ -327,10 +376,12 @@ class TestRestriccionesAdminEndpoints:
 class TestRestriccionesValidation:
     """Tests para validación de datos de restricciones"""
 
-    def test_tipos_restriccion_validos(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_tipos_restriccion_validos(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test todos los tipos de restricción válidos"""
-        tipos_validos = ['horario', 'aula', 'materia', 'periodo', 'disponibilidad']
-        
+        tipos_validos = ["horario", "aula", "materia", "periodo", "disponibilidad"]
+
         for tipo in tipos_validos:
             restriccion_data = {
                 "tipo": tipo,
@@ -338,14 +389,18 @@ class TestRestriccionesValidation:
                 "prioridad": 5,
                 "restriccion_blanda": True,
                 "restriccion_dura": False,
-                "docente_id": docente_completo["docente_id"]
+                "docente_id": docente_completo["docente_id"],
             }
-            
-            response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+
+            response = client.post(
+                "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+            )
             assert response.status_code == 201, f"Falló para tipo: {tipo}"
             assert response.json()["tipo"] == tipo
 
-    def test_prioridad_limite_inferior(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_prioridad_limite_inferior(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test prioridad mínima válida"""
         restriccion_data = {
             "tipo": "horario",
@@ -353,13 +408,17 @@ class TestRestriccionesValidation:
             "prioridad": 1,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         assert response.status_code == 201
 
-    def test_prioridad_limite_superior(self, client: TestClient, auth_headers_admin, docente_completo):
+    def test_prioridad_limite_superior(
+        self, client: TestClient, auth_headers_admin, docente_completo
+    ):
         """Test prioridad máxima válida"""
         restriccion_data = {
             "tipo": "horario",
@@ -367,10 +426,12 @@ class TestRestriccionesValidation:
             "prioridad": 10,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         assert response.status_code == 201
 
     def test_valor_vacio_invalido(self, client: TestClient, auth_headers_admin, docente_completo):
@@ -381,8 +442,10 @@ class TestRestriccionesValidation:
             "prioridad": 5,
             "restriccion_blanda": True,
             "restriccion_dura": False,
-            "docente_id": docente_completo["docente_id"]
+            "docente_id": docente_completo["docente_id"],
         }
-        
-        response = client.post("/api/restricciones/", json=restriccion_data, headers=auth_headers_admin)
+
+        response = client.post(
+            "/api/restricciones/", json=restriccion_data, headers=auth_headers_admin
+        )
         assert response.status_code == 422

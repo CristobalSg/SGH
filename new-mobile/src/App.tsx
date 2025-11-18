@@ -12,6 +12,7 @@ import { AuthProvider } from "./app/providers/AuthProvider";
 import PrivateRoute from "./presentation/routes/PrivateRoute";
 import PublicRoute from "./presentation/routes/PublicRoute";
 import RoleRoute from "./presentation/routes/RoleRoute";
+import AdminRestriccionesPage from "./presentation/pages/AdminRestriccionesPage";
 
 import DocenteRestrictionsPage from "./presentation/pages/DocenteRestrictionsPage";
 import UnauthorizedPage from "./presentation/pages/UnauthorizedPage";
@@ -122,6 +123,17 @@ export default function App() {
               </PrivateRoute>
             }
           />
+            <Route
+          path="/admin/restricciones"
+          element={
+            <PrivateRoute>
+              <RoleRoute allowed={["admin"]}>
+                <AdminRestriccionesPage />
+              </RoleRoute>
+            </PrivateRoute>
+          }
+        />
+
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/login" replace />} />

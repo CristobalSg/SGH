@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Campus
+
 from domain.entities import CampusCreate
+from domain.models import Campus
+
 
 class SQLCampusRepository:
     def __init__(self, session: Session):
@@ -9,10 +12,7 @@ class SQLCampusRepository:
 
     def create(self, campus: CampusCreate) -> Campus:
         """Crear un nuevo campus"""
-        db_campus = Campus(
-            nombre=campus.nombre,
-            direccion=campus.direccion
-        )
+        db_campus = Campus(nombre=campus.nombre, direccion=campus.direccion)
         self.session.add(db_campus)
         self.session.commit()
         self.session.refresh(db_campus)

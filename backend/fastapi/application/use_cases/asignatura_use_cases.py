@@ -1,8 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import HTTPException, status
-from domain.entities import AsignaturaCreate, Asignatura
+
+from domain.entities import Asignatura, AsignaturaCreate
 from domain.schemas import AsignaturaSecureCreate, AsignaturaSecurePatch
 from infrastructure.repositories.asignatura_repository import AsignaturaRepository
+
 
 class AsignaturaUseCases:
     def __init__(self, asignatura_repository: AsignaturaRepository):
@@ -17,8 +20,7 @@ class AsignaturaUseCases:
         asignatura = self.asignatura_repository.get_by_id(asignatura_id)
         if not asignatura:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Asignatura no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Asignatura no encontrada"
             )
         return asignatura
 
@@ -27,8 +29,7 @@ class AsignaturaUseCases:
         asignatura = self.asignatura_repository.get_by_codigo(codigo)
         if not asignatura:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Asignatura no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Asignatura no encontrada"
             )
         return asignatura
 
@@ -38,10 +39,9 @@ class AsignaturaUseCases:
         existing_asignatura = self.asignatura_repository.get_by_codigo(asignatura_data.codigo)
         if existing_asignatura:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El código de asignatura ya existe"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="El código de asignatura ya existe"
             )
-        
+
         # Convertir schema seguro a entidad
         asignatura_create = AsignaturaCreate(**asignatura_data.model_dump())
         return self.asignatura_repository.create(asignatura_create)
@@ -52,33 +52,32 @@ class AsignaturaUseCases:
         existing_asignatura = self.asignatura_repository.get_by_id(asignatura_id)
         if not existing_asignatura:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Asignatura no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Asignatura no encontrada"
             )
-        
+
         # Convertir schema seguro a diccionario y filtrar valores None
         update_data = {k: v for k, v in asignatura_data.model_dump().items() if v is not None}
-        
+
         if not update_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se proporcionaron campos para actualizar"
+                detail="No se proporcionaron campos para actualizar",
             )
-        
+
         # Si se actualiza el código, verificar que no exista otra asignatura con ese código
-        if 'codigo' in update_data:
-            asignatura_with_codigo = self.asignatura_repository.get_by_codigo(update_data['codigo'])
+        if "codigo" in update_data:
+            asignatura_with_codigo = self.asignatura_repository.get_by_codigo(update_data["codigo"])
             if asignatura_with_codigo and asignatura_with_codigo.id != asignatura_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="El código ya está registrado por otra asignatura"
+                    detail="El código ya está registrado por otra asignatura",
                 )
-        
+
         updated_asignatura = self.asignatura_repository.update(asignatura_id, update_data)
         if not updated_asignatura:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al actualizar la asignatura"
+                detail="Error al actualizar la asignatura",
             )
         return updated_asignatura
 
@@ -88,22 +87,21 @@ class AsignaturaUseCases:
         existing_asignatura = self.asignatura_repository.get_by_id(asignatura_id)
         if not existing_asignatura:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Asignatura no encontrada"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Asignatura no encontrada"
             )
-        
+
         # Verificar si tiene secciones asociadas
         if self.asignatura_repository.has_secciones(asignatura_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede eliminar la asignatura porque tiene secciones asociadas"
+                detail="No se puede eliminar la asignatura porque tiene secciones asociadas",
             )
-        
+
         success = self.asignatura_repository.delete(asignatura_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error al eliminar la asignatura"
+                detail="Error al eliminar la asignatura",
             )
         return success
 
@@ -111,6 +109,8 @@ class AsignaturaUseCases:
         """Buscar asignaturas por nombre"""
         return self.asignatura_repository.search_by_nombre(nombre)
 
-    def get_by_creditos(self, creditos_min: int = None, creditos_max: int = None) -> List[Asignatura]:
+    def get_by_creditos(
+        self, creditos_min: int = None, creditos_max: int = None
+    ) -> List[Asignatura]:
         """Obtener asignaturas por rango de créditos"""
         return self.asignatura_repository.get_by_creditos(creditos_min, creditos_max)

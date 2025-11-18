@@ -42,8 +42,10 @@ const estudianteItems: Item[] = [
 const adminItems: Item[] = [
   { id: "home", label: "Inicio", outline: HomeIcon, solid: HomeSolid, path: "/admin" },
   { id: "users", label: "Usuarios", outline: UserGroupIcon, solid: UserGroupSolid, path: "/admin/users" },
+  { id: "restricciones", label: "Restricciones", outline: AdjustmentsHorizontalIcon, solid: AdjustmentsHorizontalSolid, path: "/admin/restricciones" },
   { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
 ];
+
 
 const menuByRole: Record<Role, Item[]> = {
   docente: docenteItems,
@@ -57,7 +59,9 @@ const activeClasses: Record<string, string> = {
   events: "bg-emerald-500 text-white",
   settings: "bg-amber-500 text-white",
   users: "bg-blue-500 text-white",
+  restricciones: "bg-pink-500 text-white",
 };
+
 
 const isPathActive = (basePath: string, currentPath: string) => {
   if (currentPath === basePath) return true;

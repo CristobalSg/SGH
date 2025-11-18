@@ -8,13 +8,13 @@ class TestUsersEndpoints:
     def test_get_all_users_success_admin(self, client: TestClient, auth_headers_admin):
         """Test obtener todos los usuarios como administrador"""
         response = client.get("/api/users/", headers=auth_headers_admin)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         # Debería incluir al menos el usuario admin que creamos
         assert len(data) >= 1
-        
+
         # Verificar estructura de usuario
         if len(data) > 0:
             user = data[0]
@@ -29,14 +29,14 @@ class TestUsersEndpoints:
     def test_get_all_users_success_docente(self, client: TestClient, auth_headers_docente):
         """Test obtener usuarios como docente (si está permitido)"""
         response = client.get("/api/users/", headers=auth_headers_docente)
-        
+
         # Dependiendo de la implementación, podría ser 200 o 403
         assert response.status_code in [200, 403]
 
     def test_get_all_users_success_estudiante(self, client: TestClient, auth_headers_estudiante):
         """Test obtener usuarios como estudiante (si está permitido)"""
         response = client.get("/api/users/", headers=auth_headers_estudiante)
-        
+
         # Dependiendo de la implementación, podría ser 200 o 403
         assert response.status_code in [200, 403]
 
@@ -51,15 +51,17 @@ class TestUsersEndpoints:
         user_data = {
             "nombre": "Usuario Test",
             "email": "usuario.test@universidad.edu",
-            "contrasena": "Usuario123!",
-            "rol": "estudiante"
+            "contrasena": "Usuario123!SecurePass",
+            "rol": "estudiante",
         }
-        create_response = client.post("/api/auth/register", json=user_data)
+        create_response = client.post(
+            "/api/auth/register", json=user_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         # Obtener por ID
         response = client.get(f"/api/users/{created_id}", headers=auth_headers_admin)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == created_id
@@ -85,10 +87,10 @@ class TestUsersEndpoints:
         me_response = client.get("/api/auth/me", headers=auth_headers_admin)
         assert me_response.status_code == 200
         user_id = me_response.json()["id"]
-        
+
         # Obtener información del propio usuario por ID
         response = client.get(f"/api/users/{user_id}", headers=auth_headers_admin)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == user_id
@@ -106,33 +108,35 @@ class TestUsersFiltering:
             {
                 "nombre": "Admin Secundario",
                 "email": "admin2@test.com",
-                "contrasena": "Admin123!",
-                "rol": "administrador"
+                "contrasena": "Admin123!SecurePass",
+                "rol": "administrador",
             },
             {
                 "nombre": "Docente Secundario",
                 "email": "docente2@test.com",
-                "contrasena": "Docente123!",
-                "rol": "docente"
+                "contrasena": "Docente123!SecurePass",
+                "rol": "docente",
             },
             {
                 "nombre": "Estudiante Secundario",
                 "email": "estudiante2@test.com",
-                "contrasena": "Estudiante123!",
-                "rol": "estudiante"
-            }
+                "contrasena": "Estudiante123!SecurePass",
+                "rol": "estudiante",
+            },
         ]
-        
+
         for user_data in users_data:
-            response = client.post("/api/auth/register", json=user_data)
-            assert response.status_code == 201, f"Failed to register {user_data['email']}: {response.json()}"
-        
+            response = client.post("/api/auth/register", json=user_data, headers=auth_headers_admin)
+            assert (
+                response.status_code == 201
+            ), f"Failed to register {user_data['email']}: {response.json()}"
+
         # Obtener todos los usuarios
         response = client.get("/api/users/", headers=auth_headers_admin)
         assert response.status_code == 200
-        
+
         data = response.json()
-        
+
         # Verificar que tenemos usuarios de diferentes roles
         roles = [user["rol"] for user in data]
         assert "administrador" in roles
@@ -143,9 +147,9 @@ class TestUsersFiltering:
         """Test verificar estado activo de usuarios"""
         response = client.get("/api/users/", headers=auth_headers_admin)
         assert response.status_code == 200
-        
+
         data = response.json()
-        
+
         # Todos los usuarios recién registrados deberían estar activos
         for user in data:
             assert "activo" in user
@@ -155,15 +159,15 @@ class TestUsersFiltering:
         """Test que no se expone información sensible"""
         response = client.get("/api/users/", headers=auth_headers_admin)
         assert response.status_code == 200
-        
+
         data = response.json()
-        
+
         for user in data:
             # No debería incluir información sensible
             assert "contrasena" not in user
             assert "password" not in user
             assert "hashed_password" not in user
-            
+
             # Debería incluir solo información pública
             required_fields = ["id", "nombre", "email", "rol", "activo"]
             for field in required_fields:
@@ -190,42 +194,50 @@ class TestUsersPermissions:
         # Dependiendo de las reglas de negocio
         assert response.status_code in [200, 403]
 
-    def test_cross_user_access_restriction(self, client: TestClient):
+    def test_cross_user_access_restriction(self, client: TestClient, auth_headers_admin):
         """Test que usuarios no pueden acceder a información de otros sin permisos adecuados"""
         # Crear dos usuarios
         user1_data = {
             "nombre": "Usuario Primero",
             "email": "user1@test.com",
-            "contrasena": "User123!",
-            "rol": "estudiante"
+            "contrasena": "User123!SecurePass",
+            "rol": "estudiante",
         }
         user2_data = {
             "nombre": "Usuario Segundo",
             "email": "user2@test.com",
-            "contrasena": "User123!",
-            "rol": "estudiante"
+            "contrasena": "User123!SecurePass",
+            "rol": "estudiante",
         }
-        
-        user1_response = client.post("/api/auth/register", json=user1_data)
-        user2_response = client.post("/api/auth/register", json=user2_data)
-        
-        assert user1_response.status_code == 201, f"User1 registration failed: {user1_response.json()}"
-        assert user2_response.status_code == 201, f"User2 registration failed: {user2_response.json()}"
-        
+
+        user1_response = client.post(
+            "/api/auth/register", json=user1_data, headers=auth_headers_admin
+        )
+        user2_response = client.post(
+            "/api/auth/register", json=user2_data, headers=auth_headers_admin
+        )
+
+        assert (
+            user1_response.status_code == 201
+        ), f"User1 registration failed: {user1_response.json()}"
+        assert (
+            user2_response.status_code == 201
+        ), f"User2 registration failed: {user2_response.json()}"
+
         user1_id = user1_response.json()["id"]
         user2_id = user2_response.json()["id"]
-        
+
         # Usuario 1 hace login
-        login_response = client.post("/api/auth/login", json={
-            "email": user1_data["email"],
-            "contrasena": user1_data["contrasena"]
-        })
+        login_response = client.post(
+            "/api/auth/login",
+            json={"email": user1_data["email"], "contrasena": user1_data["contrasena"]},
+        )
         user1_token = login_response.json()["access_token"]
         user1_headers = {"Authorization": f"Bearer {user1_token}"}
-        
+
         # Usuario 1 intenta acceder a información del Usuario 2
         response = client.get(f"/api/users/{user2_id}", headers=user1_headers)
-        
+
         # Dependiendo de las reglas de negocio, podría estar permitido o no
         assert response.status_code in [200, 403]
 
@@ -239,26 +251,28 @@ class TestUsersDataIntegrity:
         user_data = {
             "nombre": "Consistencia Test",
             "email": "consistencia@test.com",
-            "contrasena": "Consist123!",
-            "rol": "docente"
+            "contrasena": "Consist123!SecurePass",
+            "rol": "docente",
         }
-        create_response = client.post("/api/auth/register", json=user_data)
+        create_response = client.post(
+            "/api/auth/register", json=user_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         # Obtener el usuario por diferentes endpoints
         response_list = client.get("/api/users/", headers=auth_headers_admin)
         response_single = client.get(f"/api/users/{created_id}", headers=auth_headers_admin)
-        
+
         assert response_list.status_code == 200
         assert response_single.status_code == 200
-        
+
         # Encontrar el usuario en la lista
         users_list = response_list.json()
         user_from_list = next((u for u in users_list if u["id"] == created_id), None)
         user_single = response_single.json()
-        
+
         assert user_from_list is not None
-        
+
         # Los datos deben ser consistentes
         assert user_from_list["id"] == user_single["id"]
         assert user_from_list["nombre"] == user_single["nombre"]
@@ -271,17 +285,19 @@ class TestUsersDataIntegrity:
         user_data = {
             "nombre": "Timestamp Test",
             "email": "timestamp@test.com",
-            "contrasena": "Time123!",
-            "rol": "estudiante"
+            "contrasena": "Time123!SecurePass",
+            "rol": "estudiante",
         }
-        create_response = client.post("/api/auth/register", json=user_data)
+        create_response = client.post(
+            "/api/auth/register", json=user_data, headers=auth_headers_admin
+        )
         created_id = create_response.json()["id"]
-        
+
         response = client.get(f"/api/users/{created_id}", headers=auth_headers_admin)
         assert response.status_code == 200
-        
+
         data = response.json()
-        
+
         # Verificar timestamps si están incluidos
         if "created_at" in data:
             assert data["created_at"] is not None

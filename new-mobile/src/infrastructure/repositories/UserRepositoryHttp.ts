@@ -43,13 +43,43 @@ const normalizeDocente = (item: ApiDocente): DocenteSummary => ({
 });
 
 export class UserRepositoryHttp implements UserRepository {
+  // 🔹 Obtener todos los usuarios
   async listUsers(): Promise<UserSummary[]> {
     const { data } = await http.get<ApiUser[]>("/users/", { params: { limit: 500 } });
     return data.map(normalizeUser);
   }
 
+  // 🔹 Obtener todos los docentes
   async listDocentes(): Promise<DocenteSummary[]> {
     const { data } = await http.get<ApiDocente[]>("/docentes/", { params: { limit: 500 } });
     return data.map(normalizeDocente);
+  }
+
+  // 🔹 Registrar nuevo usuario (Solo Admin)
+  async addUser(userData: {
+    nombre: string;
+    email: string;
+    password: string;
+    rol: string;
+  }): Promise<UserSummary> {
+    const { data } = await http.post<ApiUser>("/auth/register", userData);
+    return normalizeUser(data);
+  }
+
+  // 🔹 Eliminar usuario por ID
+  async deleteUser(userId: number): Promise<void> {
+    await http.delete(`/users/${userId}`);
+  }
+
+  // 🔹 Obtener información del usuario autenticado (opcional)
+  async getMe(): Promise<UserSummary> {
+    const { data } = await http.get<ApiUser>("/auth/me");
+    return normalizeUser(data);
+  }
+
+  // 🔹 Refrescar token (opcional, por si lo usas con JWT)
+  async refreshToken(): Promise<{ access_token: string }> {
+    const { data } = await http.post<{ access_token: string }>("/auth/refresh");
+    return data;
   }
 }

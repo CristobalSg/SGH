@@ -1,7 +1,10 @@
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from domain.models import Restriccion
+
 from domain.entities import RestriccionCreate
+from domain.models import Restriccion
+
 
 class RestriccionRepository:
     def __init__(self, session: Session):
@@ -31,12 +34,15 @@ class RestriccionRepository:
         """Obtener restricciones por tipo"""
         return self.session.query(Restriccion).filter(Restriccion.tipo == tipo).all()
 
-    def get_by_prioridad(self, prioridad_min: int = 1, prioridad_max: int = 10) -> List[Restriccion]:
+    def get_by_prioridad(
+        self, prioridad_min: int = 1, prioridad_max: int = 10
+    ) -> List[Restriccion]:
         """Obtener restricciones por rango de prioridad"""
-        return self.session.query(Restriccion).filter(
-            Restriccion.prioridad >= prioridad_min,
-            Restriccion.prioridad <= prioridad_max
-        ).all()
+        return (
+            self.session.query(Restriccion)
+            .filter(Restriccion.prioridad >= prioridad_min, Restriccion.prioridad <= prioridad_max)
+            .all()
+        )
 
     def update(self, restriccion_id: int, restriccion_data: dict) -> Optional[Restriccion]:
         """Actualizar una restricción"""

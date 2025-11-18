@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { RestriccionHorarioRepositoryHttp } from "../../infrastructure/repositories/RestriccionHorarioRepositoryHttp";
+import { AdminRestriccionHorarioRepositoryHttp } from "../../infrastructure/repositories/AdminRestriccionHorarioRepositoryHttp";
 import type { DayOfWeek } from "../../domain/restricciones/restriccionHorario";
 
 export interface AdminRestrictionView {
@@ -27,12 +28,17 @@ const sortByDayAndTime = (a: AdminRestrictionView, b: AdminRestrictionView) => {
 };
 
 export function useAdminDocenteRestrictions() {
+  // Repositorios
   const repo = useMemo(() => new RestriccionHorarioRepositoryHttp(), []);
+  const adminRepo = useMemo(() => new AdminRestriccionHorarioRepositoryHttp(), []);
+
+  // Estados
   const [docenteId, setDocenteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restrictions, setRestrictions] = useState<AdminRestrictionView[]>([]);
 
+  // Limpiar datos
   const clear = useCallback(() => {
     setDocenteId(null);
     setRestrictions([]);
@@ -40,6 +46,9 @@ export function useAdminDocenteRestrictions() {
     setLoading(false);
   }, []);
 
+  /**
+   * Cargar restricciones de un docente
+   */
   const fetchForDocente = useCallback(
     async (targetDocenteId: number | null) => {
       if (!targetDocenteId) {
@@ -67,7 +76,9 @@ export function useAdminDocenteRestrictions() {
         );
         setRestrictions(normalized.sort(sortByDayAndTime));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "No se pudieron cargar las restricciones.");
+        setError(
+          err instanceof Error ? err.message : "No se pudieron cargar las restricciones."
+        );
         setRestrictions([]);
       } finally {
         setLoading(false);
@@ -76,12 +87,46 @@ export function useAdminDocenteRestrictions() {
     [clear, repo],
   );
 
-  const refetch = useCallback(() => {
-    if (docenteId) {
-      return fetchForDocente(docenteId);
-    }
-    return Promise.resolve();
-  }, [docenteId, fetchForDocente]);
+  /**
+   * ✅ Aceptar o rechazar una restricción (activar/desactivar)
+   */
+  const toggleActiva = useCallback(
+    async (id: number, activa: boolean) => {
+      try {
+        setLoading(true);
+        await adminRepo.toggleActiva(id, activa);
+        // Refresca la lista del docente actual si existe
+        if (docenteId) await fetchForDocente(docenteId);
+      } catch (err) {
+        console.error("Error al cambiar el estado de la restricción:", err);
+        setError("No se pudo actualizar el estado de la restricción.");
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [adminRepo, docenteId, fetchForDocente],
+  );
+
+  /**
+   * Wrapper: aceptar (activa = true)
+   */
+  const aceptarRestriccion = useCallback(
+    async (id: number) => {
+      return toggleActiva(id, true);
+    },
+    [toggleActiva],
+  );
+
+  /**
+   * Wrapper: rechazar (activa = false)
+   */
+  const rechazarRestriccion = useCallback(
+    async (id: number) => {
+      return toggleActiva(id, false);
+    },
+    [toggleActiva],
+  );
 
   return {
     docenteId,
@@ -89,7 +134,9 @@ export function useAdminDocenteRestrictions() {
     error,
     restrictions,
     fetchForDocente,
-    refetch,
     clear,
+    toggleActiva,
+    aceptarRestriccion,
+    rechazarRestriccion,
   };
 }
