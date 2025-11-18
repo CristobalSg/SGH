@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AuthRegisterRepositoryHttp, type RegisterUserDto } from "../../infrastructure/repositories/AuthRegisterRepositoryHttp";
+import { AuthRegisterRepositoryHttp } from "../../infrastructure/repositories/AuthRegisterRepositoryHttp";
 
 export function useRegisterUser() {
   const [loading, setLoading] = useState(false);

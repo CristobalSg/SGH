@@ -13,19 +13,19 @@ import {
   UserGroupIcon as UserGroupSolid,
 } from "@heroicons/react/24/solid";
 import { useNavigate, useLocation } from "react-router-dom";
-import type { ComponentType, SVGProps } from "react";
 import { useAuth } from "../../app/providers/AuthProvider";
 import type { Role } from "../../domain/auth/user";
+
+type HeroIcon = typeof HomeIcon;
 
 type Item = {
   id: string;
   label: string;
   path: string;
-  outline: ComponentType<SVGProps<SVGSVGElement>>;
-  solid: ComponentType<SVGProps<SVGSVGElement>>;
+  outline: HeroIcon;
+  solid: HeroIcon;
 };
 
-// 🔹 Eliminado el item con id: "schedule"
 const docenteItems: Item[] = [
   { id: "home",          label: "Home",          outline: HomeIcon,                solid: HomeSolid,                path: "/home" },
   { id: "restrictions",  label: "Restricciones", outline: AdjustmentsHorizontalIcon, solid: AdjustmentsHorizontalSolid, path: "/restrictions" },
@@ -34,7 +34,7 @@ const docenteItems: Item[] = [
 ];
 
 const estudianteItems: Item[] = [
-  { id: "home", label: "Home", outline: HomeIcon, solid: HomeSolid, path: "/home" },
+  { id: "home", label: "Home", outline: HomeIcon, solid: HomeSolid, path: "/student/home" },
   { id: "schedule", label: "Horario", outline: CalendarIcon, solid: CalendarSolid, path: "/schedule" },
   { id: "settings", label: "Ajustes", outline: Cog6ToothIcon, solid: CogSolid, path: "/settings" },
 ];
@@ -57,6 +57,7 @@ const activeClasses: Record<string, string> = {
   home: "bg-violet-500 text-white",
   restrictions: "bg-pink-500 text-white",
   events: "bg-emerald-500 text-white",
+  schedule: "bg-emerald-500 text-white",
   settings: "bg-amber-500 text-white",
   users: "bg-blue-500 text-white",
   restricciones: "bg-pink-500 text-white",

@@ -11,6 +11,7 @@ export type AdminUserView = {
   email: string;
   role: string;
   docenteId?: number | null;
+  department?: string | null;
 };
 
 // Ejemplo de mapeo:
@@ -20,6 +21,7 @@ const toView = (u: any): AdminUserView => ({
   email: u.email,
   role: (u.role ?? u.rol ?? "").toString().toLowerCase(),
   docenteId: u.docenteId ?? u.docente_id ?? u.docente_info?.id ?? null,
+  department: u.department ?? u.departamento ?? u.docente_info?.department ?? null,
 });
 
 export function useAdminUsers() {

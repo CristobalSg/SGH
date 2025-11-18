@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { AxiosError } from "axios";
 import { useRegisterUser } from "../../hooks/useRegisterUser";
 import type { AdminUserView } from "../../hooks/useAdminUsers";
 
@@ -74,8 +74,6 @@ export default function AddUserModal({
     return basic ? null : "Correo inválido. Ej: nombre@empresa.com";
   }
 
-  const emailOk = useMemo(() => !emailClientError(form.email), [form.email]);
-
   const canSubmit = useMemo(() => {
     const baseOk =
       form.name.trim().length >= 2 &&
@@ -88,7 +86,7 @@ export default function AddUserModal({
 
   const setField =
     (key: keyof typeof form) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const value = e.target.value;
       setForm((s) => ({ ...s, [key]: value }));
       setErrors((prev) => {
@@ -112,37 +110,7 @@ export default function AddUserModal({
       });
     };
 
-  function mapApiErrors(err: unknown): FieldErrors {
-    const fe: FieldErrors = {};
-    const ax = err as AxiosError<any>;
-    const data = ax?.response?.data;
-
-    const details = Array.isArray(data?.detail) ? data.detail : [];
-    const generalMessages: string[] = [];
-
-    for (const d of details) {
-      const loc = Array.isArray(d?.loc) ? d.loc : [];
-      const last = String(loc[loc.length - 1] ?? "");
-      const key = last.toLowerCase();
-      const msg = typeof d?.msg === "string" ? d.msg : undefined;
-      if (!msg) continue;
-      if (["name", "nombre"].includes(key)) fe.name = msg;
-      else if (["email", "correo"].includes(key)) fe.email = msg;
-      else if (["password", "contrasena", "contraseña"].includes(key)) fe.password = msg;
-      else if (["role", "rol"].includes(key)) fe.role = msg;
-      else generalMessages.push(msg);
-    }
-
-    if (!Object.keys(fe).some((k) => k !== "general")) {
-      if (typeof data?.message === "string") generalMessages.push(data.message);
-      if (typeof data?.detail === "string") generalMessages.push(data.detail);
-      if (generalMessages.length === 0 && ax?.message) generalMessages.push(ax.message);
-    }
-    if (generalMessages.length) fe.general = generalMessages;
-    return fe;
-  }
-
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!canSubmit) return;
 

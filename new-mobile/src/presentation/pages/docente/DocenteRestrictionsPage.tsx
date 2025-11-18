@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Alert, message, Spin } from "antd";
 import { PlusIcon } from "@heroicons/react/24/solid";
-import AppLayout from "../components/layout/AppLayout";
-import RestrictionList from "../components/docente/RestrictionList";
-import AddRestrictionForm from "../components/docente/AddRestrictionForm";
+import AppLayout from "../../components/layout/AppLayout";
+import RestrictionList from "../../components/docente/RestrictionList";
+import AddRestrictionForm from "../../components/docente/AddRestrictionForm";
 
 import {
   useDocenteHorarioRestrictions,
   type RestriccionHorarioInput,
   type RestriccionHorarioView,
-} from "../hooks/useDocenteHorarioRestrictions";
+} from "../../hooks/useDocenteHorarioRestrictions";
 
 type FormState = {
   open: boolean;

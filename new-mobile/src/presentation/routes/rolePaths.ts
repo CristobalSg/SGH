@@ -5,7 +5,7 @@ export const getDefaultPathByRole = (role: Role | null | undefined) => {
     case "admin":
       return "/admin";
     case "estudiante":
-      return "/home";
+      return "/student/home";
     case "docente":
     default:
       return "/home";

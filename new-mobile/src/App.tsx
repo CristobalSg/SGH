@@ -1,20 +1,22 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./presentation/pages/LoginPage";
-import HomePage from "./presentation/pages/HomePage";
+import DocenteHomePage from "./presentation/pages/docente/DocenteHomePage";
 import StatsPage from "./presentation/pages/StatsPage"; // si lo usas aún
 import ProfilePage from "./presentation/pages/ProfilePage";
 import SettingsPage from "./presentation/pages/SettingsPage";
 import EventsPage from "./presentation/pages/EventsPage";
-import AdminUsersPage from "./presentation/pages/AdminUsersPage";
-import AdminHomePage from "./presentation/pages/AdminHomePage";
+import AdminUsersPage from "./presentation/pages/admin/AdminUsersPage";
+import AdminHomePage from "./presentation/pages/admin/AdminHomePage";
+import StudentSchedulePage from "./presentation/pages/student/StudentSchedulePage";
 
 import { AuthProvider } from "./app/providers/AuthProvider";
 import PrivateRoute from "./presentation/routes/PrivateRoute";
 import PublicRoute from "./presentation/routes/PublicRoute";
 import RoleRoute from "./presentation/routes/RoleRoute";
-import AdminRestriccionesPage from "./presentation/pages/AdminRestriccionesPage";
+import AdminRestriccionesPage from "./presentation/pages/admin/AdminRestriccionesPage";
 
-import DocenteRestrictionsPage from "./presentation/pages/DocenteRestrictionsPage";
+import DocenteRestrictionsPage from "./presentation/pages/docente/DocenteRestrictionsPage";
+import StudentHomePage from "./presentation/pages/student/StudentHomePage";
 import UnauthorizedPage from "./presentation/pages/UnauthorizedPage";
 
 export default function App() {
@@ -44,7 +46,17 @@ export default function App() {
             element={
               <PrivateRoute>
                 <RoleRoute allowed={["docente"]}>
-                  <HomePage />
+                  <DocenteHomePage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/home"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["estudiante"]}>
+                  <StudentHomePage />
                 </RoleRoute>
               </PrivateRoute>
             }
@@ -73,8 +85,18 @@ export default function App() {
             path="/settings"
             element={
               <PrivateRoute>
-                <RoleRoute allowed={["docente", "admin"]}>
+                <RoleRoute allowed={["docente", "admin", "estudiante"]}>
                   <SettingsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["docente", "estudiante"]}>
+                  <StudentSchedulePage />
                 </RoleRoute>
               </PrivateRoute>
             }

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Empty, Spin, Tag, message } from "antd";
-import AppLayout from "../components/layout/AppLayout";
-import { useAdminUsers, type AdminUserView } from "../hooks/useAdminUsers";
+import AppLayout from "../../components/layout/AppLayout";
+import { useAdminUsers, type AdminUserView } from "../../hooks/useAdminUsers";
 import {
   useAdminDocenteRestrictions,
   type AdminRestrictionView,
-} from "../hooks/useAdminDocenteRestrictions";
+} from "../../hooks/useAdminDocenteRestrictions";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 
 const dayLabels = [
