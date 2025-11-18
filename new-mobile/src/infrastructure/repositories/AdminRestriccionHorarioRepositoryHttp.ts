@@ -39,7 +39,7 @@ function normalize(r: Raw): AdminRestriccionHorarioDTO {
 }
 
 export class AdminRestriccionHorarioRepositoryHttp {
-  private baseUrl = "/restricciones-horario/";
+  private baseUrl = "/restricciones-horario";
 
   /**
    * Lista todas las restricciones (admin). Soporta paginación opcional.
@@ -69,7 +69,32 @@ export class AdminRestriccionHorarioRepositoryHttp {
   }
 
   async toggleActiva(id: number, activa: boolean) {
-    const response = await http.put(`${this.baseUrl}/${id}`, { activa });
-    return normalize(response.data);
+    try {
+      console.log(`[AdminRestriccionHorarioRepo] Obteniendo restricción ${id}...`);
+      
+      // Primero obtenemos la restricción completa
+      const current = await this.getById(id);
+      console.log(`[AdminRestriccionHorarioRepo] Restricción actual:`, current);
+      
+      // Actualizamos con todos los campos, cambiando solo 'activa'
+      const payload = {
+        dia_semana: current.dia_semana,
+        hora_inicio: current.hora_inicio,
+        hora_fin: current.hora_fin,
+        disponible: current.disponible,
+        descripcion: current.descripcion,
+        activa: activa,
+      };
+      
+      console.log(`[AdminRestriccionHorarioRepo] Actualizando con payload:`, payload);
+      
+      const response = await http.put(`${this.baseUrl}/${id}`, payload);
+      console.log(`[AdminRestriccionHorarioRepo] Respuesta del servidor:`, response.data);
+      
+      return normalize(response.data);
+    } catch (error) {
+      console.error(`[AdminRestriccionHorarioRepo] Error al actualizar restricción ${id}:`, error);
+      throw error;
+    }
   }
 }

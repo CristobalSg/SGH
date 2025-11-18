@@ -92,20 +92,28 @@ export function useAdminDocenteRestrictions() {
    */
   const toggleActiva = useCallback(
     async (id: number, activa: boolean) => {
+      const prevLoading = loading;
       try {
+        console.log(`[useAdminDocenteRestrictions] Cambiando restricción ${id} a activa=${activa}`);
         setLoading(true);
         await adminRepo.toggleActiva(id, activa);
+        console.log(`[useAdminDocenteRestrictions] Restricción ${id} actualizada correctamente`);
+        
         // Refresca la lista del docente actual si existe
-        if (docenteId) await fetchForDocente(docenteId);
+        if (docenteId) {
+          console.log(`[useAdminDocenteRestrictions] Recargando restricciones para usuario ${docenteId}`);
+          await fetchForDocente(docenteId);
+        }
       } catch (err) {
-        console.error("Error al cambiar el estado de la restricción:", err);
-        setError("No se pudo actualizar el estado de la restricción.");
+        console.error("[useAdminDocenteRestrictions] Error al cambiar el estado de la restricción:", err);
+        const errorMessage = err instanceof Error ? err.message : "No se pudo actualizar el estado de la restricción.";
+        setError(errorMessage);
         throw err;
       } finally {
-        setLoading(false);
+        setLoading(prevLoading);
       }
     },
-    [adminRepo, docenteId, fetchForDocente],
+    [adminRepo, docenteId, fetchForDocente, loading],
   );
 
   /**
