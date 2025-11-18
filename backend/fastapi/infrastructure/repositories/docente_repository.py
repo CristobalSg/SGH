@@ -18,23 +18,24 @@ class DocenteRepository:
         self.session.refresh(db_docente)
         return db_docente
 
-    def get_by_id(self, docente_id: int) -> Optional[Docente]:
-        """Obtener docente por ID"""
-        return (
-            self.session.query(Docente)
-            .options(joinedload(Docente.user))
-            .filter(Docente.id == docente_id)
-            .first()
-        )
-
     def get_by_user_id(self, user_id: int) -> Optional[Docente]:
-        """Obtener docente por user_id"""
+        """
+        Obtener docente por user_id (que ahora es la PK).
+        Este método es el principal para buscar docentes por ID.
+        """
         return (
             self.session.query(Docente)
             .options(joinedload(Docente.user))
             .filter(Docente.user_id == user_id)
             .first()
         )
+    
+    def get_by_id(self, user_id: int) -> Optional[Docente]:
+        """
+        Alias de get_by_user_id para compatibilidad.
+        NOTA: Ahora el ID del docente ES su user_id.
+        """
+        return self.get_by_user_id(user_id)
 
     def get_by_departamento(self, departamento: str) -> List[Docente]:
         """Obtener docentes por departamento"""
@@ -55,9 +56,9 @@ class DocenteRepository:
             .all()
         )
 
-    def update(self, docente_id: int, docente_data: dict) -> Optional[Docente]:
-        """Actualizar un docente"""
-        db_docente = self.get_by_id(docente_id)
+    def update(self, user_id: int, docente_data: dict) -> Optional[Docente]:
+        """Actualizar un docente por su user_id (PK)"""
+        db_docente = self.get_by_user_id(user_id)
         if db_docente:
             for key, value in docente_data.items():
                 setattr(db_docente, key, value)
@@ -65,9 +66,9 @@ class DocenteRepository:
             self.session.refresh(db_docente)
         return db_docente
 
-    def delete(self, docente_id: int) -> bool:
-        """Eliminar un docente"""
-        db_docente = self.get_by_id(docente_id)
+    def delete(self, user_id: int) -> bool:
+        """Eliminar un docente por su user_id (PK)"""
+        db_docente = self.get_by_user_id(user_id)
         if db_docente:
             self.session.delete(db_docente)
             self.session.commit()

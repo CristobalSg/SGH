@@ -828,7 +828,7 @@ class ClaseSecureCreate(ClaseSecureBase, IDPositivoMixin):
 
     seccion_id: conint(gt=0) = Field(..., description="ID de la sección")
 
-    docente_id: conint(gt=0) = Field(..., description="ID del docente")
+    docente_id: conint(gt=0) = Field(..., description="ID del docente (user_id del docente)")
 
     sala_id: conint(gt=0) = Field(..., description="ID de la sala")
 
@@ -1273,7 +1273,7 @@ class ClaseSecurePatch(BaseModel):
 
     estado: Optional[EstadoClaseEnum] = None
     seccion_id: Optional[conint(gt=0)] = None
-    docente_id: Optional[conint(gt=0)] = None
+    docente_id: Optional[conint(gt=0)] = Field(None, description="ID del docente (user_id del docente)")
     sala_id: Optional[conint(gt=0)] = None
     bloque_id: Optional[conint(gt=0)] = None
 

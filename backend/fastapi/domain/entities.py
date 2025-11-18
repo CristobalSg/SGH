@@ -287,11 +287,10 @@ class DocenteCreate(DocenteBase):
 
 class Docente(DocenteBase):
     """
-    Schema de respuesta para docente (estructura interna con docente_id).
-    DEPRECATED: Usar DocenteResponse para APIs públicas.
+    Schema de respuesta para docente.
+    NOTA: user_id es la clave primaria (no existe docente.id separado).
     """
-    id: int
-    user_id: int = Field(..., description="ID del usuario asociado (SIEMPRE requerido)")
+    user_id: int = Field(..., description="ID del usuario (clave primaria del docente)")
     user: Optional[UserSimple] = Field(None, description="Información del usuario asociado.")
 
     model_config = ConfigDict(from_attributes=True)
@@ -471,7 +470,7 @@ class RestriccionBase(BaseModel):
 
 
 class RestriccionCreate(RestriccionBase):
-    docente_id: int = Field(..., gt=0, description="ID del docente (debe ser positivo)")
+    docente_id: int = Field(..., gt=0, description="ID del docente (user_id del docente)")
 
 
 class Restriccion(RestriccionBase):
@@ -544,7 +543,7 @@ class RestriccionHorarioBase(BaseModel):
 
 
 class RestriccionHorarioCreate(RestriccionHorarioBase):
-    docente_id: int = Field(..., gt=0, description="ID del docente (debe ser positivo)")
+    docente_id: int = Field(..., gt=0, description="ID del docente (user_id del docente)")
 
 
 class RestriccionHorario(RestriccionHorarioBase):
@@ -658,7 +657,7 @@ class ClaseBase(BaseModel):
 
 class ClaseCreate(ClaseBase):
     seccion_id: int = Field(..., gt=0, description="ID de la sección")
-    docente_id: int = Field(..., gt=0, description="ID del docente")
+    docente_id: int = Field(..., gt=0, description="ID del docente (user_id del docente)")
     sala_id: int = Field(..., gt=0, description="ID de la sala")
     bloque_id: int = Field(..., gt=0, description="ID del bloque")
 
@@ -766,7 +765,7 @@ class ClasePatch(BaseModel):
 
     estado: Optional[str] = Field(None, min_length=1, max_length=20)
     seccion_id: Optional[int] = Field(None, gt=0)
-    docente_id: Optional[int] = Field(None, gt=0)
+    docente_id: Optional[int] = Field(None, gt=0, description="ID del docente (user_id del docente)")
     sala_id: Optional[int] = Field(None, gt=0)
     bloque_id: Optional[int] = Field(None, gt=0)
 
@@ -866,7 +865,7 @@ class EventoBase(BaseModel):
 class EventoCreate(EventoBase):
     """DTO para creación de evento"""
 
-    docente_id: int = Field(..., gt=0, description="ID del docente (debe ser positivo)")
+    docente_id: int = Field(..., gt=0, description="ID del docente (user_id del docente)")
 
 
 class Evento(EventoBase):

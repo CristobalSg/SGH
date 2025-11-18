@@ -14,7 +14,7 @@ from api.restrictions import restriccion_horario_router, restriccion_router
 from api.schedule import bloque_router, timetable_router
 from api.system import test_db_router
 
-# Router principal de la API v1
+# Router principal de la API 
 api_router = APIRouter()
 
 # Autenticación y usuarios
