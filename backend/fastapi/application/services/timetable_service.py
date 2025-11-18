@@ -62,7 +62,7 @@ class TimetableService:
         self.agent_url = settings.agent_api_url or "http://agent:8200"
 
     def _get_static_calendar(self) -> Calendar:
-        """Obtener calendario estático (5 días, bloques 8-18)"""
+        """Obtener calendario estático (5 días, 10 bloques)"""
         days = [
             CalendarDay(index=0, name="lunes", long_name="Lunes"),
             CalendarDay(index=1, name="martes", long_name="Martes"),
@@ -77,9 +77,11 @@ class TimetableService:
             CalendarHour(index=2, name="10:20 - 11:20", long_name="Bloque 3"),
             CalendarHour(index=3, name="11:30 - 12:30", long_name="Bloque 4"),
             CalendarHour(index=4, name="12:40 - 13:40", long_name="Bloque 5"),
-            CalendarHour(index=5, name="14:50 - 15:50", long_name="Bloque 6"),
-            CalendarHour(index=6, name="16:00 - 17:00", long_name="Bloque 7"),
-            CalendarHour(index=7, name="17:10 - 18:10", long_name="Bloque 8"),
+            CalendarHour(index=5, name="13:50 - 14:50", long_name="Bloque 6"),
+            CalendarHour(index=6, name="15:00 - 16:00", long_name="Bloque 7"),
+            CalendarHour(index=7, name="16:10 - 17:10", long_name="Bloque 8"),
+            CalendarHour(index=8, name="17:20 - 18:20", long_name="Bloque 9"),
+            CalendarHour(index=9, name="18:30 - 19:30", long_name="Bloque 10"),
         ]
 
         return Calendar(days=days, hours=hours)
@@ -184,8 +186,8 @@ class TimetableService:
             # duration y total_duration deberían venir de la configuración de la asignatura
             activities.append(
                 Activity(
-                    id=activity_id,
-                    group_id=seccion.id,  # Usar ID de sección como group_id
+                    id=str(activity_id),
+                    group_id=str(seccion.id * 100),  # group_id como string
                     teacher_id=f"t-{docente.user_id}",
                     subject_id=f"sub-{asignatura.id}",
                     students_reference=students_ref,
@@ -247,7 +249,7 @@ class TimetableService:
         # Obtener edificios
         edificios_db = self.edificio_repository.get_all()
         buildings = [
-            Building(id=f"b-{edif.id}", name=edif.nombre) for edif in edificios_db
+            Building(id=f"b-{edif.id}", name=edif.nombre, comments="") for edif in edificios_db
         ]
 
         # Obtener salas

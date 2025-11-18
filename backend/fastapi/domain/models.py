@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Time, func
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, func
 from sqlalchemy.orm import relationship
 
 from infrastructure.database.config import Base
@@ -158,6 +158,7 @@ class Clase(Base):
     docente = relationship("Docente", back_populates="clases", foreign_keys=[docente_id])
     sala = relationship("Sala", back_populates="clases")
     bloque = relationship("Bloque", back_populates="clases")
+    eventos = relationship("Evento", back_populates="clase")
 
 
 class Restriccion(Base):
@@ -179,15 +180,20 @@ class Evento(Base):
     """
     Modelo para eventos del docente.
     
-    Permite a los docentes crear y gestionar eventos personales
-    que pueden ser consultados por estudiantes y supervisados por administradores.
+    Los eventos pueden ser:
+    - Asociados a una clase específica (clase_id presente): incluye asignatura, día, horario, visible para estudiantes
+    - Eventos personales/departamento (clase_id NULL): reuniones, eventos administrativos, etc.
+    
+    Navegación cuando clase_id presente: Evento → Clase → Seccion → Asignatura/Bloque/Estudiantes
     """
     __tablename__ = "evento"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     docente_id = Column(Integer, ForeignKey("docente.user_id"), nullable=False)
+    clase_id = Column(Integer, ForeignKey("clase.id"), nullable=True)  # Opcional: permite eventos sin clase específica
     nombre = Column(Text, nullable=False)
     descripcion = Column(Text, nullable=True)
+    fecha = Column(Date, nullable=False)  # Fecha del evento
     hora_inicio = Column(Time, nullable=False)
     hora_cierre = Column(Time, nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
@@ -195,6 +201,7 @@ class Evento(Base):
     updated_at = Column(DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp())
 
     docente = relationship("Docente", backref="eventos", foreign_keys=[docente_id])
+    clase = relationship("Clase", back_populates="eventos")
 
 
 class PasswordResetToken(Base):

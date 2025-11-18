@@ -112,8 +112,8 @@ class StudentsReference(BaseModel):
 class Activity(BaseModel):
     """Actividad académica (clase)"""
 
-    id: int = Field(..., description="ID único de la actividad")
-    group_id: int = Field(..., description="ID del grupo de actividades en FET")
+    id: str = Field(..., description="ID único de la actividad")
+    group_id: str = Field(..., description="ID del grupo de actividades en FET")
     teacher_id: str = Field(..., description="ID del docente")
     subject_id: str = Field(..., description="ID de la asignatura")
     students_reference: StudentsReference = Field(..., description="Referencia a estudiantes")
@@ -154,7 +154,7 @@ class MinDaysBetweenActivitiesConstraint(TimeConstraintBase):
 
     type: Literal["min_days_between_activities"] = "min_days_between_activities"
     min_days: int = Field(..., ge=1, description="Días mínimos entre actividades")
-    activity_ids: List[int] = Field(..., description="IDs de actividades")
+    activity_ids: List[str] = Field(..., description="IDs de actividades")
 
 
 class TeacherNotAvailableConstraint(TimeConstraintBase):
@@ -185,6 +185,7 @@ class Building(BaseModel):
 
     id: str = Field(..., description="ID único del edificio")
     name: str = Field(..., description="Nombre del edificio")
+    comments: str = Field(default="", description="Comentarios")
 
 
 class Room(BaseModel):

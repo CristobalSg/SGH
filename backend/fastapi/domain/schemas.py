@@ -22,7 +22,7 @@ Estrategias de mitigación:
 """
 
 import re
-from datetime import datetime, time
+from datetime import date, datetime, time
 from enum import Enum
 from typing import List, Literal, Optional
 
@@ -973,6 +973,10 @@ class EventoSecureBase(BaseModel, HorarioSecureMixin, BaseSecureValidator):
         None, description="Descripción del evento"
     )
 
+    fecha: date = Field(
+        ..., description="Fecha del evento", examples=["2025-11-20", "2025-12-15"]
+    )
+
     hora_inicio: time = Field(
         ..., description="Hora de inicio del evento", examples=["09:00:00", "14:30:00"]
     )
@@ -982,6 +986,11 @@ class EventoSecureBase(BaseModel, HorarioSecureMixin, BaseSecureValidator):
     )
 
     activo: bool = Field(default=True, description="Indica si el evento está activo")
+    
+    clase_id: Optional[conint(gt=0)] = Field(
+        None, 
+        description="ID de la clase asociada (opcional: NULL para eventos personales/departamento, ID para eventos de clase)"
+    )
 
     @field_validator("nombre")
     @classmethod
@@ -1001,6 +1010,14 @@ class EventoSecureBase(BaseModel, HorarioSecureMixin, BaseSecureValidator):
         """Valida que las horas estén en horario razonable (8:00 - 21:00)"""
         if not (time(8, 0) <= v <= time(21, 0)):
             raise ValueError("Las horas deben estar entre 08:00 y 21:00")
+        return v
+    
+    @field_validator("clase_id")
+    @classmethod
+    def validate_clase_id(cls, v: Optional[int]) -> Optional[int]:
+        """Validación de ID de clase"""
+        if v is not None:
+            return cls.validate_id_field(v, "ID de clase")
         return v
 
     @model_validator(mode="after")
@@ -1032,9 +1049,11 @@ class EventoSecurePatch(BaseModel):
 
     nombre: Optional[constr(strip_whitespace=True, min_length=2, max_length=100)] = None
     descripcion: Optional[constr(max_length=500)] = None
+    fecha: Optional[date] = None
     hora_inicio: Optional[time] = None
     hora_cierre: Optional[time] = None
     activo: Optional[bool] = None
+    clase_id: Optional[conint(gt=0)] = Field(None, description="ID de la clase asociada")
 
     model_config = ConfigDict(extra="forbid")
 
