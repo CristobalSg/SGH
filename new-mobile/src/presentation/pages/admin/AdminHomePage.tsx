@@ -1,5 +1,6 @@
 import AppLayout from "../../components/layout/AppLayout";
 import StatsOverview from "../../components/admin/StatsOverview";
+import GenerateScheduleButton from "../../components/admin/GenerateScheduleButton";
 
 export default function AdminHomePage() {
   return (
@@ -11,6 +12,8 @@ export default function AdminHomePage() {
             Vista general del sistema. Agrega gráficos y reportes rápidos para apoyar la gestión.
           </p>
         </section>
+
+        <GenerateScheduleButton />
 
         <StatsOverview />
       </div>
