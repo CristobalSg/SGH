@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, time
+from datetime import date, datetime, time
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
@@ -823,9 +823,11 @@ class EventoBase(BaseModel):
 
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre del evento")
     descripcion: Optional[str] = Field(None, max_length=500, description="Descripción del evento")
+    fecha: date = Field(..., description="Fecha del evento")
     hora_inicio: time = Field(..., description="Hora de inicio del evento")
     hora_cierre: time = Field(..., description="Hora de cierre del evento")
     activo: bool = Field(default=True, description="Estado activo del evento")
+    clase_id: Optional[int] = Field(None, gt=0, description="ID de la clase asociada (opcional, para eventos de clase vs eventos personales/departamento)")
 
     @field_validator("nombre")
     @classmethod
@@ -863,7 +865,7 @@ class EventoBase(BaseModel):
 
 
 class EventoCreate(EventoBase):
-    """DTO para creación de evento"""
+    """DTO para creación de evento - clase_id opcional para permitir eventos de departamento/reuniones"""
 
     docente_id: int = Field(..., gt=0, description="ID del docente (user_id del docente)")
 
@@ -879,14 +881,44 @@ class Evento(EventoBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EventoDetallado(Evento):
+    """
+    DTO de respuesta enriquecido que incluye detalles de la clase asociada.
+    
+    Útil para el frontend para mostrar:
+    - Nombre de la asignatura
+    - Día de la semana (del bloque)
+    - Horario del bloque
+    - Sección
+    
+    Si clase_id es NULL, los campos relacionados serán None.
+    """
+    # Información de la clase
+    asignatura_nombre: Optional[str] = Field(None, description="Nombre de la asignatura")
+    asignatura_codigo: Optional[str] = Field(None, description="Código de la asignatura")
+    seccion_codigo: Optional[str] = Field(None, description="Código de la sección")
+    
+    # Información del bloque horario
+    dia_semana: Optional[int] = Field(None, ge=0, le=6, description="Día de la semana (0=Domingo, 6=Sábado)")
+    bloque_hora_inicio: Optional[time] = Field(None, description="Hora de inicio del bloque")
+    bloque_hora_fin: Optional[time] = Field(None, description="Hora de fin del bloque")
+    
+    # Información de la sala
+    sala_codigo: Optional[str] = Field(None, description="Código de la sala")
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
 class EventoPatch(BaseModel):
     """DTO para actualizaciones parciales de eventos"""
 
     nombre: Optional[str] = Field(None, min_length=2, max_length=100)
     descripcion: Optional[str] = Field(None, max_length=500)
+    fecha: Optional[date] = Field(None, description="Fecha del evento")
     hora_inicio: Optional[time] = None
     hora_cierre: Optional[time] = None
     activo: Optional[bool] = None
+    clase_id: Optional[int] = Field(None, gt=0, description="ID de la clase (opcional en updates)")
 
     @field_validator("nombre")
     @classmethod

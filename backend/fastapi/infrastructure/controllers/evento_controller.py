@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 
 from application.use_cases.evento_use_cases import EventoUseCases
 from domain.authorization import Permission
-from domain.entities import Evento, User  # Response models
+from domain.entities import Evento, EventoDetallado, User  # Response models
 from domain.schemas import EventoSecureCreate, EventoSecurePatch  # ✅ SCHEMAS SEGUROS
 from infrastructure.database.config import get_db
 from infrastructure.dependencies import require_any_permission, require_permission
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.evento_repository import EventoRepository
+from infrastructure.repositories.clase_repository import ClaseRepository
 
 router = APIRouter()
 
@@ -18,7 +19,51 @@ router = APIRouter()
 def get_evento_use_cases(db: Session = Depends(get_db)) -> EventoUseCases:
     repo = EventoRepository(db)
     docente_repo = DocenteRepository(db)
-    return EventoUseCases(repo, docente_repo)
+    clase_repo = ClaseRepository(db)
+    return EventoUseCases(repo, docente_repo, clase_repo)
+
+
+@router.get(
+    "/detallados",
+    response_model=List[EventoDetallado],
+    status_code=status.HTTP_200_OK,
+    summary="Obtener eventos con detalles de clase",
+    description="""
+    Obtiene eventos con información enriquecida incluyendo:
+    - Nombre y código de la asignatura
+    - Código de la sección
+    - Día de la semana del bloque
+    - Horario del bloque
+    - Código de la sala
+    
+    Si el evento no tiene clase_id, estos campos serán null.
+    """,
+    tags=["eventos"],
+)
+async def get_eventos_detallados(
+    skip: int = Query(0, ge=0, description="Número de registros a saltar"),
+    limit: int = Query(100, ge=1, le=100, description="Número máximo de registros"),
+    current_user: User = Depends(
+        require_any_permission(
+            Permission.EVENTO_READ_ALL,
+            Permission.EVENTO_READ_OWN,
+            Permission.EVENTO_READ,
+        )
+    ),
+    use_cases: EventoUseCases = Depends(get_evento_use_cases),
+):
+    """
+    Obtener eventos con detalles de clase según el rol del usuario.
+    Útil para el frontend que necesita mostrar asignatura, día y horario.
+    """
+    try:
+        eventos = use_cases.get_all_detallados(skip, limit)
+        return eventos
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener los eventos: {str(e)}",
+        )
 
 
 @router.get(
