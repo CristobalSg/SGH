@@ -4,6 +4,7 @@ mod controllers;
 mod models;
 mod middlewares;
 mod scheduler;
+mod jwt;
 
 use crate::router::create_router;
 

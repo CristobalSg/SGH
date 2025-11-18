@@ -20,3 +20,13 @@ pub struct ActivitiesRequest {
     pub activities: Vec<Activity>,
     pub rooms: Vec<Room>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub exp: usize,
+    pub user_id: i64,
+    pub rol: String,
+    #[serde(rename = "type")]
+    pub token_type: String,
+}
