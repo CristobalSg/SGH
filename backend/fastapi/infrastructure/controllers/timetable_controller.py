@@ -13,9 +13,7 @@ from infrastructure.dependencies import require_permission
 from infrastructure.repositories.asignatura_repository import AsignaturaRepository
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.edificio_repository import SQLEdificioRepository
-from infrastructure.repositories.restriccion_horario_repository import (
-    RestriccionHorarioRepository,
-)
+from infrastructure.repositories.clase_repository import ClaseRepository
 from infrastructure.repositories.sala_repository import SalaRepository
 from infrastructure.repositories.seccion_repository import SeccionRepository
 from infrastructure.repositories.user_repository import SQLUserRepository
@@ -29,7 +27,7 @@ def get_timetable_service(db: Session = Depends(get_db)) -> TimetableService:
         docente_repository=DocenteRepository(db),
         asignatura_repository=AsignaturaRepository(db),
         seccion_repository=SeccionRepository(db),
-        restriccion_horario_repository=RestriccionHorarioRepository(db),
+        clase_repository=ClaseRepository(db),
         sala_repository=SalaRepository(db),
         edificio_repository=SQLEdificioRepository(db),
         user_repository=SQLUserRepository(db),
