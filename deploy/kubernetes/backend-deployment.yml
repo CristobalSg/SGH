@@ -24,6 +24,10 @@ spec:
               cpu: 100m
               memory: "256Mi"
           env:
+            - name: AGENT_API_URL
+              value: http://agent.sgh.svc:8200/api
+            - name: ROOMS_SCHEDULER_URL
+              value: http://rooms-scheduler.sgh.svc:3000/api
             - name: INITIAL_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:

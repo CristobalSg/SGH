@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 fn build_config() -> Arc<Config> {
-    let port = std::env::var("ROOMS_SCHEDULER_PORT").unwrap_or_else(|_| "3000".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "default_secret".to_string());
     let jwt_refresh_secret_key = std::env::var("JWT_REFRESH_SECRET_KEY").unwrap_or_else(|_| "default_refresh_secret".to_string());
     let jwt_algorithm = std::env::var("JWT_ALGORITHM").unwrap_or_else(|_| "HS256".to_string());

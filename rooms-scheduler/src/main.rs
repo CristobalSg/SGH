@@ -13,7 +13,8 @@ async fn main() {
 
     let config = config::load_env();
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port)).await.unwrap();
+    let address = format!("0.0.0.0:{}", config.port);
+    let listener = tokio::net::TcpListener::bind(address).await.unwrap();
 
     let app = create_router();
 
