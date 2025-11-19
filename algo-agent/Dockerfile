@@ -51,9 +51,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
 COPY . .
 
 RUN rm -rf /app/fet-7.5.5
