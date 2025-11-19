@@ -130,7 +130,6 @@ export default function BottomNav() {
             })}
           </div>
         </div>
-        <div className="mx-auto mt-2 h-1 w-24 rounded-full bg-gray-300/70 dark:bg-gray-600/70" />
       </div>
     </nav>
   );

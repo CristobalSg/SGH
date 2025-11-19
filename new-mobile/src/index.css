@@ -93,3 +93,43 @@ body {
   --color-text-light: #f3f4f6;
   --color-text-dark: #f9fafb;
 }
+
+.docente-restriction-modal .ant-modal-content {
+  border-radius: 28px;
+  padding: 24px 24px 32px;
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  box-shadow: 0 30px 60px rgba(0, 79, 159, 0.2);
+}
+
+.docente-restriction-modal .ant-modal-header {
+  border-bottom: none;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.docente-restriction-modal .ant-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #004f9f;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+}
+
+.docente-restriction-modal .ant-modal-close {
+  color: #004f9f;
+}
+
+.docente-restriction-modal .ant-btn-primary {
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.35);
+}
+
+.docente-restriction-modal .ant-btn-default {
+  border-radius: 9999px;
+  border-color: rgba(0, 79, 159, 0.2);
+  color: #004f9f;
+}
