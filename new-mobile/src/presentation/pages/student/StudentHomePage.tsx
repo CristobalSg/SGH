@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import BottomNav from "../../components/BottomNav";
-import ScheduleTable from "../../components/Schedule/ScheduleTable";
+import ScheduleTodayPreview from "../../components/Schedule/ScheduleTodayPreview";
 
 const StudentHomePage: React.FC = () => {
   return (
@@ -39,7 +39,7 @@ const StudentHomePage: React.FC = () => {
               Ver horario completo
             </Link>
             <Link
-              to="/events"
+              to="/student/events"
               className="inline-flex items-center justify-center rounded-2xl border border-[#004F9F33] px-4 py-2 text-sm font-semibold text-[#004F9F]"
             >
               Ver eventos
@@ -58,7 +58,7 @@ const StudentHomePage: React.FC = () => {
             </Link>
           </div>
           <div className="mt-4">
-            <ScheduleTable />
+            <ScheduleTodayPreview />
           </div>
         </section>
       </main>

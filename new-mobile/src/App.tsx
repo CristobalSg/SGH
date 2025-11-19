@@ -17,6 +17,7 @@ import AdminRestriccionesPage from "./presentation/pages/admin/AdminRestriccione
 
 import DocenteRestrictionsPage from "./presentation/pages/docente/DocenteRestrictionsPage";
 import StudentHomePage from "./presentation/pages/student/StudentHomePage";
+import StudentEventsPlaceholderPage from "./presentation/pages/student/StudentEventsPlaceholderPage";
 import UnauthorizedPage from "./presentation/pages/UnauthorizedPage";
 
 export default function App() {
@@ -77,6 +78,16 @@ export default function App() {
               <PrivateRoute>
                 <RoleRoute allowed={["docente"]}>
                   <EventsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/events"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowed={["estudiante"]}>
+                  <StudentEventsPlaceholderPage />
                 </RoleRoute>
               </PrivateRoute>
             }
