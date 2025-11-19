@@ -4,8 +4,7 @@ WORKDIR /fet
 
 COPY ./fet-7.5.5/ .
 
-RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
@@ -18,6 +17,10 @@ RUN apt-get update && apt-get install -y \
     libxcb1 \
     libxau6 \
     libxdmcp6 \
+    qtbase5-dev \
+    gcc g++ \
+    qt5-qmake \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 RUN qmake fet.pro && make -j 24 && strip fet-cl
