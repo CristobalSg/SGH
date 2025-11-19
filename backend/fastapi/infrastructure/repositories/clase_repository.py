@@ -101,13 +101,12 @@ class ClaseRepository:
         return False
 
     def get_clases_by_periodo(self, anio: int, semestre: int) -> List[Clase]:
-        """Obtener todas las clases de un período específico"""
-        from domain.models import Seccion
-
+        """Obtener clases por periodo (año académico y semestre)"""
         return (
-            self.session.query(Clase)
+            self.db.query(Clase)
             .join(Seccion)
-            .filter(Seccion.anio == anio, Seccion.semestre == semestre)
+            .options(joinedload(Clase.seccion))
+            .filter(Seccion.semestre == semestre)
             .all()
         )
 

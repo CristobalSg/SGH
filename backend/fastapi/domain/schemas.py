@@ -494,7 +494,7 @@ class CodigoSeguroMixin(BaseSecureValidator):
 class AsignaturaSecureBase(BaseModel, CodigoSeguroMixin):
     """Schema de asignatura con validaciones de seguridad"""
 
-    codigo: constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=20) = Field(
+    codigo: constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=100) = Field(
         ...,
         description="Código único de la asignatura (A-Z, 0-9, -)",
         examples=["MAT-101", "FIS-201", "COMP-SCI-301"],
@@ -534,25 +534,42 @@ class AsignaturaSecureBase(BaseModel, CodigoSeguroMixin):
 class SeccionSecureBase(BaseModel, CodigoSeguroMixin):
     """Schema de sección con validaciones de seguridad"""
 
-    codigo: constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=20) = Field(
-        ..., description="Código único de la sección", examples=["SEC-001", "A", "B1"]
+    codigo: constr(strip_whitespace=True, min_length=1, max_length=100) = Field(
+        ..., description="Nombre del grupo (ej: '1 sección 1', '5 mención 1')"
     )
 
-    anio: conint(ge=2020, le=2030) = Field(
-        ..., description="Año académico (2020-2030)", examples=[2024, 2025]
+    anio_academico: conint(ge=1, le=5) = Field(
+        ..., description="Año académico (1-5)", examples=[1, 2, 3, 4, 5]
     )
 
     semestre: Literal[1, 2] = Field(..., description="Semestre (1 o 2)", examples=[1, 2])
 
-    cupos: conint(ge=1, le=100) = Field(
-        ..., description="Número de cupos disponibles (1-100)", examples=[30, 40, 50]
+    tipo_grupo: constr(strip_whitespace=True, to_lower=True, min_length=1, max_length=20) = Field(
+        ..., description="Tipo de grupo: seccion, mencion, base", examples=["seccion", "mencion", "base"]
     )
+
+    numero_estudiantes: conint(ge=1, le=500) = Field(
+        ..., description="Número de estudiantes en el grupo (1-500)", examples=[30, 40, 50]
+    )
+
+    cupos: Optional[conint(ge=1, le=500)] = Field(
+        None, description="Número de cupos disponibles (1-500)"
+    )
+
+    @field_validator("tipo_grupo")
+    @classmethod
+    def validate_tipo_grupo(cls, v: str) -> str:
+        """Validar que el tipo_grupo sea válido"""
+        valid_tipos = ["seccion", "mencion", "base"]
+        if v not in valid_tipos:
+            raise ValueError(f"tipo_grupo debe ser uno de: {', '.join(valid_tipos)}")
+        return v
 
 
 class SalaSecureBase(BaseModel, CodigoSeguroMixin):
     """Schema de sala con validaciones de seguridad"""
 
-    codigo: constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=20) = Field(
+    codigo: constr(strip_whitespace=True, to_upper=True, min_length=1, max_length=100) = Field(
         ..., description="Código único de la sala", examples=["A-101", "LAB-201", "AUD-PRINCIPAL"]
     )
 
@@ -1120,7 +1137,7 @@ class AsignaturaSecurePatch(BaseModel):
             strip_whitespace=True,
             to_upper=True,
             min_length=1,
-            max_length=20,
+            max_length=100,
             pattern=r"^[A-Z0-9\-]+$",
         )
     ] = None
@@ -1139,20 +1156,23 @@ class AsignaturaSecurePatch(BaseModel):
 class SeccionSecurePatch(BaseModel):
     """Schema para actualización parcial de sección"""
 
-    codigo: Optional[
-        constr(
-            strip_whitespace=True,
-            to_upper=True,
-            min_length=1,
-            max_length=20,
-            pattern=r"^[A-Z0-9\-]+$",
-        )
-    ] = None
-
-    anio: Optional[conint(ge=2020, le=2030)] = None
+    codigo: Optional[constr(strip_whitespace=True, min_length=1, max_length=100)] = None
+    anio_academico: Optional[conint(ge=1, le=5)] = None
     semestre: Optional[Literal[1, 2]] = None
-    cupos: Optional[conint(ge=1, le=100)] = None
+    tipo_grupo: Optional[constr(strip_whitespace=True, to_lower=True, min_length=1, max_length=20)] = None
+    numero_estudiantes: Optional[conint(ge=1, le=500)] = None
+    cupos: Optional[conint(ge=1, le=500)] = None
     asignatura_id: Optional[conint(gt=0)] = None
+
+    @field_validator("tipo_grupo")
+    @classmethod
+    def validate_tipo_grupo(cls, v: Optional[str]) -> Optional[str]:
+        """Validar que el tipo_grupo sea válido"""
+        if v is not None:
+            valid_tipos = ["seccion", "mencion", "base"]
+            if v not in valid_tipos:
+                raise ValueError(f"tipo_grupo debe ser uno de: {', '.join(valid_tipos)}")
+        return v
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1165,7 +1185,7 @@ class SalaSecurePatch(BaseModel):
             strip_whitespace=True,
             to_upper=True,
             min_length=1,
-            max_length=20,
+            max_length=100,
             pattern=r"^[A-Z0-9\-]+$",
         )
     ] = None

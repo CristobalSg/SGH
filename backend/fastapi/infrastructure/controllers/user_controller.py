@@ -94,6 +94,36 @@ async def get_users_by_rol(
         )
 
 
+@router.get("/stats/count-by-role", summary="Contar usuarios por rol")
+async def count_users_by_role(
+    user_use_case: UserManagementUseCase = Depends(get_user_management_use_case),
+    current_user: User = Depends(require_permission(Permission.USER_READ_ALL)),
+):
+    """
+    Obtener el conteo total de usuarios agrupados por rol.
+    
+    Retorna un objeto con la cantidad de usuarios por cada rol:
+    - docente: cantidad de docentes
+    - estudiante: cantidad de estudiantes
+    - administrador: cantidad de administradores
+    
+    Requiere permiso USER:READ:ALL (solo administradores).
+    """
+    try:
+        counts = user_use_case.count_users_by_role()
+        return {
+            "total": sum(counts.values()),
+            "by_role": counts
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Error interno del servidor"
+        )
+
+
 @router.put(
     "/{user_id}", response_model=User, status_code=status.HTTP_200_OK, summary="Actualizar usuario"
 )

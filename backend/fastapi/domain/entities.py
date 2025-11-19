@@ -1,6 +1,6 @@
 import re
 from datetime import date, datetime, time
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -588,17 +588,20 @@ class Asignatura(AsignaturaBase):
 
 # ========== SECCION DTOs ==========
 class SeccionBase(BaseModel):
-    codigo: str = Field(..., min_length=1, max_length=20, description="Código de la sección")
-    anio: int = Field(..., ge=2020, le=2030, description="Año de la sección")
+    codigo: str = Field(..., min_length=1, max_length=100, description="Código de la sección (ej: '1 sección 1', '5 mención 1')")
+    anio_academico: int = Field(..., ge=1, le=5, description="Año académico (1-5)")
     semestre: int = Field(..., ge=1, le=2, description="Semestre (1 o 2)")
-    cupos: int = Field(..., ge=1, le=100, description="Número de cupos disponibles")
+    tipo_grupo: str = Field(..., min_length=1, max_length=20, description="Tipo de grupo: seccion, mencion, base")
+    numero_estudiantes: int = Field(..., ge=1, le=500, description="Número de estudiantes en el grupo")
+    cupos: Optional[int] = Field(None, ge=1, le=500, description="Número de cupos disponibles")
 
-    @field_validator("codigo")
+    @field_validator("tipo_grupo")
     @classmethod
-    def validate_codigo(cls, v):
-        if not re.match(r"^[A-Z0-9-]+$", v.strip().upper()):
-            raise ValueError("El código debe contener solo letras mayúsculas, números y guiones")
-        return v.strip().upper()
+    def validate_tipo_grupo(cls, v):
+        valid_tipos = ["seccion", "mencion", "base"]
+        if v.lower() not in valid_tipos:
+            raise ValueError(f"tipo_grupo debe ser uno de: {', '.join(valid_tipos)}")
+        return v.lower()
 
 
 class SeccionCreate(SeccionBase):
@@ -610,6 +613,27 @@ class Seccion(SeccionBase):
     asignatura_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ========== STUDENT YEARS DTOs (para formato FET) ==========
+class StudentGroupResponse(BaseModel):
+    """Grupo de estudiantes (sección/mención)"""
+    id: str = Field(..., description="ID del grupo (ej: 'g-1-seccion-1')")
+    name: str = Field(..., description="Nombre del grupo (ej: '1 sección 1')")
+    students: int = Field(..., ge=0, description="Cantidad de estudiantes")
+
+
+class StudentYearResponse(BaseModel):
+    """Año académico con sus grupos"""
+    id: str = Field(..., description="ID del año (ej: 'year-1')")
+    name: str = Field(..., description="Nombre del año (ej: '1')")
+    total_students: int = Field(..., ge=0, description="Total de estudiantes del año")
+    groups: List[StudentGroupResponse] = Field(..., description="Grupos del año")
+
+
+class StudentYearsResponse(BaseModel):
+    """Respuesta completa con todos los años académicos"""
+    student_years: List[StudentYearResponse] = Field(..., description="Lista de años académicos")
 
 
 # ========== SALA DTOs ==========
@@ -722,7 +746,7 @@ class RestriccionHorarioPatch(BaseModel):
 class AsignaturaPatch(BaseModel):
     """DTO para actualizaciones parciales de asignaturas"""
 
-    codigo: Optional[str] = Field(None, min_length=1, max_length=20)
+    codigo: Optional[str] = Field(None, min_length=1, max_length=100)
     nombre: Optional[str] = Field(None, min_length=2, max_length=100)
     horas_presenciales: Optional[int] = Field(None, ge=0)
     horas_mixtas: Optional[int] = Field(None, ge=0)
@@ -743,10 +767,12 @@ class AsignaturaPatch(BaseModel):
 class SeccionPatch(BaseModel):
     """DTO para actualizaciones parciales de secciones"""
 
-    codigo: Optional[str] = Field(None, min_length=1, max_length=20)
-    anio: Optional[int] = Field(None, ge=2020, le=2030)
+    codigo: Optional[str] = Field(None, min_length=1, max_length=100)
+    anio_academico: Optional[int] = Field(None, ge=1, le=5)
+    tipo_grupo: Optional[str] = Field(None, min_length=1, max_length=20)
+    numero_estudiantes: Optional[int] = Field(None, ge=1, le=500)
     semestre: Optional[int] = Field(None, ge=1, le=2)
-    cupos: Optional[int] = Field(None, ge=1, le=100)
+    cupos: Optional[int] = Field(None, ge=1, le=500)
     asignatura_id: Optional[int] = Field(None, gt=0)
 
 
@@ -791,7 +817,7 @@ class ClasePatch(BaseModel):
 class SalaPatch(BaseModel):
     """DTO para actualizaciones parciales de salas"""
 
-    codigo: Optional[str] = Field(None, min_length=1, max_length=20)
+    codigo: Optional[str] = Field(None, min_length=1, max_length=100)
     capacidad: Optional[int] = Field(None, ge=1, le=500)
     tipo: Optional[str] = Field(None, min_length=1, max_length=50)
     disponible: Optional[bool] = None
