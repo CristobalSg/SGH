@@ -1,17 +1,42 @@
 import { 
   IonContent, IonHeader, IonPage, IonTitle, IonToolbar,
-  IonList, IonItem, IonInput, IonButton, IonCard, IonCardContent
+  IonList, IonItem, IonInput, IonButton, IonCard, IonCardContent, IonAlert
 } from '@ionic/react';
 import './Login.css';
+import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+interface TokenPayload {
+  sub: string;     // correo
+  user_id: number;
+  rol: string;
+  exp: number;
+  type: string;
+}
 
 const Login: React.FC = () => {
   const history = useHistory();
+  const { login } = useAuth();
 
-  const handleLogin = () => {
-    // Aquí puedes validar usuario/contraseña si quieres
-    history.push("/tabs/tab1"); // 👉 redirige al Tab1
-  };
+  const [correo, setCorreo] = useState('');
+  const [contraseña, setPassword] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+
+  const handleLogin = async () => {
+  try {
+    const loggedUser = await login(correo, contraseña);
+
+    // Redirigir según rol
+    if (loggedUser.rol === "administrador") {
+      history.push("/tabs/admin");
+    } else {
+      history.push("/tabs/tab1");
+    }
+  } catch (error) {
+    setShowAlert(true);
+  }
+};
 
   return (
     <IonPage>
@@ -20,35 +45,38 @@ const Login: React.FC = () => {
           <IonTitle>Login</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen className="ion-padding">
-        <div className="login-container">
-          <IonCard className="login-card">
-            <IonCardContent>
-              <IonList>
-                <IonItem>
-                  <IonInput
-                    label="Correo"
-                    labelPlacement="floating"
-                    placeholder="estudiante@alu.uct.cl"
-                  ></IonInput>
-                </IonItem>
+      <IonContent>
+        <IonCard>
+          <IonCardContent>
+            <IonList>
+              <IonItem>
+                <IonInput 
+                  type="email" 
+                  placeholder="Correo" 
+                  value={correo}
+                  onIonChange={e => setCorreo(e.detail.value!)} 
+                />
+              </IonItem>
+              <IonItem>
+                <IonInput 
+                  type="password" 
+                  placeholder="Contraseña" 
+                  value={contraseña}
+                  onIonChange={e => setPassword(e.detail.value!)} 
+                />
+              </IonItem>
+            </IonList>
+            <IonButton expand="full" onClick={handleLogin}>Ingresar</IonButton>
+          </IonCardContent>
+        </IonCard>
 
-                <IonItem>
-                  <IonInput
-                    label="Contraseña"
-                    labelPlacement="floating"
-                    type="password"
-                    placeholder="123"
-                  ></IonInput>
-                </IonItem>
-              </IonList>
-
-              <IonButton expand="block" onClick={handleLogin}>
-                Ingresar
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
-        </div>
+        <IonAlert
+          isOpen={showAlert}
+          onDidDismiss={() => setShowAlert(false)}
+          header={'Error'}
+          message={'Correo o contraseña incorrectos'}
+          buttons={['OK']}
+        />
       </IonContent>
     </IonPage>
   );

@@ -12,7 +12,7 @@ echo "✅ PostgreSQL listo!"
 
 # Ejecutar migraciones
 echo "📊 Ejecutando migraciones de Alembic..."
-alembic upgrade head
+alembic -c .config/alembic/alembic.ini upgrade head
 
 if [ $? -eq 0 ]; then
     echo "✅ Migraciones ejecutadas correctamente"
@@ -22,5 +22,18 @@ else
 fi
 
 # Iniciar la aplicación
-echo "🌟 Iniciando FastAPI..."
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+if [ "$test" == "true" ]; then
+    echo "🧪 Ejecutando pruebas con pytest..."
+    exec pytest -v
+else
+    echo "👩‍💻 Inicializando usuario administrador..."
+    python scripts/bootstrap_admin.py
+
+    if [ "$BACK_ENV" == "development" ] || [ "$NODE_ENV" == "development" ]; then
+        echo "🔧 Modo Desarrollo Activado"
+        exec fastapi dev main.py --host 0.0.0.0 --port ${BACKEND_PORT:-8000}
+    else
+        echo "🌟 Iniciando FastAPI..."
+        exec uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000}
+    fi
+fi
