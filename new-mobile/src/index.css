@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --app-height: 100vh;
+}
+
 /* iOS base fixes */
 @layer base {
   /* Evita zoom en inputs (Safari auto-zoomea si font <16px) */
@@ -21,6 +25,27 @@
 
   /* Schema explícito (evita inversiones raras de colores) */
   :root { color-scheme: light dark; }
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #f4f7fb;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: contain;
+  touch-action: manipulation;
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: var(--app-height);
+  height: var(--app-height);
+  background-color: #f4f7fb;
 }
 
 /* Autofill iOS/Chrome: mantener tus colores */
