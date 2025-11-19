@@ -73,11 +73,12 @@ export default function DocenteRestrictionsPage() {
         title="Restricciones"
         rightAction={
           <button
-            aria-label="Agregar"
-            className="flex items-center gap-1 rounded-md bg-blue-600 px-2 py-1.5 text-sm text-white transition hover:bg-blue-700"
+            aria-label="Agregar restricción"
             onClick={openCreateModal}
+            className="group inline-flex items-center gap-1 rounded-lg border border-[#004F9F1A] bg-gradient-to-r from-[#2563EB] to-[#7C3AED] px-3 py-1.5 text-sm font-semibold text-white shadow-[0_6px_12px_rgba(0,79,159,0.18)] transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
+            style={{ minHeight: 36 }}
           >
-            <PlusIcon className="h-4 w-4" />
+            <PlusIcon className="h-4 w-4 text-white transition group-hover:scale-105" />
             <span>Agregar</span>
           </button>
         }

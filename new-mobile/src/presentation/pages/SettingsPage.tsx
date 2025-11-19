@@ -4,7 +4,7 @@ import AppLayout from "../components/layout/AppLayout";
 import { useAuth } from "../../app/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { Collapse, Button, Switch, Input, type CollapseProps } from "antd";
+import { Collapse, Button, Switch, Input, Modal, type CollapseProps } from "antd";
 import { message } from "antd";
 import { useChangePassword } from "../hooks/useChangePassword";
 import AvatarSelector from "../components/AvatarSelector";
@@ -18,6 +18,7 @@ const SettingsPage = () => {
   const { selectAvatar, updating: updatingAvatar } = useAvatarSelection();
   const [pwdActual, setPwdActual] = useState("");
   const [pwdNueva, setPwdNueva] = useState("");
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
   const MIN_PASSWORD = 12;
 
   const handleLogout = async () => {
@@ -154,7 +155,8 @@ const SettingsPage = () => {
   }, [user, pwdActual, pwdNueva, changing, updatingAvatar, selectAvatar]);
 
   return (
-    <AppLayout
+    <>
+      <AppLayout
       title="Configuración"
       leftAction={
         <button
@@ -169,6 +171,7 @@ const SettingsPage = () => {
         <button
           aria-label="Notificaciones"
           className="p-1 rounded-md hover:bg-gray-100 active:bg-gray-200"
+          onClick={() => setNotifModalOpen(true)}
         >
           <BellIcon className="h-6 w-6 text-gray-700" />
         </button>
@@ -221,7 +224,24 @@ const SettingsPage = () => {
           </button>
         </div>
       </section>
-    </AppLayout>
+      </AppLayout>
+      <Modal
+        open={notifModalOpen}
+        title="Notificaciones"
+        centered
+        onCancel={() => setNotifModalOpen(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setNotifModalOpen(false)}>
+            Entendido
+          </Button>,
+        ]}
+      >
+        <div className="space-y-2 text-sm text-gray-600">
+          <p>No hay mensajes nuevos por ahora.</p>
+          <p>Mantendremos esta sección lista para cuando habilitemos las alertas.</p>
+        </div>
+      </Modal>
+    </>
   );
 };
 

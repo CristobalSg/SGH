@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { DIAS, DIA_LABELS, HORAS, type ScheduleEventDetailsMap, type ScheduleEventDetail } from "../../types/schedule";
 import type { Events } from "../../types/schedule";
 
-const HOUR_COLUMN_WIDTH = 36;
-const ROW_HEIGHT = 54;
+const HOUR_COLUMN_WIDTH = 20;
+const ROW_HEIGHT = 44;
 
 export default function ScheduleListMobile({ events, details }: { events: Events; details: ScheduleEventDetailsMap }) {
   const gridTemplateColumns = `repeat(${DIAS.length}, minmax(0, 1fr))`;
@@ -14,9 +14,9 @@ export default function ScheduleListMobile({ events, details }: { events: Events
 
   return (
     <div className="overflow-hidden">
-      <div className="w-full rounded-[32px] border border-[#004F9F1A] bg-gradient-to-b from-white via-[#F8FAFF] to-white p-4 shadow-[0_20px_60px_rgba(0,79,159,0.08)] sm:p-6">
+      <div className="w-full rounded-[26px] border border-[#004F9F1A] bg-gradient-to-b from-white via-[#F8FAFF] to-white p-4 shadow-[0_20px_60px_rgba(0,79,159,0.08)] sm:p-6">
         <div
-          className="grid items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#004F9F99]"
+          className="grid items-center gap-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#004F9F99]"
           style={{ gridTemplateColumns: `${HOUR_COLUMN_WIDTH}px 1fr` }}
         >
           <div className="text-left tracking-[0.18em] text-[#004F9FCC]">Hora</div>
@@ -31,7 +31,7 @@ export default function ScheduleListMobile({ events, details }: { events: Events
 
         <div className="mt-4 flex gap-2">
           <div
-            className="grid text-[10px] font-semibold text-[#004F9F]"
+            className="grid text-[8px] font-semibold text-[#004F9F]"
             style={{ width: `${HOUR_COLUMN_WIDTH}px`, gridTemplateRows }}
           >
             {HORAS.map((hora) => {
@@ -39,7 +39,7 @@ export default function ScheduleListMobile({ events, details }: { events: Events
               return (
                 <div
                   key={`hour-${hora}`}
-                  className="flex items-center justify-center px-1 text-center"
+                  className="flex items-center justify-center text-center"
                 >
                   <span>{start}</span>
                 </div>
@@ -87,15 +87,19 @@ export default function ScheduleListMobile({ events, details }: { events: Events
                       <button
                         type="button"
                         onClick={() => setSelected(card.detail)}
-                        className="flex h-full w-full flex-col justify-center rounded-[8px] border px-2 text-left text-[#004F9F] shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
+                        className="flex h-full w-full flex-col justify-center rounded-[8px] border px-1 text-left text-[#004F9F] shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
                         style={{
                           borderColor: card.detail.color.border,
                           backgroundColor: card.detail.color.bg,
                           boxShadow: `0 8px 18px ${card.detail.color.border}33`,
                         }}
                       >
-                        <p className="text-[9px] font-semibold leading-tight">{card.detail.code}</p>
-                        <p className="text-[8px] font-medium text-[#004F9FCC]">{card.detail.location}</p>
+                        <p className="text-[8px] font-semibold leading-tight break-words whitespace-normal">
+                          {card.detail.code}
+                        </p>
+                        <p className="text-[7px] font-medium text-[#004F9FCC] break-words whitespace-normal">
+                          {card.detail.location}
+                        </p>
                       </button>
                     </div>
                   ))}
