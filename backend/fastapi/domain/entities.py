@@ -556,7 +556,11 @@ class RestriccionHorario(RestriccionHorarioBase):
 class AsignaturaBase(BaseModel):
     codigo: str = Field(..., min_length=1, max_length=20, description="Código de la asignatura")
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre de la asignatura")
-    creditos: int = Field(..., ge=1, le=20, description="Número de créditos (1-20)")
+    horas_presenciales: int = Field(..., ge=0, description="Horas presenciales semanales")
+    horas_mixtas: int = Field(..., ge=0, description="Horas mixtas semanales")
+    horas_autonomas: int = Field(..., ge=0, description="Horas autónomas semanales")
+    cantidad_creditos: int = Field(..., ge=1, le=30, description="Número de créditos (1-30)")
+    semestre: int = Field(..., ge=1, le=12, description="Semestre recomendado (1-12)")
 
     @field_validator("codigo")
     @classmethod
@@ -720,7 +724,11 @@ class AsignaturaPatch(BaseModel):
 
     codigo: Optional[str] = Field(None, min_length=1, max_length=20)
     nombre: Optional[str] = Field(None, min_length=2, max_length=100)
-    creditos: Optional[int] = Field(None, ge=1, le=20)
+    horas_presenciales: Optional[int] = Field(None, ge=0)
+    horas_mixtas: Optional[int] = Field(None, ge=0)
+    horas_autonomas: Optional[int] = Field(None, ge=0)
+    cantidad_creditos: Optional[int] = Field(None, ge=1, le=30)
+    semestre: Optional[int] = Field(None, ge=1, le=12)
 
     @field_validator("codigo")
     @classmethod
@@ -956,4 +964,3 @@ class EventoPatch(BaseModel):
                 raise ValueError("La hora de cierre debe estar entre 08:00 y 21:00")
         
         return self
-

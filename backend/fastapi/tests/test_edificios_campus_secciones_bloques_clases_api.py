@@ -202,8 +202,11 @@ class TestSeccionesEndpoints:
         asignatura_data = {
             "nombre": "Programación Avanzada",
             "codigo": "PROG-301",
-            "nivel": 3,
-            "creditos": 4,
+            "horas_presenciales": 3,
+            "horas_mixtas": 2,
+            "horas_autonomas": 4,
+            "cantidad_creditos": 4,
+            "semestre": 5,
         }
         asignatura_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
@@ -243,8 +246,11 @@ class TestSeccionesEndpoints:
         asignatura_data = {
             "nombre": "Test Asignatura",
             "codigo": "TEST-101",
-            "nivel": 1,
-            "creditos": 3,
+            "horas_presenciales": 2,
+            "horas_mixtas": 1,
+            "horas_autonomas": 4,
+            "cantidad_creditos": 3,
+            "semestre": 2,
         }
         asignatura_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
@@ -363,8 +369,11 @@ class TestClasesEndpoints:
         asignatura_data = {
             "nombre": "Programación Clase",
             "codigo": "PROG-CLASE101",
-            "nivel": 1,
-            "creditos": 4,
+            "horas_presenciales": 3,
+            "horas_mixtas": 2,
+            "horas_autonomas": 5,
+            "cantidad_creditos": 4,
+            "semestre": 3,
         }
         asignatura_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin

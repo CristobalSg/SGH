@@ -34,15 +34,15 @@ class AsignaturaRepository:
         """Buscar asignaturas por nombre"""
         return self.session.query(Asignatura).filter(Asignatura.nombre.ilike(f"%{nombre}%")).all()
 
-    def get_by_creditos(
+    def get_by_cantidad_creditos(
         self, creditos_min: int = None, creditos_max: int = None
     ) -> List[Asignatura]:
-        """Obtener asignaturas por rango de créditos"""
+        """Obtener asignaturas por rango de cantidad de créditos"""
         query = self.session.query(Asignatura)
         if creditos_min is not None:
-            query = query.filter(Asignatura.creditos >= creditos_min)
+            query = query.filter(Asignatura.cantidad_creditos >= creditos_min)
         if creditos_max is not None:
-            query = query.filter(Asignatura.creditos <= creditos_max)
+            query = query.filter(Asignatura.cantidad_creditos <= creditos_max)
         return query.all()
 
     def update(self, asignatura_id: int, asignatura_data: dict) -> Optional[Asignatura]:

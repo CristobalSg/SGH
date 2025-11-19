@@ -504,8 +504,24 @@ class AsignaturaSecureBase(BaseModel, CodigoSeguroMixin):
         ..., description="Nombre de la asignatura", examples=["Matemáticas I", "Física II"]
     )
 
-    creditos: conint(ge=1, le=20) = Field(
-        ..., description="Número de créditos (1-20)", examples=[3, 4, 5]
+    horas_presenciales: conint(ge=0) = Field(
+        ..., description="Horas presenciales semanales", examples=[2, 3, 4]
+    )
+
+    horas_mixtas: conint(ge=0) = Field(
+        ..., description="Horas mixtas semanales", examples=[1, 2]
+    )
+
+    horas_autonomas: conint(ge=0) = Field(
+        ..., description="Horas autónomas semanales", examples=[2, 3, 5]
+    )
+
+    cantidad_creditos: conint(ge=1, le=30) = Field(
+        ..., description="Número de créditos (1-30)", examples=[3, 4, 6]
+    )
+
+    semestre: conint(ge=1, le=12) = Field(
+        ..., description="Semestre recomendado (1-12)", examples=[1, 2, 3]
     )
 
     @field_validator("nombre")
@@ -1111,7 +1127,11 @@ class AsignaturaSecurePatch(BaseModel):
 
     nombre: Optional[constr(strip_whitespace=True, min_length=2, max_length=100)] = None
 
-    creditos: Optional[conint(ge=1, le=20)] = None
+    horas_presenciales: Optional[conint(ge=0)] = None
+    horas_mixtas: Optional[conint(ge=0)] = None
+    horas_autonomas: Optional[conint(ge=0)] = None
+    cantidad_creditos: Optional[conint(ge=1, le=30)] = None
+    semestre: Optional[conint(ge=1, le=12)] = None
 
     model_config = ConfigDict(extra="forbid")
 

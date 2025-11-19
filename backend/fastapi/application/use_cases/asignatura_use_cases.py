@@ -109,8 +109,8 @@ class AsignaturaUseCases:
         """Buscar asignaturas por nombre"""
         return self.asignatura_repository.search_by_nombre(nombre)
 
-    def get_by_creditos(
+    def get_by_cantidad_creditos(
         self, creditos_min: int = None, creditos_max: int = None
     ) -> List[Asignatura]:
-        """Obtener asignaturas por rango de créditos"""
-        return self.asignatura_repository.get_by_creditos(creditos_min, creditos_max)
+        """Obtener asignaturas por rango de cantidad de créditos"""
+        return self.asignatura_repository.get_by_cantidad_creditos(creditos_min, creditos_max)
