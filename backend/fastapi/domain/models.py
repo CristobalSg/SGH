@@ -99,7 +99,11 @@ class Asignatura(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     codigo = Column(Text, nullable=False)
     nombre = Column(Text, nullable=False)
-    creditos = Column(Integer)
+    horas_presenciales = Column(Integer, nullable=False)
+    horas_mixtas = Column(Integer, nullable=False)
+    horas_autonomas = Column(Integer, nullable=False)
+    cantidad_creditos = Column(Integer, nullable=False)
+    semestre = Column(Integer, nullable=False)
 
     secciones = relationship("Seccion", back_populates="asignatura")
 

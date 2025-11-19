@@ -2,16 +2,33 @@ import pytest
 from fastapi.testclient import TestClient
 
 
+DEFAULT_ASIGNATURA_PAYLOAD = {
+    "codigo": "INFO1120",
+    "nombre": "Programación I",
+    "horas_presenciales": 3,
+    "horas_mixtas": 2,
+    "horas_autonomas": 5,
+    "cantidad_creditos": 6,
+    "semestre": 1,
+}
+
+
+def build_asignatura_payload(**overrides):
+    payload = DEFAULT_ASIGNATURA_PAYLOAD.copy()
+    payload.update(overrides)
+    return payload
+
+
 class TestAsignaturasEndpoints:
     """Tests para los endpoints de asignaturas"""
 
     def test_create_asignatura_success_admin(self, client: TestClient, auth_headers_admin):
         """Test creación exitosa de asignatura por administrador"""
-        asignatura_data = {
-            "codigo": "ING101",
-            "nombre": "Introducción a la Ingeniería",
-            "creditos": 3,
-        }
+        asignatura_data = build_asignatura_payload(
+            codigo="ING101",
+            nombre="Introducción a la Ingeniería",
+            cantidad_creditos=3,
+        )
 
         response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
@@ -21,12 +38,14 @@ class TestAsignaturasEndpoints:
         data = response.json()
         assert data["codigo"] == "ING101"
         assert data["nombre"] == "Introducción A La Ingeniería"  # El validador capitaliza
-        assert data["creditos"] == 3
+        assert data["cantidad_creditos"] == 3
         assert "id" in data
 
     def test_create_asignatura_unauthorized_docente(self, client: TestClient, auth_headers_docente):
         """Test que docentes no pueden crear asignaturas"""
-        asignatura_data = {"codigo": "MAT101", "nombre": "Matemáticas Básicas", "creditos": 4}
+        asignatura_data = build_asignatura_payload(
+            codigo="MAT101", nombre="Matemáticas Básicas", cantidad_creditos=4
+        )
 
         response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_docente
@@ -35,7 +54,9 @@ class TestAsignaturasEndpoints:
 
     def test_create_asignatura_unauthorized(self, client: TestClient):
         """Test creación de asignatura sin autenticación"""
-        asignatura_data = {"codigo": "FIS101", "nombre": "Física Básica", "creditos": 4}
+        asignatura_data = build_asignatura_payload(
+            codigo="FIS101", nombre="Física Básica", cantidad_creditos=4
+        )
 
         response = client.post("/api/asignaturas/", json=asignatura_data)
         assert response.status_code == 401
@@ -43,7 +64,9 @@ class TestAsignaturasEndpoints:
     def test_get_all_asignaturas_success(self, client: TestClient, auth_headers_admin):
         """Test obtener todas las asignaturas"""
         # Crear una asignatura primero
-        asignatura_data = {"codigo": "QUI101", "nombre": "Química General", "creditos": 4}
+        asignatura_data = build_asignatura_payload(
+            codigo="QUI101", nombre="Química General", cantidad_creditos=4
+        )
         client.post("/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin)
 
         # Obtener todas las asignaturas
@@ -56,7 +79,9 @@ class TestAsignaturasEndpoints:
     def test_get_asignatura_by_id_success(self, client: TestClient, auth_headers_admin):
         """Test obtener asignatura específica por ID"""
         # Crear una asignatura primero
-        asignatura_data = {"codigo": "BIO101", "nombre": "Biología General", "creditos": 3}
+        asignatura_data = build_asignatura_payload(
+            codigo="BIO101", nombre="Biología General", cantidad_creditos=3
+        )
         create_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
         )
@@ -78,14 +103,30 @@ class TestAsignaturasEndpoints:
     def test_update_asignatura_put_success(self, client: TestClient, auth_headers_admin):
         """Test actualización completa de asignatura con PUT"""
         # Crear una asignatura primero
-        asignatura_data = {"codigo": "ART101", "nombre": "Arte Original", "creditos": 2}
+        asignatura_data = build_asignatura_payload(
+            codigo="ART101",
+            nombre="Arte Original",
+            cantidad_creditos=2,
+            horas_presenciales=2,
+            horas_mixtas=1,
+            horas_autonomas=3,
+            semestre=2,
+        )
         create_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
         )
         created_id = create_response.json()["id"]
 
         # Actualizar con PUT
-        updated_data = {"codigo": "ART101", "nombre": "Arte Actualizado", "creditos": 3}
+        updated_data = build_asignatura_payload(
+            codigo="ART101",
+            nombre="Arte Actualizado",
+            cantidad_creditos=3,
+            horas_presenciales=4,
+            horas_mixtas=2,
+            horas_autonomas=5,
+            semestre=3,
+        )
         response = client.put(
             f"/api/asignaturas/{created_id}", json=updated_data, headers=auth_headers_admin
         )
@@ -93,32 +134,38 @@ class TestAsignaturasEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["nombre"] == "Arte Actualizado"
-        assert data["creditos"] == 3
+        assert data["cantidad_creditos"] == 3
+        assert data["horas_presenciales"] == 4
 
     def test_update_asignatura_patch_success(self, client: TestClient, auth_headers_admin):
         """Test actualización parcial de asignatura con PATCH"""
         # Crear una asignatura primero
-        asignatura_data = {"codigo": "LIT101", "nombre": "Literatura Clásica", "creditos": 3}
+        asignatura_data = build_asignatura_payload(
+            codigo="LIT101", nombre="Literatura Clásica", cantidad_creditos=3
+        )
         create_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
         )
         created_id = create_response.json()["id"]
 
         # Actualizar solo algunos campos con PATCH
-        patch_data = {"creditos": 4}
+        patch_data = {"cantidad_creditos": 4, "horas_autonomas": 6}
         response = client.patch(
             f"/api/asignaturas/{created_id}", json=patch_data, headers=auth_headers_admin
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["creditos"] == 4
+        assert data["cantidad_creditos"] == 4
+        assert data["horas_autonomas"] == 6
         assert data["codigo"] == "LIT101"  # Debe mantener el valor original
 
     def test_delete_asignatura_success(self, client: TestClient, auth_headers_admin):
         """Test eliminación exitosa de asignatura"""
         # Crear una asignatura primero
-        asignatura_data = {"codigo": "DEL101", "nombre": "Para Eliminar", "creditos": 1}
+        asignatura_data = build_asignatura_payload(
+            codigo="DEL101", nombre="Para Eliminar", cantidad_creditos=1
+        )
         create_response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
         )
@@ -158,7 +205,9 @@ class TestAsignaturasValidation:
         nombres_validos = ["Ingenieria Uno", "Matematicas Dos", "Fisica Tres", "Ciencias Cuatro"]
 
         for i, codigo in enumerate(codigos_validos):
-            asignatura_data = {"codigo": codigo, "nombre": nombres_validos[i], "creditos": 3}
+            asignatura_data = build_asignatura_payload(
+                codigo=codigo, nombre=nombres_validos[i], semestre=i + 1
+            )
 
             response = client.post(
                 "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
@@ -176,7 +225,7 @@ class TestAsignaturasValidation:
         codigos_invalidos = ["MAT 202", "FIS@300", ""]
 
         for codigo in codigos_invalidos:
-            asignatura_data = {"codigo": codigo, "nombre": "Test Asignatura", "creditos": 3}
+            asignatura_data = build_asignatura_payload(codigo=codigo, nombre="Test Asignatura")
 
             response = client.post(
                 "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
@@ -185,32 +234,32 @@ class TestAsignaturasValidation:
                 response.status_code == 422
             ), f"Debería fallar para código: {codigo}, pero obtuvo {response.status_code}"
 
-    def test_creditos_validation_range(self, client: TestClient, auth_headers_admin):
-        """Test validación de rango de créditos"""
-        # Créditos válidos (1-20)
+    def test_cantidad_creditos_validation_range(self, client: TestClient, auth_headers_admin):
+        """Test validación de rango de cantidad de créditos"""
+        # Créditos válidos (1-30)
         nombres_creditos = ["Uno", "Cinco", "Diez", "Quince", "Veinte"]
         for idx, creditos in enumerate([1, 5, 10, 15, 20]):
-            asignatura_data = {
-                "codigo": f"TEST{creditos}",
-                "nombre": f"Test {nombres_creditos[idx]} creditos",
-                "creditos": creditos,
-            }
+            asignatura_data = build_asignatura_payload(
+                codigo=f"TEST{creditos}",
+                nombre=f"Test {nombres_creditos[idx]} creditos",
+                cantidad_creditos=creditos,
+            )
 
             response = client.post(
                 "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
             )
             assert response.status_code == 201, f"Falló para créditos: {creditos}"
 
-    def test_creditos_validation_invalid(self, client: TestClient, auth_headers_admin):
-        """Test créditos inválidos"""
-        creditos_invalidos = [0, -1, 21, 100]
+    def test_cantidad_creditos_validation_invalid(self, client: TestClient, auth_headers_admin):
+        """Test cantidad de créditos inválida"""
+        creditos_invalidos = [0, -1, 31, 100]
 
         for creditos in creditos_invalidos:
-            asignatura_data = {
-                "codigo": f"FAIL{abs(creditos)}",
-                "nombre": "Test Asignatura",
-                "creditos": creditos,
-            }
+            asignatura_data = build_asignatura_payload(
+                codigo=f"FAIL{abs(creditos)}",
+                nombre="Test Asignatura",
+                cantidad_creditos=creditos,
+            )
 
             response = client.post(
                 "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
@@ -220,18 +269,16 @@ class TestAsignaturasValidation:
     def test_nombre_validation(self, client: TestClient, auth_headers_admin):
         """Test validación de nombre"""
         # Nombre válido
-        asignatura_data = {
-            "codigo": "VALID1",
-            "nombre": "Nombre Válido de Asignatura",
-            "creditos": 3,
-        }
+        asignatura_data = build_asignatura_payload(
+            codigo="VALID1", nombre="Nombre Válido de Asignatura"
+        )
         response = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
         )
         assert response.status_code == 201
 
         # Nombre vacío (inválido)
-        asignatura_data_invalid = {"codigo": "INVALID1", "nombre": "", "creditos": 3}
+        asignatura_data_invalid = build_asignatura_payload(codigo="INVALID1", nombre="")
         response = client.post(
             "/api/asignaturas/", json=asignatura_data_invalid, headers=auth_headers_admin
         )
@@ -240,18 +287,18 @@ class TestAsignaturasValidation:
     def test_codigo_unique_constraint(self, client: TestClient, auth_headers_admin):
         """Test que no se pueden crear asignaturas con códigos duplicados"""
         # Crear primera asignatura
-        asignatura_data = {"codigo": "UNIQUE1", "nombre": "Primera Asignatura", "creditos": 3}
+        asignatura_data = build_asignatura_payload(
+            codigo="UNIQUE1", nombre="Primera Asignatura", cantidad_creditos=3
+        )
         response1 = client.post(
             "/api/asignaturas/", json=asignatura_data, headers=auth_headers_admin
         )
         assert response1.status_code == 201
 
         # Intentar crear segunda con mismo código
-        asignatura_data_duplicate = {
-            "codigo": "UNIQUE1",
-            "nombre": "Segunda Asignatura",
-            "creditos": 4,
-        }
+        asignatura_data_duplicate = build_asignatura_payload(
+            codigo="UNIQUE1", nombre="Segunda Asignatura", cantidad_creditos=4
+        )
         response2 = client.post(
             "/api/asignaturas/", json=asignatura_data_duplicate, headers=auth_headers_admin
         )
@@ -265,9 +312,9 @@ class TestAsignaturasSearch:
         """Test búsqueda de asignatura por código"""
         # Crear varias asignaturas
         asignaturas = [
-            {"codigo": "SEARCH1", "nombre": "Busqueda Uno", "creditos": 3},
-            {"codigo": "SEARCH2", "nombre": "Busqueda Dos", "creditos": 4},
-            {"codigo": "OTHER1", "nombre": "Otra Uno", "creditos": 2},
+            build_asignatura_payload(codigo="SEARCH1", nombre="Busqueda Uno"),
+            build_asignatura_payload(codigo="SEARCH2", nombre="Busqueda Dos"),
+            build_asignatura_payload(codigo="OTHER1", nombre="Otra Uno"),
         ]
 
         for asignatura in asignaturas:
@@ -279,13 +326,19 @@ class TestAsignaturasSearch:
         # data = response.json()
         # assert len(data) == 2  # Debería encontrar SEARCH1 y SEARCH2
 
-    def test_filter_by_creditos(self, client: TestClient, auth_headers_admin):
-        """Test filtrado de asignaturas por créditos"""
+    def test_filter_by_cantidad_creditos(self, client: TestClient, auth_headers_admin):
+        """Test filtrado de asignaturas por cantidad de créditos"""
         # Crear asignaturas con diferentes créditos
         asignaturas = [
-            {"codigo": "CRED3A", "nombre": "Tres Creditos A", "creditos": 3},
-            {"codigo": "CRED3B", "nombre": "Tres Creditos B", "creditos": 3},
-            {"codigo": "CRED4", "nombre": "Cuatro Creditos", "creditos": 4},
+            build_asignatura_payload(
+                codigo="CRED3A", nombre="Tres Creditos A", cantidad_creditos=3
+            ),
+            build_asignatura_payload(
+                codigo="CRED3B", nombre="Tres Creditos B", cantidad_creditos=3
+            ),
+            build_asignatura_payload(
+                codigo="CRED4", nombre="Cuatro Creditos", cantidad_creditos=4
+            ),
         ]
 
         for asignatura in asignaturas:

@@ -116,11 +116,7 @@ async def update_asignatura(
     """Actualizar completamente una asignatura con validaciones anti-inyección (requiere permiso ASIGNATURA:WRITE - solo administradores)"""
     try:
         # Convertir AsignaturaSecureCreate a AsignaturaSecurePatch para el use case
-        patch_data = AsignaturaSecurePatch(
-            codigo=asignatura_data.codigo,
-            nombre=asignatura_data.nombre,
-            creditos=asignatura_data.creditos,
-        )
+        patch_data = AsignaturaSecurePatch(**asignatura_data.model_dump())
 
         asignatura_actualizada = use_cases.update(asignatura_id, patch_data)
 
@@ -269,18 +265,25 @@ async def search_asignaturas_by_nombre(
     "/buscar/creditos",
     response_model=List[Asignatura],
     status_code=status.HTTP_200_OK,
-    summary="Buscar asignaturas por créditos",
+    summary="Buscar asignaturas por cantidad de créditos",
     tags=["asignaturas"],
 )
-async def get_asignaturas_by_creditos(
+@router.get(
+    "/buscar/cantidad-creditos",
+    response_model=List[Asignatura],
+    status_code=status.HTTP_200_OK,
+    summary="Buscar asignaturas por cantidad de créditos",
+    tags=["asignaturas"],
+)
+async def get_asignaturas_by_cantidad_creditos(
     creditos_min: Optional[int] = None,
     creditos_max: Optional[int] = None,
     current_user: User = Depends(require_permission(Permission.ASIGNATURA_READ)),  # ✅ MIGRADO
     use_cases: AsignaturaUseCases = Depends(get_asignatura_use_cases),
 ):
-    """Buscar asignaturas por rango de créditos (requiere permiso ASIGNATURA:READ)"""
+    """Buscar asignaturas por rango de cantidad de créditos (requiere permiso ASIGNATURA:READ)"""
     try:
-        asignaturas = use_cases.get_by_creditos(creditos_min, creditos_max)
+        asignaturas = use_cases.get_by_cantidad_creditos(creditos_min, creditos_max)
         return asignaturas
     except Exception as e:
         raise HTTPException(
