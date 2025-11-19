@@ -123,11 +123,13 @@ class Seccion(Base):
     __tablename__ = "seccion"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    codigo = Column(Text, nullable=False)
-    anio = Column(Integer)
-    semestre = Column(Integer)
+    codigo = Column(Text, nullable=False)  # Ej: "1 sección 1", "5 mención 1"
+    anio_academico = Column(Integer, nullable=False)  # 1, 2, 3, 4, 5
+    semestre = Column(Integer)  # Semestre académico (1, 2)
     asignatura_id = Column(Integer, ForeignKey("asignatura.id"))
-    cupos = Column(Integer)
+    tipo_grupo = Column(String(20), nullable=False, default="seccion")  # "seccion", "mencion", "base"
+    numero_estudiantes = Column(Integer, nullable=False, default=30)  # Cantidad de estudiantes en el grupo
+    cupos = Column(Integer)  # Cupos disponibles (puede ser diferente de numero_estudiantes)
 
     asignatura = relationship("Asignatura", back_populates="secciones")
     clases = relationship("Clase", back_populates="seccion")

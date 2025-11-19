@@ -87,46 +87,51 @@ class TimetableService:
         return Calendar(days=days, hours=hours)
 
     def _get_static_student_years(self) -> List[StudentYear]:
-        """Obtener años y grupos estáticos"""
-        return [
-            StudentYear(
-                id="year-1",
-                name="1",
-                total_students=90,
-                groups=[
-                    StudentGroup(id="g-1-seccion-1", name="1 sección 1", students=30),
-                    StudentGroup(id="g-1-seccion-2", name="1 sección 2", students=30),
-                    StudentGroup(id="g-1-seccion-3", name="1 sección 3", students=30),
-                ],
-            ),
-            StudentYear(
-                id="year-2",
-                name="2",
-                total_students=80,
-                groups=[
-                    StudentGroup(id="g-2-seccion-1", name="2 sección 1", students=40),
-                    StudentGroup(id="g-2-seccion-2", name="2 sección 2", students=40),
-                ],
-            ),
-            StudentYear(
-                id="year-3",
-                name="3",
-                total_students=70,
-                groups=[
-                    StudentGroup(id="g-3-seccion-1", name="3 sección 1", students=35),
-                    StudentGroup(id="g-3-seccion-2", name="3 sección 2", students=35),
-                ],
-            ),
-            StudentYear(
-                id="year-4",
-                name="4",
-                total_students=60,
-                groups=[
-                    StudentGroup(id="g-4-seccion-1", name="4 sección 1", students=30),
-                    StudentGroup(id="g-4-seccion-2", name="4 sección 2", students=30),
-                ],
-            ),
-        ]
+        """Obtener años y grupos desde la base de datos"""
+        from collections import defaultdict
+        
+        # Obtener todas las secciones
+        secciones_db = self.seccion_repository.get_all()
+        
+        # Agrupar por año académico
+        años_dict = defaultdict(lambda: {"grupos": [], "total": 0})
+        
+        for seccion in secciones_db:
+            año = seccion.anio_academico
+            
+            # Generar ID del grupo según tipo
+            if seccion.tipo_grupo == "seccion":
+                group_id = f"g-{año}-seccion-{seccion.id}"
+            elif seccion.tipo_grupo == "mencion":
+                group_id = f"g-{año}-mencion-{seccion.id}"
+            elif seccion.tipo_grupo == "base":
+                group_id = f"g-{año}-seccion-{seccion.id}"
+            else:
+                group_id = f"g-{año}-grupo-{seccion.id}"
+            
+            # Agregar grupo
+            años_dict[año]["grupos"].append(
+                StudentGroup(
+                    id=group_id,
+                    name=seccion.codigo,  # "1 sección 1", "5 mención 1", etc.
+                    students=seccion.numero_estudiantes
+                )
+            )
+            años_dict[año]["total"] += seccion.numero_estudiantes
+        
+        # Construir lista de StudentYear
+        student_years = []
+        for año in sorted(años_dict.keys()):
+            student_years.append(
+                StudentYear(
+                    id=f"year-{año}",
+                    name=str(año),
+                    total_students=años_dict[año]["total"],
+                    groups=años_dict[año]["grupos"]
+                )
+            )
+        
+        return student_years
 
     def _build_subjects(self) -> List[Subject]:
         """Construir lista de asignaturas desde la BD"""
@@ -178,9 +183,17 @@ class TimetableService:
             if not docente:
                 continue
 
-            # Determinar grupo de estudiantes (usar año académico por defecto)
-            # En producción, esto vendría de la relación seccion-estudiantes
-            students_ref = StudentsReference(type="year", id=f"year-{seccion.anio}")
+            # Determinar referencia al grupo específico de la sección
+            if seccion.tipo_grupo == "seccion":
+                group_id = f"g-{seccion.anio_academico}-seccion-{seccion.id}"
+            elif seccion.tipo_grupo == "mencion":
+                group_id = f"g-{seccion.anio_academico}-mencion-{seccion.id}"
+            elif seccion.tipo_grupo == "base":
+                group_id = f"g-{seccion.anio_academico}-seccion-{seccion.id}"
+            else:
+                group_id = f"g-{seccion.anio_academico}-grupo-{seccion.id}"
+            
+            students_ref = StudentsReference(type="group", id=group_id)
 
             # Crear actividad
             # duration y total_duration deberían venir de la configuración de la asignatura
