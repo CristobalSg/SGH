@@ -3,7 +3,6 @@ import PasswordInput from "../ui/PasswordInput";
 import Card from "../ui/Card";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
-import DarkModeToggle from "../ui/DarkModeToggle";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { getDefaultPathByRole } from "../../routes/rolePaths";
@@ -40,14 +39,10 @@ const LoginForm: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen p-5
+      className="flex min-h-[var(--app-height)] w-full flex-col items-center justify-center p-5
       bg-gradient-to-br from-[var(--color-primary-light)] to-[var(--color-primary-dark)]
       dark:from-[var(--color-secondary-dark)] dark:to-[var(--color-background-dark)]"
     >
-      <header className="p-4 flex justify-end">
-        <DarkModeToggle />
-      </header>
-
       <Card>
         <form onSubmit={handleSubmit} className="flex flex-col w-full gap-6">
           <div className="text-center mb-8">
@@ -63,16 +58,18 @@ const LoginForm: React.FC = () => {
 
           <div className="flex flex-col gap-4">
             <Input
-              label="Usuario"
+              label="Correo electrónico"
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin"
+              variant="solid"
               required
             />
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              variant="solid"
             />
           </div>
 

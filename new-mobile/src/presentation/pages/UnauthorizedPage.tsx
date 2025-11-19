@@ -7,7 +7,7 @@ export default function UnauthorizedPage() {
   const backHref = role ? getDefaultPathByRole(role) : "/login";
 
   return (
-    <div className="min-h-screen grid place-items-center bg-gray-50">
+    <div className="min-h-[var(--app-height)] grid place-items-center bg-gray-50 px-6">
       <div className="max-w-md text-center">
         <h1 className="text-2xl font-semibold mb-2">No autorizado</h1>
         <p className="text-gray-600 mb-4">
