@@ -27,16 +27,17 @@ export default function AppLayout({
   className = "",
 }: AppLayoutProps) {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex min-h-[var(--app-height)] flex-col bg-gray-50">
       {/* Header */}
       <PageHeader title={title} leftAction={leftAction} rightAction={rightAction} />
 
       {/* Contenido principal */}
       <main
-        className={`flex-1 mt-14 px-4 max-w-md mx-auto ${className}`}
+        className={`ios-scroll mx-auto flex w-full max-w-md flex-1 flex-col overflow-y-auto px-4 ${className}`}
         style={{
+          paddingTop: "calc(80px + env(safe-area-inset-top, 0px))",
           paddingBottom: showBottomNav
-            ? "calc(80px + env(safe-area-inset-bottom, 0px))"
+            ? "calc(120px + env(safe-area-inset-bottom, 0px))"
             : "env(safe-area-inset-bottom, 0px)",
         }}
       >

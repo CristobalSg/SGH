@@ -30,9 +30,9 @@ const EventsPage: React.FC = () => {
     vm.editingId ? vm.eventsForSelected.find((e) => e.id === vm.editingId) ?? null : null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex min-h-[var(--app-height)] flex-col bg-gray-50">
       {/* Header (con tu layout) */}
-      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
+      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-10 safe-top">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarDaysIcon className="h-5 w-5 text-gray-700" />
@@ -43,7 +43,13 @@ const EventsPage: React.FC = () => {
       </header>
 
       {/* Main */}
-      <main className="flex-1 mt-14 mb-16 px-4 max-w-md mx-auto w-full">
+      <main
+        className="ios-scroll mx-auto flex w-full max-w-md flex-1 flex-col overflow-y-auto px-4"
+        style={{
+          paddingTop: "calc(80px + env(safe-area-inset-top, 0px))",
+          paddingBottom: "calc(120px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
         <p className="text-gray-700 text-sm mt-4 mb-3">
           Selecciona una fecha para ver y gestionar tus eventos.
         </p>
