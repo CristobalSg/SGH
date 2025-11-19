@@ -2,11 +2,15 @@ FROM rust:1.91-alpine3.22 as builder
 
 WORKDIR /app
 
-COPY Cargo.toml Cargo.lock .
+COPY Cargo.toml Cargo.lock ./
 
 RUN mkdir src
 
 COPY src ./src
+
+RUN apk add --no-cache \
+    build-base \
+    musl-dev
 
 RUN cargo build --release
 
