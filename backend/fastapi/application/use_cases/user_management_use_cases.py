@@ -191,3 +191,12 @@ class UserManagementUseCase:
 
         user_update = UserUpdate(activo=False)
         return self.user_repository.update(user_id, user_update)
+
+    def count_users_by_role(self) -> dict:
+        """
+        Obtener el conteo de usuarios agrupados por rol.
+        
+        Returns:
+            Diccionario con el conteo por rol: {"docente": 5, "estudiante": 100, "administrador": 2}
+        """
+        return self.user_repository.count_users_by_role()

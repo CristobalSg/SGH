@@ -35,25 +35,25 @@ class SeccionRepository:
         return self.session.query(Seccion).filter(Seccion.asignatura_id == asignatura_id).all()
 
     def get_by_periodo(self, anio: int, semestre: int) -> List[Seccion]:
-        """Obtener secciones por año y semestre"""
+        """Obtener secciones por periodo (año y semestre)"""
         return (
-            self.session.query(Seccion)
-            .filter(Seccion.anio == anio, Seccion.semestre == semestre)
+            self.db.query(Seccion)
+            .filter(Seccion.semestre == semestre)
             .all()
         )
 
-    def get_by_asignatura_and_periodo(
+    def existe_seccion_en_periodo(
         self, asignatura_id: int, anio: int, semestre: int
-    ) -> List[Seccion]:
-        """Obtener secciones de una asignatura en un período específico"""
+    ) -> bool:
+        """Verificar si existe una sección de una asignatura en un periodo específico"""
         return (
-            self.session.query(Seccion)
+            self.db.query(Seccion)
             .filter(
                 Seccion.asignatura_id == asignatura_id,
-                Seccion.anio == anio,
                 Seccion.semestre == semestre,
             )
-            .all()
+            .first()
+            is not None
         )
 
     def get_secciones_con_cupos(self, cupos_min: int = 1) -> List[Seccion]:

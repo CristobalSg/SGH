@@ -178,6 +178,30 @@ class SQLUserRepository:
         
         return query.all()
 
+    def count_users_by_role(self, include_deleted: bool = False) -> dict:
+        """
+        Contar usuarios agrupados por rol.
+        
+        Args:
+            include_deleted: Si True, incluye usuarios eliminados (soft delete)
+        
+        Returns:
+            Diccionario con el conteo por rol: {"docente": 5, "estudiante": 100, "administrador": 2}
+        """
+        from sqlalchemy import func
+        
+        query = self.session.query(
+            User.rol,
+            func.count(User.id).label('count')
+        ).group_by(User.rol)
+        
+        if not include_deleted:
+            query = query.filter(User.deleted_at.is_(None))
+        
+        results = query.all()
+        
+        return {rol: count for rol, count in results}
+
     # ==================== RECUPERACIÓN DE CONTRASEÑA ====================
 
     def create_password_reset_token(

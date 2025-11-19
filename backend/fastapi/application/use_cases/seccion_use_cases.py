@@ -26,14 +26,6 @@ class SeccionUseCases:
 
     def create(self, seccion_data: SeccionSecureCreate) -> Seccion:
         """Crear una nueva sección"""
-        # Verificar si ya existe una sección con el mismo código
-        existing_seccion = self.seccion_repository.get_by_codigo(seccion_data.codigo)
-        if existing_seccion:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ya existe una sección con ese código",
-            )
-
         # Convertir schema seguro a entidad
         seccion_create = SeccionCreate(**seccion_data.model_dump())
         return self.seccion_repository.create(seccion_create)
@@ -99,3 +91,51 @@ class SeccionUseCases:
     def get_secciones_activas(self) -> List[Seccion]:
         """Obtener secciones activas"""
         return self.seccion_repository.get_secciones_activas()
+
+    def get_student_years_format(self) -> List[dict]:
+        """Obtener secciones agrupadas por año académico en formato FET"""
+        from collections import defaultdict
+        from domain.entities import StudentYearResponse, StudentGroupResponse
+        
+        # Obtener todas las secciones
+        secciones = self.seccion_repository.get_all()
+        
+        # Agrupar por año académico
+        años_dict = defaultdict(lambda: {"grupos": [], "total": 0})
+        
+        for seccion in secciones:
+            año = seccion.anio_academico
+            
+            # Generar ID del grupo según tipo
+            if seccion.tipo_grupo == "seccion":
+                group_id = f"g-{año}-seccion-{seccion.id}"
+            elif seccion.tipo_grupo == "mencion":
+                group_id = f"g-{año}-mencion-{seccion.id}"
+            elif seccion.tipo_grupo == "base":
+                group_id = f"g-{año}-seccion-{seccion.id}"
+            else:
+                group_id = f"g-{año}-grupo-{seccion.id}"
+            
+            # Agregar grupo
+            años_dict[año]["grupos"].append(
+                StudentGroupResponse(
+                    id=group_id,
+                    name=seccion.codigo,
+                    students=seccion.numero_estudiantes
+                )
+            )
+            años_dict[año]["total"] += seccion.numero_estudiantes
+        
+        # Construir lista de StudentYear
+        student_years = []
+        for año in sorted(años_dict.keys()):
+            student_years.append(
+                StudentYearResponse(
+                    id=f"year-{año}",
+                    name=str(año),
+                    total_students=años_dict[año]["total"],
+                    groups=años_dict[año]["grupos"]
+                )
+            )
+        
+        return student_years
