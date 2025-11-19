@@ -30,9 +30,7 @@ from domain.timetable_schemas import (
 from infrastructure.repositories.docente_repository import DocenteRepository
 from infrastructure.repositories.asignatura_repository import AsignaturaRepository
 from infrastructure.repositories.seccion_repository import SeccionRepository
-from infrastructure.repositories.restriccion_horario_repository import (
-    RestriccionHorarioRepository,
-)
+from infrastructure.repositories.clase_repository import ClaseRepository
 from infrastructure.repositories.sala_repository import SalaRepository
 from infrastructure.repositories.edificio_repository import SQLEdificioRepository
 from infrastructure.repositories.user_repository import SQLUserRepository
@@ -47,7 +45,7 @@ class TimetableService:
         docente_repository: DocenteRepository,
         asignatura_repository: AsignaturaRepository,
         seccion_repository: SeccionRepository,
-        restriccion_horario_repository: RestriccionHorarioRepository,
+        clase_repository: ClaseRepository,
         sala_repository: SalaRepository,
         edificio_repository: SQLEdificioRepository,
         user_repository: SQLUserRepository,
@@ -55,7 +53,7 @@ class TimetableService:
         self.docente_repository = docente_repository
         self.asignatura_repository = asignatura_repository
         self.seccion_repository = seccion_repository
-        self.restriccion_horario_repository = restriccion_horario_repository
+        self.clase_repository = clase_repository
         self.sala_repository = sala_repository
         self.edificio_repository = edificio_repository
         self.user_repository = user_repository
@@ -167,20 +165,31 @@ class TimetableService:
         return teachers
 
     def _build_activities(self) -> List[Activity]:
-        """Construir actividades desde las secciones"""
-        secciones_db = self.seccion_repository.get_all()
+        """Construir actividades desde las clases programadas"""
+        clases_db = self.clase_repository.get_all()
         activities = []
+        
+        # Agrupar clases por sección para calcular duración total
+        from collections import defaultdict
+        clases_por_seccion = defaultdict(list)
+        
+        for clase in clases_db:
+            if clase.seccion_id:
+                clases_por_seccion[clase.seccion_id].append(clase)
+        
         activity_id = 1
-
-        for seccion in secciones_db:
-            # Buscar la asignatura
+        for seccion_id, clases in clases_por_seccion.items():
+            # Obtener información de la primera clase
+            primera_clase = clases[0]
+            
+            # Obtener seccion
+            seccion = self.seccion_repository.get_by_id(seccion_id)
+            if not seccion:
+                continue
+                
+            # Obtener la asignatura
             asignatura = self.asignatura_repository.get_by_id(seccion.asignatura_id)
             if not asignatura:
-                continue
-
-            # Buscar el docente
-            docente = self.docente_repository.get_by_id(seccion.docente_id)
-            if not docente:
                 continue
 
             # Determinar referencia al grupo específico de la sección
@@ -195,17 +204,21 @@ class TimetableService:
             
             students_ref = StudentsReference(type="group", id=group_id)
 
+            # Calcular duración basada en horas de la asignatura
+            # Usar horas_presenciales como base (convertir a bloques de 1 hora)
+            total_duration = asignatura.horas_presenciales + asignatura.horas_mixtas
+            duration = min(2, total_duration)  # 2 bloques consecutivos por defecto, ajustable
+            
             # Crear actividad
-            # duration y total_duration deberían venir de la configuración de la asignatura
             activities.append(
                 Activity(
                     id=str(activity_id),
                     group_id=str(seccion.id * 100),  # group_id como string
-                    teacher_id=f"t-{docente.user_id}",
+                    teacher_id=f"t-{primera_clase.docente_id}",
                     subject_id=f"sub-{asignatura.id}",
                     students_reference=students_ref,
-                    duration=2,  # 2 bloques consecutivos por defecto
-                    total_duration=4,  # 4 bloques totales por semana
+                    duration=duration,
+                    total_duration=total_duration,
                     active=True,
                     comments=f"Sección: {seccion.codigo}",
                 )
@@ -215,47 +228,8 @@ class TimetableService:
         return activities
 
     def _build_time_constraints(self) -> List[TimeConstraint]:
-        """Construir restricciones de tiempo"""
-        constraints = []
-
-        # Restricción básica obligatoria
-        constraints.append(
-            BasicCompulsoryTimeConstraint(
-                type="basic_compulsory_time", weight=100.0, active=True
-            )
-        )
-
-        # Restricciones de disponibilidad de docentes
-        docentes_db = self.docente_repository.get_all()
-        for docente in docentes_db:
-            restricciones = self.restriccion_horario_repository.get_by_docente(docente.id)
-
-            not_available_slots = []
-            for restriccion in restricciones:
-                # Solo restricciones de NO disponibilidad
-                if not restriccion.disponible and restriccion.activa:
-                    # Convertir día de semana y bloques a slots
-                    # Aquí necesitarías convertir hora_inicio/hora_fin a índices de bloque
-                    # Por simplicidad, usar el día directamente
-                    not_available_slots.append(
-                        NotAvailableSlot(
-                            day_index=restriccion.dia_semana,
-                            hour_index=0,  # Necesitarías calcular esto desde hora_inicio
-                        )
-                    )
-
-            if not_available_slots:
-                constraints.append(
-                    TeacherNotAvailableConstraint(
-                        type="teacher_not_available",
-                        weight=100.0,
-                        active=True,
-                        teacher_id=f"t-{docente.user_id}",
-                        not_available_slots=not_available_slots,
-                    )
-                )
-
-        return constraints
+        """Devolver restricciones de tiempo vacías (no se usan de momento)"""
+        return []
 
     def _build_space(self) -> Space:
         """Construir configuración de espacios"""
