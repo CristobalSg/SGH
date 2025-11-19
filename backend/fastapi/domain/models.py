@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, func
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 
 from infrastructure.database.config import Base
@@ -44,6 +44,17 @@ class Estudiante(Base):
     matricula = Column(Text, nullable=False, unique=True)  # Generada automáticamente
 
     user = relationship("User", back_populates="estudiante")
+    inscripciones = relationship(
+        "EstudianteSeccion",
+        back_populates="estudiante",
+        cascade="all, delete-orphan",
+    )
+    secciones = relationship(
+        "Seccion",
+        secondary="estudiante_seccion",
+        back_populates="estudiantes",
+        viewonly=True,
+    )
 
 
 class Administrador(Base):
@@ -120,6 +131,32 @@ class Seccion(Base):
 
     asignatura = relationship("Asignatura", back_populates="secciones")
     clases = relationship("Clase", back_populates="seccion")
+    inscripciones = relationship(
+        "EstudianteSeccion",
+        back_populates="seccion",
+        cascade="all, delete-orphan",
+    )
+    estudiantes = relationship(
+        "Estudiante",
+        secondary="estudiante_seccion",
+        back_populates="secciones",
+        viewonly=True,
+    )
+
+
+class EstudianteSeccion(Base):
+    __tablename__ = "estudiante_seccion"
+    __table_args__ = (
+        UniqueConstraint("estudiante_id", "seccion_id", name="uq_estudiante_seccion"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    estudiante_id = Column(Integer, ForeignKey("estudiante.id", ondelete="CASCADE"), nullable=False)
+    seccion_id = Column(Integer, ForeignKey("seccion.id", ondelete="CASCADE"), nullable=False)
+    fecha_inscripcion = Column(DateTime, default=func.current_timestamp(), nullable=False)
+
+    estudiante = relationship("Estudiante", back_populates="inscripciones")
+    seccion = relationship("Seccion", back_populates="inscripciones")
 
 
 class Sala(Base):
