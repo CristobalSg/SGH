@@ -56,8 +56,11 @@ RUN chmod +x /app/start.sh
 
 COPY . .
 
+RUN rm -rf /app/fet-7.5.5
+
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
+
 
 USER appuser
 

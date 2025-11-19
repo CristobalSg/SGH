@@ -12,4 +12,8 @@ RUN cargo build --release
 
 FROM alpine:3.22
 
-CMD ["/app/target/release/rooms-scheduler"]
+COPY --from=builder /app/target/release/rooms-scheduler /usr/bin/rooms-scheduler
+
+RUN rm -rf /var/cache/apk/* && rm -rf /app
+
+CMD ["/usr/bin/rooms-scheduler"]
