@@ -1,14 +1,15 @@
 
 use axum_responses::http::HttpResponse;
 use axum::{
-    http::{header, Request},
+    http::header,
     middleware::Next,
     response::Response,
+    extract::Request
 };
 
 use crate::jwt::verify_token;
 
-pub async fn require_access_token<B>(mut req: Request<B>, next: Next<B>) -> Result<Response, HttpResponse> {
+pub async fn require_access_token(mut req: Request, next: Next) -> Result<Response, HttpResponse> {
     let token_encoded = req
         .headers()
         .get(header::AUTHORIZATION)
@@ -18,7 +19,7 @@ pub async fn require_access_token<B>(mut req: Request<B>, next: Next<B>) -> Resu
     let token = match token_encoded {
             Some(token) => token,
             None => return Err(HttpResponse::Unauthorized()),
-        }?;
+        };
 
     let claims = match verify_token(token) {
             Ok(claims) => claims,
@@ -29,7 +30,7 @@ pub async fn require_access_token<B>(mut req: Request<B>, next: Next<B>) -> Resu
     Ok(next.run(req).await)
 }
 
-pub async fn require_administrator_role<B>(mut req: Request<B>, next: Next<B>) -> Result<Response, HttpResponse> {
+pub async fn require_administrator_role(req: Request, next: Next) -> Result<Response, HttpResponse> {
     let claims = req
         .extensions()
         .get::<crate::models::Claims>()
