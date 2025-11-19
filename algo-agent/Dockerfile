@@ -20,13 +20,31 @@ RUN apt-get update && apt-get install -y \
     libxdmcp6 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN qmake fet.pro && \
-    make -j 16 && \
-    cp fet-cl /usr/bin/fet-cl
+RUN qmake fet.pro && make -j 24 && strip fet-cl
 
-FROM python:3.12-slim AS app-runner
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6 \
+    libfontconfig1 \
+    libice6 \
+    libxtst6 \
+    libnss3 \
+    libx11-6 \
+    libxcb1 \
+    libxau6 \
+    libxdmcp6 \
+    libqt5core5a \
+    libqt5gui5 \
+    libqt5widgets5 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+COPY --from=fet-builder /fet/fet-cl /usr/local/bin/fet-cl
 
 COPY requirements.txt .
 
